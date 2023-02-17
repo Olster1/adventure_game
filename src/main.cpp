@@ -173,6 +173,44 @@ static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font 
 
 }
 
+static void drawGrid(EditorState *editorState) {
+	float zPos = 10;
+
+	Renderer *renderer = &editorState->renderer;
+
+	float3 snappedCamera = editorState->cameraPos;
+	snappedCamera.x = (int)snappedCamera.x;
+	snappedCamera.y = (int)snappedCamera.y;
+
+	//NOTE: Draw grid
+	pushShader(renderer, &lineShader);
+
+	int gridSize = 30;
+	int halfGridSize = (int)(0.5f*gridSize);
+		
+	for(int x = -halfGridSize; x < halfGridSize; ++x) {
+		float defaultY = halfGridSize;
+		float3 posA = make_float3(x, -defaultY, zPos);
+		float3 posB = make_float3(x, defaultY, zPos);
+
+		posA = minus_float3(plus_float3(posA, snappedCamera), editorState->cameraPos);
+		posB = minus_float3(plus_float3(posB, snappedCamera), editorState->cameraPos);
+		
+		pushLine(renderer, posA, posB, make_float4(1, 0, 0, 1));
+	}
+
+	for(int y = -halfGridSize; y < halfGridSize; ++y) {
+		float defaultX = halfGridSize;
+		float3 posA = make_float3(-defaultX, y, zPos);
+		float3 posB = make_float3(defaultX, y, zPos);
+
+		posA = minus_float3(plus_float3(posA, snappedCamera), editorState->cameraPos);
+		posB = minus_float3(plus_float3(posB, snappedCamera), editorState->cameraPos);
+		
+		pushLine(renderer, posA, posB, make_float4(1, 0, 0, 1));
+	}
+}
+
 
 static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
 	EditorState *editorState = (EditorState *)global_platform.permanent_storage;
@@ -322,6 +360,8 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	float16 fovMatrix = make_ortho_matrix_origin_center((windowWidth / windowHeight)*planeSize, planeSize, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	// float16 fovMatrix = make_perspective_matrix_origin_center(60.0f, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE, windowWidth / windowHeight);
 
+	pushMatrix(renderer, fovMatrix);
+
 	editorState->coinRotation += dt*0.6f;
 
 	if(editorState->coinRotation > 1.0f) {
@@ -332,7 +372,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	float gapSize = 2.5f;
 
-	
+	drawGrid(editorState);
 
 	for(int i = 0; i < 128; ++i) {
 
@@ -348,9 +388,6 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		pushShader(renderer, &textureShader);
 		pushTexture(renderer, editorState->pipeFlippedTexture.handle, minus_float3(pos, editorState->cameraPos), get_scale_rect2f(r), make_float4(1, 1, 1, 1), make_float4(0, 0, 1, 1));
-		
-		pushShader(renderer, &lineShader);
-		pushLine(renderer, pos, plus_float3(pos, make_float3(2, 2, 0)), make_float4(1, 0, 0, 1));
 		
 
 		Rect2f minowskiPlus = rect2f_minowski_plus(r, make_rect2f_center_dim(editorState->player.pos.xy, playerSize), pos.xy);
