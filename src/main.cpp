@@ -175,6 +175,7 @@ static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font 
 
 static void drawGrid(EditorState *editorState) {
 	float zPos = 10;
+	float4 gridColor = make_float4(0.5f, 0.5f, 0.5f, 1.0f);
 
 	Renderer *renderer = &editorState->renderer;
 
@@ -196,7 +197,7 @@ static void drawGrid(EditorState *editorState) {
 		posA = minus_float3(plus_float3(posA, snappedCamera), editorState->cameraPos);
 		posB = minus_float3(plus_float3(posB, snappedCamera), editorState->cameraPos);
 		
-		pushLine(renderer, posA, posB, make_float4(1, 0, 0, 1));
+		pushLine(renderer, posA, posB, gridColor);
 	}
 
 	for(int y = -halfGridSize; y < halfGridSize; ++y) {
@@ -207,7 +208,7 @@ static void drawGrid(EditorState *editorState) {
 		posA = minus_float3(plus_float3(posA, snappedCamera), editorState->cameraPos);
 		posB = minus_float3(plus_float3(posB, snappedCamera), editorState->cameraPos);
 		
-		pushLine(renderer, posA, posB, make_float4(1, 0, 0, 1));
+		pushLine(renderer, posA, posB, gridColor);
 	}
 }
 
