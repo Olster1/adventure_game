@@ -76,6 +76,8 @@ enum PlatformKeyType {
 
     PLATFORM_KEY_SHIFT,
 
+    PLATFORM_KEY_ESCAPE,
+
     PLATFORM_KEY_O,
 
     PLATFORM_KEY_MINUS,

@@ -355,6 +355,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
             keyType = PLATFORM_KEY_F5;
         } else if(vk_code == VK_SPACE) {
             keyType = PLATFORM_KEY_SPACE;
+         } else if(vk_code == VK_ESCAPE) {
+            keyType = PLATFORM_KEY_ESCAPE;
         } else if(vk_code == 'X') {
             keyType = PLATFORM_KEY_X;
         } else if(vk_code == 'P') {

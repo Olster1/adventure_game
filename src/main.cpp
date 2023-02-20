@@ -10,9 +10,14 @@
 #include "resize_array.cpp"
 // #include "transform.cpp"
 #include "entity.h"
+#include "editor_gui.h"
 
 #include <time.h>
 #include <stdlib.h>
+
+enum TileSetType {
+	TILE_SET_SWAMP
+};
 
 
 inline char *easy_createString_printf(Memory_Arena *arena, char *formatString, ...) {
@@ -49,7 +54,33 @@ struct CollisionRect {
 	}
 };
 
+struct TileSet {
+	TileSetType type;
+	Texture **tiles;
+	int count;
 
+	int countX;
+	int countY;
+
+	int tileSizeX;
+	int tileSizeY;
+};
+
+TileSet buildTileSet(Texture **tiles, int count, TileSetType type, int countX, int countY, int tileSizeX, int tileSizeY) {
+	TileSet result = {};
+
+	result.type = type;
+	result.tiles = tiles;
+	result.count = count;
+
+	result.countX = countX;
+	result.countY = countY;
+
+	result.tileSizeX = tileSizeX;
+	result.tileSizeY = tileSizeY;
+
+	return result;
+}
 
 typedef struct {
 	bool initialized;
@@ -65,6 +96,8 @@ typedef struct {
 	Font font;
 
 	float shakeTimer;
+
+	TileSet swampTileSet;
 
 	float fontScale;
 
@@ -101,35 +134,14 @@ typedef struct {
 	Animation fireballIdleAnimation;
 
 	EasyAnimation_ListItem *animationItemFreeListPtr;
+
+	EditorGui editorGuiState;
 } EditorState;
 
+
 #include "entity.cpp"
-
-
-static void loadImageStrip(Animation *animation, BackendRenderer *backendRenderer, char *filename_full_utf8, int widthPerImage) {
-	Texture texOnStack = backendRenderer_loadFromFileToGPU(backendRenderer, filename_full_utf8);
-	int count = 0;
-
-	float xAt = 0;
-
-	float widthTruncated = ((int)(texOnStack.width / widthPerImage))*widthPerImage;
-	while(xAt < widthTruncated) {
-		Texture *tex = pushStruct(&global_long_term_arena, Texture);
-		easyPlatform_copyMemory(tex, &texOnStack, sizeof(Texture));
-
-		tex->uvCoords.x = xAt / texOnStack.width;
-
-		xAt += widthPerImage;
-
-		tex->uvCoords.z = xAt / texOnStack.width;
-
-		tex->aspectRatio_h_over_w = ((float)texOnStack.height) / ((float)(tex->uvCoords.z - tex->uvCoords.x)*(float)texOnStack.width);
-
-		easyAnimation_pushFrame(animation, tex);
-
-		count++;
-	}
-}
+#include "assets.cpp"
+#include "editor_gui.cpp"
 
 static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font *font, float windowWidth, float windowHeight, float dt) {
 
@@ -269,6 +281,13 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		loadImageStrip(&editorState->playerIdleAnimation, backendRenderer, "..\\src\\images\\Flappy_bird.png", 64);
 		loadImageStrip(&editorState->fireballIdleAnimation, backendRenderer, "..\\src\\images\\fireball.png", 64);
+
+		int tileCount = 0;
+		int countX = 0;
+		int countY = 0;
+		Texture ** tiles = loadTileSet(backendRenderer, "..\\src\\images\\Tileset.png", 32, 32, &global_long_term_arena, &tileCount, &countX, &countY);
+
+		editorState->swampTileSet = buildTileSet(tiles, tileCount, TILE_SET_SWAMP, countX, countY, 32, 32);
 
 		editorState->coinsGot = initResizeArray(int);
 
@@ -541,6 +560,8 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	Texture *t = easyAnimation_updateAnimation_getTexture(&editorState->playerAnimationController, &editorState->animationItemFreeListPtr, dt);
 	
 	pushTexture(renderer, t->handle, make_float3(0, 0, 0), playerSize, make_float4(1, 1, 1, 1), t->uvCoords);
+
+	drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
 
 	//NOTE: Draw the points
 	float16 orthoMatrix1 = make_ortho_matrix_bottom_left_corner(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
