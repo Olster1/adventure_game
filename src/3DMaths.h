@@ -23,8 +23,19 @@ inline float ATan2_0toTau(float Y, float X) {
     return Result;
 }
 
-static float lerp(float a, float b, float t) {
-	return (b - a)*t + a;
+struct LerpTValue{
+	float value;
+};
+
+static LerpTValue make_lerpTValue(float value) {
+	LerpTValue result = {};
+	result.value = value;
+
+	return result;
+}
+
+static float lerp(float a, float b, LerpTValue t) {
+	return (b - a)*t.value + a;
 }
 
 

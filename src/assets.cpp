@@ -32,6 +32,8 @@ Texture ** loadTileSet(BackendRenderer *backendRenderer, char *filename_full_utf
 	float xAt = 0;
     float yAt = 0;
 
+    int bestCountX = 0;
+
     int maxTileCount = 64;
     Texture **tileSet = pushArray(arena, maxTileCount, Texture *);
 
@@ -61,9 +63,16 @@ Texture ** loadTileSet(BackendRenderer *backendRenderer, char *filename_full_utf
             (*countX)++;
         }
         yAt += heightPerImage;
+        xAt = 0;
+        if(*countX > bestCountX) {
+            bestCountX = *countX;
+        }
+        *countX = 0;
 
         (*countY)++;
     }
+
+    *countX = bestCountX;
 
     *finalCount = count; 
     

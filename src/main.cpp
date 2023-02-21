@@ -66,6 +66,16 @@ struct TileSet {
 	int tileSizeY;
 };
 
+struct MapTile {
+	int x;
+	int y;
+
+	int xId;
+	int yId;
+
+	TileSetType type;
+};
+
 TileSet buildTileSet(Texture **tiles, int count, TileSetType type, int countX, int countY, int tileSizeX, int tileSizeY) {
 	TileSet result = {};
 
@@ -110,6 +120,9 @@ typedef struct {
 
 	float3 cameraPos;
 
+	float planeSizeX;
+	float planeSizeY;
+
 	Texture playerTexture;
 
 	Texture pipeTexture;
@@ -123,6 +136,9 @@ typedef struct {
 	float coinRotation; //NOTE: Between 0 and 1
 
 	int points;
+
+	int tileCount;
+	MapTile tiles[1028];
 
 	bool hasInteratedYet;
 
@@ -255,6 +271,9 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->randomIdStartApp = rand();
 		editorState->randomIdStart = rand();
 
+		editorState->planeSizeY = 20;
+		editorState->planeSizeX = 20;
+
 		editorState->player.velocity = make_float3(0, 0, 0);
 		editorState->player.pos = make_float3(0, 0, 10);
 		editorState->playerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\helicopter.png");
@@ -291,10 +310,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		editorState->coinsGot = initResizeArray(int);
 
-		Entity *e = addFireballEnemy(editorState);
+		// Entity *e = addFireballEnemy(editorState);
 
-		e->rotation = 0.5f*HALF_PI32;
-		e->velocity = make_float3(0, 10, 0);
+		// e->rotation = 0.5f*HALF_PI32;
+		// e->velocity = make_float3(0, 10, 0);
 
 
 	} else {
@@ -342,7 +361,6 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	float16 orthoMatrix = make_ortho_matrix_origin_center(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	pushMatrix(renderer, orthoMatrix);
-	
 
 	pushShader(renderer, &rectOutlineShader);
 
@@ -366,7 +384,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	editorState->player.pos.xy = plus_float2(scale_float2(dt, editorState->player.velocity.xy),  editorState->player.pos.xy);
 
-	editorState->player.rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, rotationPower*0.05f); 
+	editorState->player.rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
 	editorState->cameraPos.x = editorState->player.pos.x + cameraOffset.x;
 	editorState->cameraPos.y = cameraOffset.y;
@@ -375,9 +393,9 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	//NOTE: Background texture
 	pushTexture(renderer, editorState->backgroundTexture.handle, make_float3(0, 0, 10), make_float2(fauxDimensionX, fauxDimensionY), make_float4(1, 1, 1, 1), make_float4(0, 0, 1, 1));
-	
-	float planeSize = 10.0f;
-	float16 fovMatrix = make_ortho_matrix_origin_center((windowWidth / windowHeight)*planeSize, planeSize, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
+
+	editorState->planeSizeY = (windowHeight / windowWidth) * editorState->planeSizeX;
+	float16 fovMatrix = make_ortho_matrix_origin_center(editorState->planeSizeX, editorState->planeSizeY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	// float16 fovMatrix = make_perspective_matrix_origin_center(60.0f, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE, windowWidth / windowHeight);
 
 	pushMatrix(renderer, fovMatrix);
@@ -471,7 +489,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 				//NOTE: MOve from model to view space
 				float3 coinPosViewSpace = minus_float3(coinPos, editorState->cameraPos);
 
-				float16 coinMatrix = float16_angle_aroundY(lerp(0, 2*PI32, editorState->coinRotation));
+				float16 coinMatrix = float16_angle_aroundY(lerp(0, 2*PI32, make_lerpTValue(editorState->coinRotation)));
 
 				coinMatrix = float16_set_pos(coinMatrix, coinPosViewSpace);
 
@@ -497,13 +515,40 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 			}
 		}
 
+	}	
+
+	pushShader(renderer, &textureShader);
+	pushMatrix(renderer, fovMatrix);
+
+	//NOTE: Draw the tile map
+	for(int i = 0; i < editorState->tileCount; ++i) {
+		MapTile t = editorState->tiles[i];
+
+		Texture *sprite = 0;
+
+		//NOTE: Get the right texture
+		switch(t.type) {
+			case TILE_SET_SWAMP: {
+				TileSet *set = &editorState->swampTileSet;
+
+				int indexIntoArray = t.xId + (set->countX*t.yId);
+				assert(indexIntoArray < set->count);
+				sprite = set->tiles[indexIntoArray];
+
+			} break;
+		}
+
+		float pX = (t.x + 0.5f) - editorState->cameraPos.x;
+		float pY = (t.y + 0.5f)  - editorState->cameraPos.y;
+
+		pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
 	}
 
 	for(int i = 0; i < editorState->entityCount; ++i) {
 		Entity *e = &editorState->entities[i];
 
 		e->pos.xy = plus_float2(scale_float2(dt, e->velocity.xy),  e->pos.xy);
-		e->rotation = lerp(e->rotation, e->targetRotation, rotationPower*0.05f); 
+		e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
 		if(e->flags & ENTITY_ACTIVE) {
 			

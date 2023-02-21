@@ -10,6 +10,10 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
 
     float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
 
+    float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
+
+    bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+
     TileSet *swampSet = &state->swampTileSet; 
 
     
@@ -32,7 +36,7 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
         float tileSizeY = swampSet->tileSizeY * scaleFactor;
 
         int xIndex = (mouseP.x - x) / tileSizeX; 
-        int yIndex = (mouseP.y - x) / tileSizeY; 
+        int yIndex = (mouseP.y - y) / tileSizeY; 
 
         EditorGuiId thisId = {};
 
@@ -47,7 +51,13 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
 
         bool isActive = (state->editorGuiState.currentInteraction.active && state->editorGuiState.currentInteraction.id.type == TILE_SELECTION_SWAMP);
 
-        if((!state->editorGuiState.currentInteraction.active && in_rect2f_bounds(make_rect2f_min_dim(x, y, scale.x, scale.y), mouseP)) || isActive) {
+        bool inSelectionBounds = in_rect2f_bounds(make_rect2f_min_dim(x, y, scale.x, scale.y), mouseP);
+
+        if(inSelectionBounds && clicked) {
+            editorGui_clearInteraction(&state->editorGuiState);
+	    }
+
+        if((!state->editorGuiState.currentInteraction.active && inSelectionBounds) || isActive) {
             //NOTE: Get the tile mouse is hovering over
            
             pushShader(renderer, &rectOutlineShader);
@@ -80,6 +90,41 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
 
             pushTexture(renderer, global_white_texture, make_float3(tileP.x, tileP.y, 1.0f), tileScaleP, selectColor, make_float4(0, 0, 1, 1));
         }
+
+
+        //NOTE: See if user added tile to map
+        if(!inSelectionBounds && global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {
+            //NOTE: Add tile to map
+            assert(state->tileCount < arrayCount(state->tiles));
+            MapTile *t = state->tiles + state->tileCount++;
+
+            float worldX = lerp(-0.5f*state->planeSizeX, 0.5f*state->planeSizeX, make_lerpTValue(mouseP_01.x));
+            float worldY = lerp(-0.5f*state->planeSizeY, 0.5f*state->planeSizeY, make_lerpTValue(mouseP_01.y));
+
+            worldX += state->cameraPos.x;
+            worldY += state->cameraPos.y;
+
+
+            //NOTE: Make sure the tile goes in the cell you click
+            if(worldX < 0) {
+                worldX = floor(worldX);
+            }
+
+            if(worldY < 0) {
+                worldY = floor(worldY);
+            }
+            
+            
+            t->x = worldX;
+            t->y = worldY;
+            
+            t->xId = xIndex;
+            t->yId = (swampSet->countY - 1) - yIndex;
+
+            t->type = TILE_SET_SWAMP;
+        }
+
+
 
     }
 
