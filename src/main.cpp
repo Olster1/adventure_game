@@ -10,14 +10,28 @@
 #include "resize_array.cpp"
 // #include "transform.cpp"
 #include "entity.h"
+
+
+
+enum TileSetType {
+	TILE_SET_SWAMP
+};
+
+struct MapTile {
+	int x;
+	int y;
+
+	int xId;
+	int yId;
+
+	TileSetType type;
+};
+
 #include "editor_gui.h"
 
 #include <time.h>
 #include <stdlib.h>
 
-enum TileSetType {
-	TILE_SET_SWAMP
-};
 
 
 inline char *easy_createString_printf(Memory_Arena *arena, char *formatString, ...) {
@@ -66,15 +80,6 @@ struct TileSet {
 	int tileSizeY;
 };
 
-struct MapTile {
-	int x;
-	int y;
-
-	int xId;
-	int yId;
-
-	TileSetType type;
-};
 
 TileSet buildTileSet(Texture **tiles, int count, TileSetType type, int countX, int countY, int tileSizeX, int tileSizeY) {
 	TileSet result = {};
@@ -281,7 +286,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->pipeTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipe.png");
 		editorState->pipeFlippedTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipeRotated.png");
 
-		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\backgroundCastles.png");
+		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\bg.png");//backgroundCastles.png");
 
 		editorState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\coin.png");
 

@@ -6,6 +6,24 @@ static void editorGui_clearInteraction(EditorGui *gui) {
     gui->currentInteraction.active = false;
 }
 
+static void addUndoRedoBlock(EditorGui *gui, UndoRedoBlock block) {
+    //NOTE: If overflowed buffer go to zero
+    if(gui->undoRedoCursorAt >= gui->undoRedoTotalCount) {
+        gui->undoRedoCursorAt = 0;
+    }
+    gui->undoRedoBlocks[gui->undoRedoCursorAt++] = block;
+
+    if(gui->undoRedoCursorAt > gui->undoRedoEndOfRingBuffer) {
+        gui->undoRedoEndOfRingBuffer = gui->undoRedoCursorAt;
+        gui->undoRedoTotalCount++;
+
+        if(gui->undoRedoTotalCount > arrayCount(gui->undoRedoBlocks)) {
+            gui->undoRedoTotalCount = arrayCount(gui->undoRedoBlocks);
+        }
+    }
+
+}   
+
 void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
 
     float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
@@ -15,6 +33,61 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
     TileSet *swampSet = &state->swampTileSet; 
+
+    EditorGui *gui = &state->editorGuiState;
+
+    if(global_platformInput.keyStates[PLATFORM_KEY_Z].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
+        if(global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
+           //NOTE: REDO
+            int nextIndex = gui->undoRedoCursorAt;
+            if(gui->undoRedoTotalCount < arrayCount(gui->undoRedoBlocks) && nextIndex >= gui->undoRedoTotalCount) {
+                //NOTE: None left so don't bother
+            } else {
+                if(nextIndex >= gui->undoRedoTotalCount) {
+                    //NOTE: Wrap the index
+                    nextIndex = 0;
+                }
+
+                if(nextIndex == gui->undoRedoEndOfRingBuffer) {
+                    //NOTE: None left so don't bother
+                } else {
+                    //NOTE: Get the block
+                    UndoRedoBlock block =  gui->undoRedoBlocks[nextIndex];
+
+                    //NOTE: Execute the block
+
+
+                    //NOTE: Update the cusror
+                    gui->undoRedoCursorAt = nextIndex + 1;
+                }
+            }
+        } else {
+            //NOTE: UNDO
+            int lastIndex = gui->undoRedoCursorAt - 1;
+            if(gui->undoRedoTotalCount < arrayCount(gui->undoRedoBlocks) && lastIndex < 0) {
+                //NOTE: Not full so don't wrap back to top of array if zero
+                //NOTE: None left so don't bother
+            } else {
+                if(lastIndex < 0) {
+                    //NOTE: Wrap the index
+                    lastIndex = arrayCount(gui->undoRedoBlocks) - 1;
+                }
+
+                if(lastIndex == gui->undoRedoEndOfRingBuffer) {
+                    //NOTE: None left so don't bother
+                } else {
+                    //NOTE: Get the block
+                    UndoRedoBlock block =  gui->undoRedoBlocks[lastIndex];
+
+                    //NOTE: Execute the block
+
+
+                    //NOTE: Update the cusror
+                    gui->undoRedoCursorAt = lastIndex;
+                }
+            }
+        }
+	}
 
     
 	if(global_platformInput.keyStates[PLATFORM_KEY_ESCAPE].pressedCount > 0) {
@@ -122,6 +195,12 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
             t->yId = (swampSet->countY - 1) - yIndex;
 
             t->type = TILE_SET_SWAMP;
+
+            UndoRedoBlock block = {};
+            // block->lastMapTile;
+            block.mapTile = *t;
+
+            addUndoRedoBlock(&state->editorGuiState, block);
         }
 
 
