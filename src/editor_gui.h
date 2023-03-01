@@ -19,6 +19,7 @@ struct GuiInteraction {
 struct UndoRedoBlock {
     union {
         struct {
+            bool hasLastTile;
             MapTile lastMapTile;
             MapTile mapTile;
         };
@@ -29,8 +30,8 @@ struct EditorGui {
     GuiInteraction currentInteraction; 
 
     //NOTE: Ring buffer
-    int undoRedoTotalCount; //NOTE: Fills up then stays full 
-    int undoRedoEndOfRingBuffer; //NOTE: Where the next most out of date spot is 
-    int undoRedoCursorAt; //NOTE: Where the next most out of date spot is 
-    UndoRedoBlock undoRedoBlocks[1028];
+    int undoRedoTotalCount; //NOTE:  this is relative
+    int undoRedoStartOfRingBuffer; //NOTE: Where the next most out of date spot is 
+    int undoRedoCursorAt; //NOTE: Where the next most out of date spot is - this is relative 
+    UndoRedoBlock undoRedoBlocks[1024]; 
 };

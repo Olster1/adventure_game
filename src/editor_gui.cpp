@@ -6,22 +6,35 @@ static void editorGui_clearInteraction(EditorGui *gui) {
     gui->currentInteraction.active = false;
 }
 
+static int wrapUndoRedoIndex(EditorGui *gui, int index) {
+
+    int result = index + arrayCount(gui->undoRedoBlocks);
+
+    result = result & (arrayCount(gui->undoRedoBlocks) - 1);
+
+    return result; 
+    
+}
+
 static void addUndoRedoBlock(EditorGui *gui, UndoRedoBlock block) {
     //NOTE: If overflowed buffer go to zero
-    if(gui->undoRedoCursorAt >= gui->undoRedoTotalCount) {
-        gui->undoRedoCursorAt = 0;
-    }
-    gui->undoRedoBlocks[gui->undoRedoCursorAt++] = block;
-
-    if(gui->undoRedoCursorAt > gui->undoRedoEndOfRingBuffer) {
-        gui->undoRedoEndOfRingBuffer = gui->undoRedoCursorAt;
-        gui->undoRedoTotalCount++;
-
-        if(gui->undoRedoTotalCount > arrayCount(gui->undoRedoBlocks)) {
-            gui->undoRedoTotalCount = arrayCount(gui->undoRedoBlocks);
-        }
+    if(gui->undoRedoCursorAt >= arrayCount(gui->undoRedoBlocks)) {
+        gui->undoRedoStartOfRingBuffer = wrapUndoRedoIndex(gui, gui->undoRedoStartOfRingBuffer + 1);
+        gui->undoRedoCursorAt--;
     }
 
+    int index = wrapUndoRedoIndex(gui, gui->undoRedoCursorAt + gui->undoRedoStartOfRingBuffer);
+
+    assert(index >= 0 && index < arrayCount(gui->undoRedoBlocks));
+    gui->undoRedoBlocks[index] = block;
+
+    gui->undoRedoCursorAt++;
+
+    if(gui->undoRedoCursorAt > arrayCount(gui->undoRedoBlocks)) {
+        gui->undoRedoCursorAt = arrayCount(gui->undoRedoBlocks);
+    }
+
+    gui->undoRedoTotalCount = gui->undoRedoCursorAt;
 }   
 
 void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
@@ -39,52 +52,56 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
     if(global_platformInput.keyStates[PLATFORM_KEY_Z].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
         if(global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
            //NOTE: REDO
-            int nextIndex = gui->undoRedoCursorAt;
-            if(gui->undoRedoTotalCount < arrayCount(gui->undoRedoBlocks) && nextIndex >= gui->undoRedoTotalCount) {
-                //NOTE: None left so don't bother
-            } else {
-                if(nextIndex >= gui->undoRedoTotalCount) {
-                    //NOTE: Wrap the index
-                    nextIndex = 0;
+            if(gui->undoRedoCursorAt < gui->undoRedoTotalCount) {
+                int nextIndex = wrapUndoRedoIndex(gui, gui->undoRedoCursorAt + gui->undoRedoStartOfRingBuffer);
+                 //NOTE: Get the block
+                UndoRedoBlock block =  gui->undoRedoBlocks[nextIndex];
+
+                //NOTE: Execute the block
+                //NOTE: Remove last tile block if have one from map
+                if(block.hasLastTile) {
+                    MapTileFindResult result = findMapTile(state, block.lastMapTile);
+                    assert(result.found);
+
+                    removeMapTile(state, result.indexAt);
                 }
 
-                if(nextIndex == gui->undoRedoEndOfRingBuffer) {
-                    //NOTE: None left so don't bother
-                } else {
-                    //NOTE: Get the block
-                    UndoRedoBlock block =  gui->undoRedoBlocks[nextIndex];
+                //NOTE: Put in the current one back into the map
+                assert(state->tileCount < arrayCount(state->tiles));
+                MapTile *t = state->tiles + state->tileCount++;
 
-                    //NOTE: Execute the block
+                *t = block.mapTile;
 
-
-                    //NOTE: Update the cusror
-                    gui->undoRedoCursorAt = nextIndex + 1;
-                }
+                gui->undoRedoCursorAt++;
             }
         } else {
             //NOTE: UNDO
-            int lastIndex = gui->undoRedoCursorAt - 1;
-            if(gui->undoRedoTotalCount < arrayCount(gui->undoRedoBlocks) && lastIndex < 0) {
-                //NOTE: Not full so don't wrap back to top of array if zero
-                //NOTE: None left so don't bother
-            } else {
-                if(lastIndex < 0) {
-                    //NOTE: Wrap the index
-                    lastIndex = arrayCount(gui->undoRedoBlocks) - 1;
+            if(gui->undoRedoCursorAt > 0) {
+                int lastIndex = wrapUndoRedoIndex(gui, (gui->undoRedoCursorAt - 1) + gui->undoRedoStartOfRingBuffer);
+                //NOTE: Get the block
+                UndoRedoBlock block =  gui->undoRedoBlocks[lastIndex];
+
+                //NOTE: Execute the block
+                //NOTE: Remove current tile from map
+                {
+                    MapTileFindResult result = findMapTile(state, block.mapTile);
+                    assert(result.found);
+                    removeMapTile(state, result.indexAt);
+
                 }
 
-                if(lastIndex == gui->undoRedoEndOfRingBuffer) {
-                    //NOTE: None left so don't bother
-                } else {
-                    //NOTE: Get the block
-                    UndoRedoBlock block =  gui->undoRedoBlocks[lastIndex];
+                //NOTE: Put in the last tile into map if valid
+                if(block.hasLastTile) {
+                    assert(state->tileCount < arrayCount(state->tiles));
+                    MapTile *t = state->tiles + state->tileCount++;
 
-                    //NOTE: Execute the block
-
-
-                    //NOTE: Update the cusror
-                    gui->undoRedoCursorAt = lastIndex;
+                    *t = block.lastMapTile;
                 }
+
+
+                gui->undoRedoCursorAt--;
+
+                assert(gui->undoRedoCursorAt >= 0);
             }
         }
 	}
@@ -168,9 +185,8 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
         //NOTE: See if user added tile to map
         if(!inSelectionBounds && global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {
             //NOTE: Add tile to map
-            assert(state->tileCount < arrayCount(state->tiles));
-            MapTile *t = state->tiles + state->tileCount++;
-
+            MapTile t = {};
+           
             float worldX = lerp(-0.5f*state->planeSizeX, 0.5f*state->planeSizeX, make_lerpTValue(mouseP_01.x));
             float worldY = lerp(-0.5f*state->planeSizeY, 0.5f*state->planeSizeY, make_lerpTValue(mouseP_01.y));
 
@@ -187,18 +203,31 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
                 worldY = floor(worldY);
             }
             
+            t.x = worldX;
+            t.y = worldY;
             
-            t->x = worldX;
-            t->y = worldY;
-            
-            t->xId = xIndex;
-            t->yId = (swampSet->countY - 1) - yIndex;
+            t.xId = xIndex;
+            t.yId = (swampSet->countY - 1) - yIndex;
 
-            t->type = TILE_SET_SWAMP;
+            t.type = TILE_SET_SWAMP;
 
             UndoRedoBlock block = {};
             // block->lastMapTile;
-            block.mapTile = *t;
+            block.mapTile = t;
+
+            MapTileFindResult mapTileQueryResult = findMapTile(state, t);
+
+            if(mapTileQueryResult.found) {
+                block.hasLastTile = true;
+                block.lastMapTile = state->tiles[mapTileQueryResult.indexAt];
+
+                removeMapTile(state, mapTileQueryResult.indexAt);
+            } else {
+                block.hasLastTile = false;
+            }
+
+            assert(state->tileCount < arrayCount(state->tiles));
+            state->tiles[state->tileCount++] = t;
 
             addUndoRedoBlock(&state->editorGuiState, block);
         }

@@ -10,23 +10,7 @@
 #include "resize_array.cpp"
 // #include "transform.cpp"
 #include "entity.h"
-
-
-
-enum TileSetType {
-	TILE_SET_SWAMP
-};
-
-struct MapTile {
-	int x;
-	int y;
-
-	int xId;
-	int yId;
-
-	TileSetType type;
-};
-
+#include "tileMap.h"
 #include "editor_gui.h"
 
 #include <time.h>
@@ -68,34 +52,6 @@ struct CollisionRect {
 	}
 };
 
-struct TileSet {
-	TileSetType type;
-	Texture **tiles;
-	int count;
-
-	int countX;
-	int countY;
-
-	int tileSizeX;
-	int tileSizeY;
-};
-
-
-TileSet buildTileSet(Texture **tiles, int count, TileSetType type, int countX, int countY, int tileSizeX, int tileSizeY) {
-	TileSet result = {};
-
-	result.type = type;
-	result.tiles = tiles;
-	result.count = count;
-
-	result.countX = countX;
-	result.countY = countY;
-
-	result.tileSizeX = tileSizeX;
-	result.tileSizeY = tileSizeY;
-
-	return result;
-}
 
 typedef struct {
 	bool initialized;
@@ -162,6 +118,7 @@ typedef struct {
 
 #include "entity.cpp"
 #include "assets.cpp"
+#include "tileMap.cpp"
 #include "editor_gui.cpp"
 
 static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font *font, float windowWidth, float windowHeight, float dt) {
@@ -245,6 +202,9 @@ static void drawGrid(EditorState *editorState) {
 	}
 }
 
+#if DEBUG_BUILD
+#include "unit_tests.cpp"
+#endif
 
 static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
 	EditorState *editorState = (EditorState *)global_platform.permanent_storage;
@@ -319,7 +279,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		// e->rotation = 0.5f*HALF_PI32;
 		// e->velocity = make_float3(0, 10, 0);
-
+		
+	#if DEBUG_BUILD
+		DEBUG_runUnitTests(editorState);
+	#endif
 
 	} else {
 		releaseMemoryMark(&global_perFrameArenaMark);
