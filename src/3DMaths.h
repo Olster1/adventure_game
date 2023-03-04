@@ -342,9 +342,14 @@ float16 float16_angle_aroundZ(float angle_radians) {
     return result;
 }
 
-float16 float16_scale(float16 a, float3 scale) {
-    float16 result = a;
+float3 float3_negate(float3 v) {
+	v.x *= -1;
+	v.y *= -1;
+	v.z *= -1;
+	return v;
+}
 
+float16 float16_scale(float16 a, float3 scale) {
 	a.E_[0][0] *= scale.x;
 	a.E_[0][1] *= scale.x;
 	a.E_[0][2] *= scale.x;
@@ -357,7 +362,7 @@ float16 float16_scale(float16 a, float3 scale) {
 	a.E_[2][1] *= scale.z;
 	a.E_[2][2] *= scale.z;
 
-    return result;
+    return a;
 }
 
 

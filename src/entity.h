@@ -10,10 +10,16 @@ enum EntityType {
     ENTITY_COIN
 };
 
+typedef struct Entity Entity; 
+
 struct Entity {
+    Entity *parent; 
+
     char *id;
     int idHash;
     EntityType type;
+
+    bool spriteFlipped;
     
     float3 pos;
     float3 scale;

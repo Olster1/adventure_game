@@ -275,10 +275,18 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		editorState->coinsGot = initResizeArray(int);
 
-		// Entity *e = addFireballEnemy(editorState);
+		Entity *e = addFireballEnemy(editorState);
 
+		e->pos.x = -3;
 		// e->rotation = 0.5f*HALF_PI32;
+		e->targetRotation = 0.5f*HALF_PI32;
 		// e->velocity = make_float3(0, 10, 0);
+
+		Entity *e1 = addFireballEnemy(editorState);
+
+		e1->pos.x = 1;
+		e1->parent = e;
+		e1->velocity = make_float3(0, 0, 0);
 		
 	#if DEBUG_BUILD
 		DEBUG_runUnitTests(editorState);
@@ -519,26 +527,25 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
 		if(e->flags & ENTITY_ACTIVE) {
-			
-				//NOTE: Draw the fireball
-				float16 entityMatrix = float16_angle_aroundZ(e->rotation);
 
-				entityMatrix.E[0] *= -1;
+				float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
 
-				float3 entityP = minus_float3(e->pos, editorState->cameraPos);
+				if(e->spriteFlipped) {
+					modelToViewT.E[0] *= -1;
+					modelToViewT.E[1] *= -1;
+					modelToViewT.E[2] *= -1;
+				}
+				
+				modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
 
-				entityMatrix = float16_set_pos(entityMatrix, entityP);
-
-				entityMatrix = float16_multiply(fovMatrix, entityMatrix); 
-
-				pushMatrix(renderer, entityMatrix);
+				pushMatrix(renderer, modelToViewT);
 
 				Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &editorState->animationItemFreeListPtr, dt);
 				if(e->animationController.finishedAnimationLastUpdate) {
 					//NOTE: Make not active anymore. Should Probably remove it from the list. 
-					e->flags &= ~ENTITY_ACTIVE;
+					// e->flags &= ~ENTITY_ACTIVE;
 				}
-				pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 0.5f), make_float4(1, 1, 1, 1), t->uvCoords);
+				pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
 
 				Rect2f r = make_rect2f_center_dim(e->pos.xy, scale_float2(e->collisionScale, e->scale.xy));
 
@@ -551,7 +558,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 					//NOTE: Shake the camera
 					if(editorState->shakeTimer < 0 || editorState->shakeTimer > 0.5f) {
-						editorState->shakeTimer = 0;
+						// editorState->shakeTimer = 0;
 					}
 					
 				}
