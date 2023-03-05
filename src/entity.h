@@ -10,23 +10,70 @@ enum EntityType {
     ENTITY_COIN
 };
 
+enum ColliderFlag {
+    COLLIDER_ACTIVE = 1 << 0,
+    COLLIDER_TRIGGER = 1 << 1,
+};
+
+enum CollideEventType {
+    COLLIDE_ENTER,
+    COLLIDE_STAY,
+    COLLIDE_EXIT,
+};
+
+struct CollideEvent {
+    char *entityId;
+    int entityHash;
+
+    bool hitThisFrame;
+
+    CollideEventType type;
+};
+
+struct Collider {
+    // ColliderType type; //NOTE: Assume everything is a rectangle
+
+    int collideEventsCount;
+    CollideEvent events[8];
+
+    float3 offset;
+    float3 scale; //NOTE: This is a percentage of the parent scale;
+
+    u32 flags;
+};
+
+Collider make_collider(float3 offset, float3 scale, u32 flags) {
+    Collider c = {};
+
+    c.flags = flags;
+    c.offset = offset;
+    c.scale = scale;
+
+    return c;
+}
+
 typedef struct Entity Entity; 
 
 struct Entity {
     Entity *parent; 
+
+    int colliderCount;
+    Collider colliders[2];
 
     char *id;
     int idHash;
     EntityType type;
 
     bool spriteFlipped;
-    
+
     float3 pos;
+    float deltaTLeft;
+    float3 deltaPos; //NOTE: Used in collision loop
+
     float3 scale;
     float3 velocity;
     float rotation;
     float targetRotation;
-    float collisionScale;
     u64 flags;
 
     ///////////////////////
@@ -35,7 +82,3 @@ struct Entity {
 
     EasyAnimation_Controller animationController;
 };
-
-void updateFireballComponent() {
-
-} 

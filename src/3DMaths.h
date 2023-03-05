@@ -82,6 +82,13 @@ static float2 plus_float2(float2 a, float2 b) {
 	return make_float2(a.x+b.x, a.y+b.y);
 }
 
+static float2 minus_float2(float2 a, float2 b) {
+	return make_float2(a.x-b.x, a.y-b.y);
+}
+
+static float float2_dot(float2 a, float2 b) {
+	return (a.x*b.x + a.y*b.y);
+}
 
 static float2 lerp_float2(float2 a, float2 b, float t) {
 	return make_float2((b.x - a.x)*t + a.x, (b.y - a.y)*t + a.y);
@@ -93,6 +100,16 @@ static float3 make_float3(float x0, float y0, float z0) {
 	result.x = x0;
 	result.y = y0;
 	result.z = z0;
+
+	return result;
+}
+
+static float3 float3_hadamard(float3 a, float3 b) {
+	float3 result = {};
+
+	result.x = a.x * b.x;
+	result.y = a.y * b.y;
+	result.z = a.z * b.z;
 
 	return result;
 }
@@ -349,6 +366,19 @@ float3 float3_negate(float3 v) {
 	return v;
 }
 
+float float3_magnitude_sqr(float3 v) {
+	float result = (v.x*v.x + v.y*v.y + v.z*v.z); 
+	return result;
+}
+
+float float3_magnitude(float3 v) {
+	float result = (v.x*v.x + v.y*v.y + v.z*v.z); 
+
+	result = sqrt(result);
+
+	return result;
+}
+
 float16 float16_scale(float16 a, float3 scale) {
 	a.E_[0][0] *= scale.x;
 	a.E_[0][1] *= scale.x;
@@ -442,3 +472,6 @@ int get_crc32_for_string(char *string_nullterminated) {
 	}
 	return result;
 }
+
+
+

@@ -35,6 +35,20 @@ float16 getModelToWorldTransform(Entity *e_) {
     return result;
 }
 
+float3 getWorldPosition(Entity *e_) {
+    float3 result = e_->pos;
+
+    Entity *e = e_->parent;
+
+    while(e) {
+        result = plus_float3(result, e->pos);
+
+        e = e->parent;
+    }
+
+    return result;
+}
+
 float16 getModelToViewTransform(Entity *e_, float3 cameraPos) {
 
     float16 result = getModelToWorldTransform(e_);
@@ -59,8 +73,9 @@ Entity *addFireballEnemy(EditorState *state) {
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
         e->respawnTimer = 3;
-        e->collisionScale = 1;
         e->scale = make_float3(2, 1, 1);
+
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE | COLLIDER_TRIGGER);
 
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->fireballIdleAnimation, 0.3f);

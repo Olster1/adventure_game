@@ -52,71 +52,9 @@ struct CollisionRect {
 	}
 };
 
-
-typedef struct {
-	bool initialized;
-
-	//NOTE: For creating unique entity ids like MongoDb ObjectIds
-	int randomIdStartApp;
-	int randomIdStart;
-
-	Renderer renderer;
-
-	EditorMode mode;
-
-	Font font;
-
-	float shakeTimer;
-
-	TileSet swampTileSet;
-
-	float fontScale;
-
-	bool draw_debug_memory_stats;
-
-	Entity player;	
-
-	int entityCount;
-	Entity entities[256];
-
-	float3 cameraPos;
-
-	float planeSizeX;
-	float planeSizeY;
-
-	Texture playerTexture;
-
-	Texture pipeTexture;
-
-	Texture pipeFlippedTexture;
-
-	Texture backgroundTexture;
-
-	Texture coinTexture;
-
-	float coinRotation; //NOTE: Between 0 and 1
-
-	int points;
-
-	int tileCount;
-	MapTile tiles[1028];
-
-	bool hasInteratedYet;
-
-	//NOTE: Resizeable array for the coins - if id in list, means user got it. 
-	int *coinsGot;
-
-	EasyAnimation_Controller playerAnimationController;
-	Animation playerIdleAnimation;
-	Animation fireballIdleAnimation;
-
-	EasyAnimation_ListItem *animationItemFreeListPtr;
-
-	EditorGui editorGuiState;
-} EditorState;
-
-
+#include "game_state.h"
 #include "entity.cpp"
+#include "collision.cpp"
 #include "assets.cpp"
 #include "tileMap.cpp"
 #include "editor_gui.cpp"
@@ -205,6 +143,12 @@ static void drawGrid(EditorState *editorState) {
 #if DEBUG_BUILD
 #include "unit_tests.cpp"
 #endif
+
+static void shakeCamera(EditorState *editorState) {
+	if(editorState->shakeTimer < 0 || editorState->shakeTimer > 0.5f) {
+		editorState->shakeTimer = 0;
+	}
+}
 
 static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
 	EditorState *editorState = (EditorState *)global_platform.permanent_storage;
@@ -520,48 +464,36 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
 	}
 
+	//NOTE: Collision code - fill all colliders with info and move entities
+	updateEntityCollisions(editorState, dt);
+
+	//NOTE: Gameplay code
 	for(int i = 0; i < editorState->entityCount; ++i) {
 		Entity *e = &editorState->entities[i];
 
-		e->pos.xy = plus_float2(scale_float2(dt, e->velocity.xy),  e->pos.xy);
+		// e->pos.xy = plus_float2(scale_float2(dt, e->velocity.xy),  e->pos.xy);
 		e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
 		if(e->flags & ENTITY_ACTIVE) {
 
-				float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
+			float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
 
-				if(e->spriteFlipped) {
-					modelToViewT.E[0] *= -1;
-					modelToViewT.E[1] *= -1;
-					modelToViewT.E[2] *= -1;
-				}
-				
-				modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
+			if(e->spriteFlipped) {
+				modelToViewT.E[0] *= -1;
+				modelToViewT.E[1] *= -1;
+				modelToViewT.E[2] *= -1;
+			}
+			
+			modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
 
-				pushMatrix(renderer, modelToViewT);
+			pushMatrix(renderer, modelToViewT);
 
-				Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &editorState->animationItemFreeListPtr, dt);
-				if(e->animationController.finishedAnimationLastUpdate) {
-					//NOTE: Make not active anymore. Should Probably remove it from the list. 
-					// e->flags &= ~ENTITY_ACTIVE;
-				}
-				pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
-
-				Rect2f r = make_rect2f_center_dim(e->pos.xy, scale_float2(e->collisionScale, e->scale.xy));
-
-				//NOTE: See if it hit anything
-				Rect2f minowskiPlus = rect2f_minowski_plus(r, make_rect2f_center_dim(editorState->player.pos.xy, playerSize), e->pos.xy);
-				if(in_rect2f_bounds(minowskiPlus, editorState->player.pos.xy)) {
-					// editorState->player.pos.y = 0;
-					// editorState->player.velocity.y = 0;
-					//NOTE: Reset player
-
-					//NOTE: Shake the camera
-					if(editorState->shakeTimer < 0 || editorState->shakeTimer > 0.5f) {
-						// editorState->shakeTimer = 0;
-					}
-					
-				}
+			Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &editorState->animationItemFreeListPtr, dt);
+			if(e->animationController.finishedAnimationLastUpdate) {
+				//NOTE: Make not active anymore. Should Probably remove it from the list. 
+				// e->flags &= ~ENTITY_ACTIVE;
+			}
+			pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
 			
 		}
 	}
