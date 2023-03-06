@@ -63,7 +63,8 @@ struct float3
 struct float4
 {
     float x, y, z, w;
-}; 
+};
+
 
 static float2 make_float2(float x0, float y0) {
 	float2 result = {};
@@ -131,6 +132,11 @@ static float4 make_float4(float x, float y, float z, float w) {
 	result.w = w;
 
 	return result;
+}
+
+
+static float4 scale_float4(float dt, float4 value) {
+	return make_float4(dt*value.x, dt*value.y, dt*value.z, dt*value.w);
 }
 
 struct Rect2f {

@@ -1,6 +1,7 @@
 enum EntityFlags {
     ENTITY_ACTIVE = 1 << 0,
     FIRE_BALL_COMPONENT = 1 << 1,
+    LIGHT_COMPONENT = 1 << 2,
 };
 
 enum EntityType {
@@ -69,6 +70,8 @@ struct Entity {
     float3 pos;
     float deltaTLeft;
     float3 deltaPos; //NOTE: Used in collision loop
+
+    float perlinNoiseLight; //NOTE: Used for the lights
 
     float3 scale;
     float3 velocity;

@@ -16,7 +16,7 @@ float16 getModelToWorldTransform(Entity *e_) {
 
     while(e) {
         //NOTE: ROTATION
-        float16 local = float16_angle_aroundZ(lerp(0, 2*PI32, make_lerpTValue(e->rotation)));
+        float16 local = float16_angle_aroundZ(e->rotation);
 
         if(e == e_) { //NOTE: Only scale by the orignal entity
             //NOTE: SCALE
@@ -53,11 +53,34 @@ float16 getModelToViewTransform(Entity *e_, float3 cameraPos) {
 
     float16 result = getModelToWorldTransform(e_);
 
-    result = float16_multiply(result, float16_set_pos(float16_identity(), float3_negate(cameraPos)));
+    result = float16_multiply(float16_set_pos(float16_identity(), float3_negate(cameraPos)), result);
 
     return result;
 
 }
+Entity *addPlayerEntity(EditorState *state) {
+    Entity *e = 0;
+    if(state->entityCount < arrayCount(state->entities)) {
+        e = &state->entities[state->entityCount++];
+
+        e->id = makeEntityId(state);
+        e->idHash = get_crc32_for_string(e->id);
+        
+        e->type = ENTITY_PLAYER;
+
+        e->velocity = make_float3(0, 0, 0);
+        e->pos = make_float3(0, 0, 10);
+        e->flags |= ENTITY_ACTIVE;
+        e->scale = make_float3(1, 1, 1);
+
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
+
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->playerIdleAnimation, 0.08f);
+		
+    }
+    return e;
+} 
 
 Entity *addFireballEnemy(EditorState *state) {
     Entity *e = 0;
@@ -84,3 +107,49 @@ Entity *addFireballEnemy(EditorState *state) {
     return e;
 } 
 
+void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {
+    float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
+
+    if(e->spriteFlipped) {
+        modelToViewT.E[0] *= -1;
+        modelToViewT.E[1] *= -1;
+        modelToViewT.E[2] *= -1;
+    }
+    
+    modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
+
+    pushMatrix(renderer, modelToViewT);
+
+    Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &editorState->animationItemFreeListPtr, dt);
+    if(e->animationController.finishedAnimationLastUpdate) {
+        //NOTE: Make not active anymore. Should Probably remove it from the list. 
+        // e->flags &= ~ENTITY_ACTIVE;
+    }
+    pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
+}
+
+void pushAllEntityLights(EditorState *editorState, float dt) {
+    //NOTE: Push all lights for the renderer to use
+	for(int i = 0; i < editorState->entityCount; ++i) {
+		Entity *e = &editorState->entities[i];
+
+		if(e->flags & ENTITY_ACTIVE) {
+
+			float3 worldPos = getWorldPosition(e);
+
+			if(e->flags & LIGHT_COMPONENT) {
+				//NOTE: Update the flicker
+				e->perlinNoiseLight += dt;
+
+				if(e->perlinNoiseLight > 1.0f) {
+					e->perlinNoiseLight = 0.0f;
+				}
+
+				float value = perlin1d(e->perlinNoiseLight, 40, 3);
+
+				//NOTE: Push light
+				pushGameLight(editorState, worldPos, make_float4(1, 0.5f, 0, 1), value);
+			}
+		}
+	}
+}

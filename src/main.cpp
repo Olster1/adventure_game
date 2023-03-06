@@ -183,9 +183,9 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->planeSizeY = 20;
 		editorState->planeSizeX = 20;
 
-		editorState->player.velocity = make_float3(0, 0, 0);
-		editorState->player.pos = make_float3(0, 0, 10);
-		editorState->playerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\helicopter.png");
+		// editorState->player.velocity = make_float3(0, 0, 0);
+		// editorState->player.pos = make_float3(0, 0, 10);
+		// editorState->playerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\helicopter.png");
 
 		editorState->pipeTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipe.png");
 		editorState->pipeFlippedTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipeRotated.png");
@@ -219,6 +219,8 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		editorState->coinsGot = initResizeArray(int);
 
+		addPlayerEntity(editorState);
+
 		Entity *e = addFireballEnemy(editorState);
 
 		e->pos.x = -3;
@@ -250,7 +252,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	//NOTE: Clear the renderer out so we can start again
 	clearRenderer(renderer);
+	clearGameStatePerFrameValues(editorState);
 
+	//NOTE: Get pointer to player - always at slot zero
+	editorState->player = &editorState->entities[0];
 
 	pushViewport(renderer, make_float4(0, 0, 0, 0));
 	renderer_defaultScissors(renderer, windowWidth, windowHeight);
@@ -287,26 +292,25 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	float rotationPower = 1;
 	if(global_platformInput.keyStates[PLATFORM_KEY_UP].pressedCount > 0) {
 		// editorState->player.pos.y += 1.0f;
-		editorState->player.velocity.y = 5.0f;
-		editorState->player.targetRotation = 0.5f*HALF_PI32;
+		editorState->player->velocity.y = 5.0f;
+		editorState->player->targetRotation = 0.5f*HALF_PI32;
 		rotationPower = 15.0f;
 
 		if(!editorState->hasInteratedYet) {
-			editorState->player.velocity.x = 2;
+			editorState->player->velocity.x = 2;
 		}
 
 		editorState->hasInteratedYet = true;
 
 	} else if(editorState->hasInteratedYet) {
-		editorState->player.velocity.y -= 0.3f;
-		editorState->player.targetRotation = -0.5f*HALF_PI32;
+		editorState->player->velocity.y -= 0.3f;
+		editorState->player->targetRotation = -0.5f*HALF_PI32;
 	}
 
-	editorState->player.pos.xy = plus_float2(scale_float2(dt, editorState->player.velocity.xy),  editorState->player.pos.xy);
+	editorState->player->pos.xy = plus_float2(scale_float2(dt, editorState->player->velocity.xy),  editorState->player->pos.xy);
+	// editorState->player->rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
-	editorState->player.rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
-
-	editorState->cameraPos.x = editorState->player.pos.x + cameraOffset.x;
+	editorState->cameraPos.x = editorState->player->pos.x + cameraOffset.x;
 	editorState->cameraPos.y = cameraOffset.y;
 
 	pushShader(renderer, &textureShader);
@@ -320,122 +324,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	pushMatrix(renderer, fovMatrix);
 
-	editorState->coinRotation += dt*0.6f;
-
-	if(editorState->coinRotation > 1.0f) {
-		editorState->coinRotation = 0;
-	}
-
-	float2 playerSize = make_float2(1, 1);
-
-	float gapSize = 2.5f;
-
 	drawGrid(editorState);
 
-	for(int i = 0; i < 128; ++i) {
-
-		pushMatrix(renderer, fovMatrix);
-
-		float yPos = 3.5f*perlin1d(i + 1,  10, 10);
-
-		Rect2f r = make_rect2f_center_dim(make_float2(i*2, yPos + gapSize), make_float2(1, 2));
-
-		float3 pos = {};
-		pos.xy = get_centre_rect2f(r);
-		pos.z = 9;
-
-		pushShader(renderer, &textureShader);
-		pushTexture(renderer, editorState->pipeFlippedTexture.handle, minus_float3(pos, editorState->cameraPos), get_scale_rect2f(r), make_float4(1, 1, 1, 1), make_float4(0, 0, 1, 1));
-		
-
-		Rect2f minowskiPlus = rect2f_minowski_plus(r, make_rect2f_center_dim(editorState->player.pos.xy, playerSize), pos.xy);
-		if(in_rect2f_bounds(minowskiPlus, editorState->player.pos.xy)) {
-			// editorState->player.pos.y = 0;
-			// editorState->player.velocity.y = 0;
-			//NOTE: Reset player
-
-			//NOTE: Shake the camera
-			if(editorState->shakeTimer < 0 || editorState->shakeTimer > 0.5f) {
-				editorState->shakeTimer = 0;
-			}
-			
-		}
-
-		pushShader(renderer, &textureShader);
-
-		////////////
-		/// This is the ones below
-		/// 
-		r = make_rect2f_center_dim(make_float2(i*2, yPos - gapSize), make_float2(1, 2));
-
-		pos = {};
-		pos.xy = get_centre_rect2f(r);
-		pos.z = 9;
-
-		float3 pipePos = minus_float3(pos, editorState->cameraPos);
-
-		//pushRect(renderer, minus_float3(pos, editorState->player.cameraPos), get_scale_rect2f(r), make_float4(1, 0, 0, 1));
-
-		pushTexture(renderer, editorState->pipeTexture.handle, pipePos, get_scale_rect2f(r), make_float4(1, 1, 1, 1), make_float4(0, 0, 1, 1));
-
-		minowskiPlus = rect2f_minowski_plus(r, make_rect2f_center_dim(editorState->player.pos.xy, playerSize), pos.xy);
-		if(in_rect2f_bounds(minowskiPlus, editorState->player.pos.xy)) {
-			// editorState->player.pos.y = 0;
-			// editorState->player.velocity.y = 0;
-			//NOTE: Reset player
-
-			if(editorState->shakeTimer < 0 || editorState->shakeTimer > 0.5f) {
-				editorState->shakeTimer = 0;
-			}
-		}
-
-		{
-			bool gotCoin = false;
-
-			for(int j = 0; j < getArrayLength(editorState->coinsGot); j++) {
-				if(editorState->coinsGot[j] == i) {
-					gotCoin = true;
-					break;
-				}
-			}
-
-			if(!gotCoin) {
-
-				//NOTE: Draw and update coins
-				float3 coinPos = {};
-				coinPos.xy = make_float2(i*2, yPos);
-				coinPos.z = 10;
-
-				//NOTE: MOve from model to view space
-				float3 coinPosViewSpace = minus_float3(coinPos, editorState->cameraPos);
-
-				float16 coinMatrix = float16_angle_aroundY(lerp(0, 2*PI32, make_lerpTValue(editorState->coinRotation)));
-
-				coinMatrix = float16_set_pos(coinMatrix, coinPosViewSpace);
-
-				coinMatrix = float16_multiply(fovMatrix, coinMatrix); 
-
-				pushMatrix(renderer, coinMatrix);
-
-				float2 coinSize = make_float2(1, 1);
-
-				pushTexture(renderer, editorState->coinTexture.handle, make_float3(0, 0, 0), coinSize, make_float4(1, 1, 1, 1), make_float4(0, 0, 1, 1));
-				
-				//NOTE: Player collision
-
-				r = make_rect2f_center_dim(coinPos.xy, scale_float2(0.7f, coinSize));
-
-				minowskiPlus = rect2f_minowski_plus(r, make_rect2f_center_dim(editorState->player.pos.xy, playerSize), coinPos.xy);
-				if(in_rect2f_bounds(minowskiPlus, editorState->player.pos.xy)) {
-					editorState->points += 10;
-					//NOTE: Make coin dissapear
-					int val = i;
-					editorState->coinsGot = pushArrayItem(editorState->coinsGot, val, int);
-				}
-			}
-		}
-
-	}	
+	//NOTE: Push all lights for the renderer to use
+	pushAllEntityLights(editorState, dt);
 
 	pushShader(renderer, &textureShader);
 	pushMatrix(renderer, fovMatrix);
@@ -475,43 +367,9 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
 		if(e->flags & ENTITY_ACTIVE) {
-
-			float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
-
-			if(e->spriteFlipped) {
-				modelToViewT.E[0] *= -1;
-				modelToViewT.E[1] *= -1;
-				modelToViewT.E[2] *= -1;
-			}
-			
-			modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
-
-			pushMatrix(renderer, modelToViewT);
-
-			Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &editorState->animationItemFreeListPtr, dt);
-			if(e->animationController.finishedAnimationLastUpdate) {
-				//NOTE: Make not active anymore. Should Probably remove it from the list. 
-				// e->flags &= ~ENTITY_ACTIVE;
-			}
-			pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
-			
+			renderEntity(editorState, renderer, e, fovMatrix, dt);
 		}
 	}
-
-	//NOTE: Draw player
-	float16 playerMatrix = float16_angle_aroundZ(editorState->player.rotation);
-
-	float3 playerP = minus_float3(editorState->player.pos, editorState->cameraPos);
-
-	playerMatrix = float16_set_pos(playerMatrix, playerP);
-
-	playerMatrix = float16_multiply(fovMatrix, playerMatrix); 
-
-	pushMatrix(renderer, playerMatrix);
-
-	Texture *t = easyAnimation_updateAnimation_getTexture(&editorState->playerAnimationController, &editorState->animationItemFreeListPtr, dt);
-	
-	pushTexture(renderer, t->handle, make_float3(0, 0, 0), playerSize, make_float4(1, 1, 1, 1), t->uvCoords);
 
 	drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
 
@@ -523,7 +381,6 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	pushShader(renderer, &sdfFontShader);
 	char *name_str = easy_createString_printf(&globalPerFrameArena, "%d points", editorState->points); 
 	draw_text(renderer, &editorState->font, name_str, 50, 50, 1, make_float4(0, 0, 0, 1)); 
-
 
 #if DEBUG_BUILD
 	if(editorState->draw_debug_memory_stats) {
