@@ -125,7 +125,8 @@ void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
         //NOTE: Make not active anymore. Should Probably remove it from the list. 
         // e->flags &= ~ENTITY_ACTIVE;
     }
-    pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
+    // pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
+    pushRect(renderer, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1));
 }
 
 void pushAllEntityLights(EditorState *editorState, float dt) {

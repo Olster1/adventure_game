@@ -190,14 +190,9 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->pipeTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipe.png");
 		editorState->pipeFlippedTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipeRotated.png");
 
-		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\bg.png");//backgroundCastles.png");
+		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\bg1.png");//backgroundCastles.png");
 
 		editorState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\coin.png");
-
-		// for(int i = 0; i < arrayCount(editorState->rects); ++i) {
-		// 	Rect2f r = make_rect2f_center_dim(make_float2(i, 3), make_float2(1, 2));
-		// 	editorState->rects[i] = CollisionRect(r);
-		// }
 
 		//NOTE: Init all animations for game
 		easyAnimation_initAnimation(&editorState->playerIdleAnimation, "flappy_bird_idle");
@@ -296,10 +291,6 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->player->targetRotation = 0.5f*HALF_PI32;
 		rotationPower = 15.0f;
 
-		if(!editorState->hasInteratedYet) {
-			editorState->player->velocity.x = 2;
-		}
-
 		editorState->hasInteratedYet = true;
 
 	} else if(editorState->hasInteratedYet) {
@@ -307,11 +298,21 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->player->targetRotation = -0.5f*HALF_PI32;
 	}
 
-	editorState->player->pos.xy = plus_float2(scale_float2(dt, editorState->player->velocity.xy),  editorState->player->pos.xy);
+	if(global_platformInput.keyStates[PLATFORM_KEY_LEFT].isDown) {
+		editorState->player->velocity.x = -5.0f;
+		editorState->hasInteratedYet = true;
+	}
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_RIGHT].isDown) {
+		editorState->player->velocity.x = 5.0f;
+		editorState->hasInteratedYet = true;
+	} 
+
+	// editorState->player->pos.xy = plus_float2(scale_float2(dt, editorState->player->velocity.xy),  editorState->player->pos.xy);
 	// editorState->player->rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
-	editorState->cameraPos.x = editorState->player->pos.x + cameraOffset.x;
-	editorState->cameraPos.y = cameraOffset.y;
+	// editorState->cameraPos.x = editorState->player->pos.x + cameraOffset.x;
+	// editorState->cameraPos.y = cameraOffset.y;
 
 	pushShader(renderer, &textureShader);
 
@@ -364,7 +365,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		Entity *e = &editorState->entities[i];
 
 		// e->pos.xy = plus_float2(scale_float2(dt, e->velocity.xy),  e->pos.xy);
-		e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
+		// e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
 		if(e->flags & ENTITY_ACTIVE) {
 			renderEntity(editorState, renderer, e, fovMatrix, dt);

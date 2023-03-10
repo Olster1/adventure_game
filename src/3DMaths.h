@@ -75,6 +75,12 @@ static float2 make_float2(float x0, float y0) {
 	return result;
 }
 
+static float clamp(float min, float max, float value) {
+	if(value < min) { value = min; }
+	if(value > max) { value = max; }
+	return value;
+}
+
 static float2 scale_float2(float dt, float2 value) {
 	return make_float2(dt*value.x, dt*value.y);
 }
@@ -89,6 +95,20 @@ static float2 minus_float2(float2 a, float2 b) {
 
 static float float2_dot(float2 a, float2 b) {
 	return (a.x*b.x + a.y*b.y);
+}
+
+static float2 float2_perp(float2 a) {
+	return make_float2(-a.y, a.x);
+}
+
+//NOTE: Into different coordinate space
+static float2 float2_transform(float2 a, float2 xAxis, float2 yAxis) {
+	float x = float2_dot(a, xAxis);
+	float y = float2_dot(a, yAxis);
+
+	float2 result = make_float2(x, y);
+
+	return result;
 }
 
 static float2 lerp_float2(float2 a, float2 b, float t) {
@@ -369,6 +389,12 @@ float3 float3_negate(float3 v) {
 	v.x *= -1;
 	v.y *= -1;
 	v.z *= -1;
+	return v;
+}
+
+float2 float2_negate(float2 v) {
+	v.x *= -1;
+	v.y *= -1;
 	return v;
 }
 

@@ -98,6 +98,7 @@ void updateTriggerCollision(Entity *a, Entity *b, Collider *a1, Collider *b1) {
 struct RayCastResult {
     float2 collisionNormal; //NOTE: Pointing outwards
     float distance; //NOTE: Between 0 - 1 of the incoming deltaP
+    float distanceToTest;
 	bool hit;
 
     Entity *a;
@@ -106,19 +107,34 @@ struct RayCastResult {
     Collider *colB;
 };
 
-RayCastResult castAgainstSide(float2 startP, float2 normal, float2 startSide, float3 deltaP, float sideLength) {
-    RayCastResult result = {};
-    float2 relA = minus_float2(startP, startSide);
+RayCastResult castAgainstSide(float2 startP, float2 normal, float2 startSide, float3 deltaP_, float sideLength) {
 
-    float tValue = -relA.x / deltaP.x;
+    float2 tangent = float2_perp(normal);
+
+    RayCastResult result = {};
+    float2 relA_ = minus_float2(startP, startSide);
+    float2 relB_ = minus_float2(plus_float2(startP, deltaP_.xy), startSide);
+
+    float2 relA = float2_transform(relA_, normal, tangent);
+    float2 relB = float2_transform(relB_, normal, tangent);
+
+    float2 deltaP = minus_float2(relB, relA);
+
+    // C = t*(B - A) + A
+    float tValue = (-relA.x) / deltaP.x;
 
     if(tValue >= 0.0f && tValue <= 1.0f) {
-        float yValue = lerp(startP.y, plus_float2(startP, deltaP.xy).y, make_lerpTValue(tValue)); 
+        float yValue = lerp(relA.y, relB.y, make_lerpTValue(tValue)); 
 
         if(yValue >= 0.0f && yValue <= sideLength) {
+
+            float epsilon = 0.01;
+
             result.hit = true;
-            result.distance = tValue;
-            result.collisionNormal = normal;
+            result.distanceToTest = tValue;
+            result.distance = clamp(0, 1, tValue - epsilon);
+            //NOTE: Make the normal facing outwards
+            result.collisionNormal = float2_negate(normal);
         }
     }
     return result;
@@ -126,41 +142,64 @@ RayCastResult castAgainstSide(float2 startP, float2 normal, float2 startSide, fl
 
 RayCastResult rayCast_rectangle(float3 startP, float3 deltaP, Rect2f rect) {
 	RayCastResult result = {};
+    result.distanceToTest = 1.0f;
 
     //NOTE: LEFT 
-    if(!result.hit) {
+    {
         float2 startSide = make_float2(rect.minX, rect.minY);
-        float2 normal = make_float2(-1, 0);
-        float sideLength =(rect.maxY - rect.minY);
-
-        result = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
-    }
-
-    //NOTE: TOP
-    if(!result.hit) {
-        float2 startSide = make_float2(rect.minX, rect.maxY);
-        float2 normal = make_float2(0, 1);
-        float sideLength =(rect.maxX - rect.minX);
-
-        result = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
-    }
-
-    //NOTE: RIGHT
-    if(!result.hit) {
-        float2 startSide = make_float2(rect.maxX, rect.maxY);
         float2 normal = make_float2(1, 0);
         float sideLength =(rect.maxY - rect.minY);
 
-        result = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
+        RayCastResult result1 = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
+
+        if(result1.hit) {
+            result = result1;
+        }
     }
 
-    //NOTE: BOTTOM
-    if(!result.hit) {
+    //NOTE: TOP
+    {
         float2 startSide = make_float2(rect.minX, rect.maxY);
         float2 normal = make_float2(0, -1);
         float sideLength =(rect.maxX - rect.minX);
 
-        result = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
+        RayCastResult result1 = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
+
+        if(result1.hit) {
+            if(result1.distanceToTest < result.distanceToTest) {
+                result = result1;
+            }
+        }
+    }
+
+    //NOTE: RIGHT
+    {
+        float2 startSide = make_float2(rect.maxX, rect.maxY);
+        float2 normal = make_float2(-1, 0);
+        float sideLength =(rect.maxY - rect.minY);
+
+        RayCastResult result1 = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
+
+        if(result1.hit) {
+            if(result1.distanceToTest < result.distanceToTest) {
+                result = result1;
+            }
+        }
+    }
+
+    //NOTE: BOTTOM
+    {
+        float2 startSide = make_float2(rect.maxX, rect.minY);
+        float2 normal = make_float2(0, 1);
+        float sideLength =(rect.maxX - rect.minX);
+
+        RayCastResult result1 = castAgainstSide(startP.xy, normal, startSide, deltaP, sideLength);
+
+        if(result1.hit) {
+            if(result1.distanceToTest < result.distanceToTest) {
+                result = result1;
+            }
+        }
     }
     
 
@@ -181,7 +220,7 @@ void updateCollisions(Entity *a, Entity *b, Collider *a1, Collider *b1, float *s
     //NOTE: Ray cast agains minkowski rectangle
     RayCastResult r = rayCast_rectangle(aPos, a->deltaPos, minowskiPlus);
 
-    if(r.hit && r.distance < *shortestDistance) {
+    if(r.hit && r.distanceToTest < *shortestDistance) {
         //NOTE: See if shortest distance
         *shortestRayCastResult = r;
         shortestRayCastResult->a = a;
@@ -189,7 +228,7 @@ void updateCollisions(Entity *a, Entity *b, Collider *a1, Collider *b1, float *s
         shortestRayCastResult->colA = a1;
         shortestRayCastResult->colB = b1;
 
-        *shortestDistance = r.distance;
+        *shortestDistance = r.distanceToTest;
     }
 }
 
@@ -202,6 +241,10 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
 
 			prepareCollisions(colA);
 		}
+
+        //NOTE: Apply drag 
+        //TODO: This isn't frame independent
+        a->velocity.x = 0.85f*a->velocity.x; //NOTE: Just x drag
 
         a->deltaPos.xy = scale_float2(dt, a->velocity.xy);
         a->deltaTLeft = 1.0f;
@@ -233,52 +276,55 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
                     //NOTE: Ray cast agains minkowski rectangle
                     RayCastResult r = rayCast_rectangle(entWorldP, a->deltaPos, minowskiPlus);
 
-                    if(r.hit && r.distance < shortestDistance) {
+                    if(r.hit && r.distanceToTest < shortestDistance) {
                         //NOTE: See if shortest distance
                         shortestRayCastResult = r;
-                        shortestDistance = r.distance;
+                        shortestDistance = r.distanceToTest;
                     }
                 }
             }
 
-			//NOTE: Process other entity collisions
-            for(int j = 0; j  < editorState->entityCount; ++j) {
-                if(i == j) {
-                    continue;
-                }
+			// //NOTE: Process other entity collisions
+            // for(int j = 0; j  < editorState->entityCount; ++j) {
+            //     if(i == j) {
+            //         continue;
+            //     }
 
-                Entity *b = &editorState->entities[j];
+            //     Entity *b = &editorState->entities[j];
 
-                for(int colliderIndex = 0; colliderIndex < a->colliderCount; ++colliderIndex) {
-                    for(int colliderIndex1 = 0; colliderIndex1 < b->colliderCount; ++colliderIndex1) {
-                        Collider *colA = &a->colliders[colliderIndex];
-                        Collider *colB = &b->colliders[colliderIndex1];
+            //     for(int colliderIndex = 0; colliderIndex < a->colliderCount; ++colliderIndex) {
+            //         for(int colliderIndex1 = 0; colliderIndex1 < b->colliderCount; ++colliderIndex1) {
+            //             Collider *colA = &a->colliders[colliderIndex];
+            //             Collider *colB = &b->colliders[colliderIndex1];
 
-                        // if((colA->flags & COLLIDER_ACTIVE) && (colB->flags & COLLIDER_ACTIVE)) 
-                        {
-                            //NOTE: See if trigger
-                            if((colA->flags & COLLIDER_TRIGGER) || (colB->flags & COLLIDER_TRIGGER)) {
-                                updateTriggerCollision(a, b, colA, colB);
-                            } else { 
-                                //TODO: continous collision
-                               updateCollisions(a, b, colA, colB, &shortestDistance, &shortestRayCastResult);
-                            }
-                        }
-                    }
-                }
-            }
+            //             // if((colA->flags & COLLIDER_ACTIVE) && (colB->flags & COLLIDER_ACTIVE)) 
+            //             {
+            //                 //NOTE: See if trigger
+            //                 if((colA->flags & COLLIDER_TRIGGER) || (colB->flags & COLLIDER_TRIGGER)) {
+            //                     updateTriggerCollision(a, b, colA, colB);
+            //                 } else { 
+            //                     //TODO: continous collision
+            //                    updateCollisions(a, b, colA, colB, &shortestDistance, &shortestRayCastResult);
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
 
             //NOTE: Update position and velocity
             if(shortestRayCastResult.hit) {
 
-                addCollisionEvent(shortestRayCastResult.colA, shortestRayCastResult.b);
-                addCollisionEvent(shortestRayCastResult.colB, shortestRayCastResult.a);
+                if(shortestRayCastResult.colA) {
+                    addCollisionEvent(shortestRayCastResult.colA, shortestRayCastResult.b);
+                    addCollisionEvent(shortestRayCastResult.colB, shortestRayCastResult.a);
+                }
 
                 float2 moveVector = scale_float2(shortestRayCastResult.distance, a->deltaPos.xy);
                 a->pos.xy = plus_float2(moveVector,  a->pos.xy);
 
                 //NOTE: Take the component out of the velocity
-                a->velocity.xy = minus_float2(a->velocity.xy, scale_float2(-float2_dot(a->velocity.xy, shortestRayCastResult.collisionNormal), shortestRayCastResult.collisionNormal));
+                float2 d = scale_float2(float2_dot(a->velocity.xy, shortestRayCastResult.collisionNormal), shortestRayCastResult.collisionNormal);
+                a->velocity.xy = minus_float2(a->velocity.xy, d);
 
                 //NOTE: Remove distance left to travel
                 a->deltaTLeft -= shortestRayCastResult.distance;
@@ -288,6 +334,10 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
                     a->deltaPos = make_float3(0, 0, 0);
                     a->deltaTLeft = 0;
                 }
+            } else {
+                 a->pos.xy = plus_float2(a->deltaPos.xy,  a->pos.xy);
+                 a->deltaTLeft = 0;
+                 a->deltaPos = make_float3(0, 0, 0);
             }
         }
     }

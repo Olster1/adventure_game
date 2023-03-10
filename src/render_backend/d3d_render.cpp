@@ -461,7 +461,7 @@ static UINT backendRender_init(BackendRenderer *r, HWND hwnd) {
 			assert(SUCCEEDED(hResult));
 		}
 		{
-			//NOTE: Create the input layout for the Glyph elements, this is reused by texture elements
+			//NOTE: Create the input layout for the LINE element, this is not reused by other render elements
 			D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
 			{
 				{ "POS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
