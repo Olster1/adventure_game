@@ -71,7 +71,7 @@ Entity *addPlayerEntity(EditorState *state) {
         e->velocity = make_float3(0, 0, 0);
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
-        e->scale = make_float3(1, 1, 1);
+        e->scale = make_float3(2, 2, 1);
 
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
 
@@ -125,8 +125,8 @@ void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
         //NOTE: Make not active anymore. Should Probably remove it from the list. 
         // e->flags &= ~ENTITY_ACTIVE;
     }
-    // pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
-    pushRect(renderer, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1));
+    pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
+    // pushRect(renderer, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1));
 }
 
 void pushAllEntityLights(EditorState *editorState, float dt) {

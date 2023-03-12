@@ -190,20 +190,22 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->pipeTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipe.png");
 		editorState->pipeFlippedTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\pipeRotated.png");
 
-		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\bg1.png");//backgroundCastles.png");
+		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\background_layer_1.png");//backgroundCastles.png");
 
 		editorState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\coin.png");
 
 		//NOTE: Init all animations for game
-		easyAnimation_initAnimation(&editorState->playerIdleAnimation, "flappy_bird_idle");
 		easyAnimation_initAnimation(&editorState->fireballIdleAnimation, "fireball_idle");
-		//////////////////
 
-		easyAnimation_initController(&editorState->playerAnimationController);
-		easyAnimation_addAnimationToController(&editorState->playerAnimationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);
-
-		loadImageStrip(&editorState->playerIdleAnimation, backendRenderer, "..\\src\\images\\Flappy_bird.png", 64);
 		loadImageStrip(&editorState->fireballIdleAnimation, backendRenderer, "..\\src\\images\\fireball.png", 64);
+
+		loadImageStripXY(&editorState->playerIdleAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 0, 6);
+		loadImageStripXY(&editorState->playerRunAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 2, 8);
+		loadImageStripXY(&editorState->playerAttackAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 1, 6);
+		loadImageStripXY(&editorState->playerJumpAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 3, 16);
+		loadImageStripXY(&editorState->playerHurtAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 5, 12);
+
+		/////////////
 
 		int tileCount = 0;
 		int countX = 0;
@@ -298,21 +300,55 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->player->targetRotation = -0.5f*HALF_PI32;
 	}
 
+	bool playerMoved = false;
+
 	if(global_platformInput.keyStates[PLATFORM_KEY_LEFT].isDown) {
 		editorState->player->velocity.x = -5.0f;
 		editorState->hasInteratedYet = true;
+
+		editorState->player->spriteFlipped = true;
+
+		playerMoved = true;
+
+		if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerRunAnimation)  {
+			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
+			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerRunAnimation, 0.08f);	
+		}
 	}
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_RIGHT].isDown) {
 		editorState->player->velocity.x = 5.0f;
 		editorState->hasInteratedYet = true;
+
+		editorState->player->spriteFlipped = false;
+
+		playerMoved = true;
+
+		if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerRunAnimation)  {
+			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
+			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerRunAnimation, 0.08f);	
+		}
 	} 
+
+	//NOTE: IDLE ANIMATION
+	if(!playerMoved && editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerIdleAnimation)  {
+		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
+		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
+	}
+
+	//NOTE: JUMP ANIMATION
+	if(global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0) {
+		editorState->player->velocity.y = 10.0f;
+		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
+		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerJumpAnimation, 0.08f);	
+		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
+	}
 
 	// editorState->player->pos.xy = plus_float2(scale_float2(dt, editorState->player->velocity.xy),  editorState->player->pos.xy);
 	// editorState->player->rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
-	// editorState->cameraPos.x = editorState->player->pos.x + cameraOffset.x;
-	// editorState->cameraPos.y = cameraOffset.y;
+	editorState->cameraPos.x = lerp(editorState->cameraPos.x, editorState->player->pos.x + cameraOffset.x, make_lerpTValue(0.4f));
+	editorState->cameraPos.y = lerp(editorState->cameraPos.y, editorState->player->pos.y + cameraOffset.y, make_lerpTValue(0.4f));
 
 	pushShader(renderer, &textureShader);
 

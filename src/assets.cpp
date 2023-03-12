@@ -24,6 +24,39 @@ static void loadImageStrip(Animation *animation, BackendRenderer *backendRendere
 	}
 }
 
+static void loadImageStripXY(Animation *animation, BackendRenderer *backendRenderer, char *filename_full_utf8, int widthPerImage, int heightPerImage, int startRow, int numberOfSprites) {
+	Texture texOnStack = backendRenderer_loadFromFileToGPU(backendRenderer, filename_full_utf8);
+	int count = 0;
+	float xAt = 0;
+    float yAt = heightPerImage*startRow;
+
+	float widthTruncated = ((int)(texOnStack.width / widthPerImage))*widthPerImage;
+
+    for(int i = 0; i < numberOfSprites; i++) {
+        Texture *tex = pushStruct(&global_long_term_arena, Texture);
+        easyPlatform_copyMemory(tex, &texOnStack, sizeof(Texture));
+
+        tex->uvCoords.x = xAt / texOnStack.width;
+        tex->uvCoords.y = yAt / texOnStack.height;
+
+        xAt += widthPerImage;
+
+        tex->uvCoords.z = xAt / texOnStack.width;
+        tex->uvCoords.w = (yAt + heightPerImage) / texOnStack.height;
+
+        tex->aspectRatio_h_over_w = ((float)(tex->uvCoords.w - tex->uvCoords.y)*(float)texOnStack.height) / ((float)(tex->uvCoords.z - tex->uvCoords.x)*(float)texOnStack.width);
+
+        easyAnimation_pushFrame(animation, tex);
+
+        if(xAt >= widthTruncated) {
+            xAt = 0;
+            yAt += heightPerImage;
+        }
+    }
+}
+
+
+
 Texture ** loadTileSet(BackendRenderer *backendRenderer, char *filename_full_utf8, int widthPerImage, int heightPerImage, Memory_Arena *arena, int *finalCount, int *countX, int *countY) {
 	Texture texOnStack = backendRenderer_loadFromFileToGPU(backendRenderer, filename_full_utf8);
     

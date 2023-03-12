@@ -62,8 +62,13 @@ typedef struct {
 	//NOTE: Resizeable array for the coins - if id in list, means user got it. 
 	int *coinsGot;
 
-	EasyAnimation_Controller playerAnimationController;
 	Animation playerIdleAnimation;
+	Animation playerRunAnimation;
+	Animation playerAttackAnimation;
+	Animation playerHurtAnimation;
+	Animation playerDieAnimation;
+	Animation playerJumpAnimation;
+
 	Animation fireballIdleAnimation;
 
 	EasyAnimation_ListItem *animationItemFreeListPtr;
