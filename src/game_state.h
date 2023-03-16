@@ -4,10 +4,18 @@ struct GameLight {
 
 };
 
+enum GameMode {
+	PLAY_MODE,
+	TILE_MODE,
+	SELECT_ENTITY_MODE
+};
+
 
 
 typedef struct {
 	bool initialized;
+
+	GameMode gameMode;
 
 	//NOTE: For creating unique entity ids like MongoDb ObjectIds
 	int randomIdStartApp;
@@ -68,6 +76,7 @@ typedef struct {
 	Animation playerHurtAnimation;
 	Animation playerDieAnimation;
 	Animation playerJumpAnimation;
+	Animation playerFallingAnimation;
 
 	Animation fireballIdleAnimation;
 

@@ -194,6 +194,8 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		editorState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\coin.png");
 
+		editorState->gameMode = PLAY_MODE;
+
 		//NOTE: Init all animations for game
 		easyAnimation_initAnimation(&editorState->fireballIdleAnimation, "fireball_idle");
 
@@ -203,8 +205,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		loadImageStripXY(&editorState->playerRunAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 2, 8);
 		loadImageStripXY(&editorState->playerAttackAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 1, 6);
 		loadImageStripXY(&editorState->playerJumpAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 3, 16);
-		loadImageStripXY(&editorState->playerHurtAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 5, 12);
-
+		loadImageStripXY(&editorState->playerHurtAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 5, 3);
+		loadImageStripXY(&editorState->playerDieAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 5, 12);
+		loadImageStripXY(&editorState->playerFallingAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 4, 1);
+		
 		/////////////
 
 		int tileCount = 0;
@@ -239,6 +243,15 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		releaseMemoryMark(&global_perFrameArenaMark);
 		global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
 	}
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_F1].pressedCount > 0) {
+		editorState->gameMode = PLAY_MODE;
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_F2].pressedCount > 0) {
+		editorState->gameMode = TILE_MODE;
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_F3].pressedCount > 0) {
+		editorState->gameMode = SELECT_ENTITY_MODE;
+	}
+
 
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_F5].pressedCount > 0) {
@@ -342,13 +355,15 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->player->velocity.y = 10.0f;
 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerJumpAnimation, 0.08f);	
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
+		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
 	} else {
 		if(editorState->player->animationController.lastAnimationOn == &editorState->playerJumpAnimation && editorState->player->grounded)  {
 			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
-		} else if(editorState->player->animationController.lastAnimationOn == &editorState->playerJumpAnimation && !editorState->player->grounded) {
+		} else if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && !editorState->player->grounded) {
 			//NOTE: FALLING ANIMATION
+			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
+			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
 
 		}
 		
@@ -398,13 +413,29 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		}
 	}
 
-	drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
+	if(editorState->gameMode != PLAY_MODE) {
+		drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
+	}
 
 	//NOTE: Draw the points
 	float16 orthoMatrix1 = make_ortho_matrix_bottom_left_corner(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	pushMatrix(renderer, orthoMatrix1);
-
 	pushShader(renderer, &sdfFontShader);
+
+#if DEBUG_BUILD
+	{
+		char *name_str = "PLAY MODE";
+		if(editorState->gameMode == TILE_MODE) {
+			name_str = "TILE MODE";
+		} else if(editorState->gameMode == SELECT_ENTITY_MODE) {
+			name_str = "SELECT ENTITY MODE";
+		}
+
+		draw_text(renderer, &editorState->font, name_str, 50, fauxDimensionY - 50, 1, make_float4(0, 0, 0, 1)); 
+	}
+
+#endif
+	
 	char *name_str = easy_createString_printf(&globalPerFrameArena, "%d points", editorState->points); 
 	draw_text(renderer, &editorState->font, name_str, 50, 50, 1, make_float4(0, 0, 0, 1)); 
 

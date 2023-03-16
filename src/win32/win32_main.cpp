@@ -351,6 +351,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
             keyType = PLATFORM_KEY_S;
         } else if(vk_code == VK_SHIFT) {
             keyType = PLATFORM_KEY_SHIFT;
+        } else if(vk_code == VK_F1) {
+            keyType = PLATFORM_KEY_F1;
+        } else if(vk_code == VK_F2) {
+            keyType = PLATFORM_KEY_F2;
+        } else if(vk_code == VK_F3) {
+            keyType = PLATFORM_KEY_F3;
+        } else if(vk_code == VK_F4) {
+            keyType = PLATFORM_KEY_F4;
         } else if(vk_code == VK_F5) {
             keyType = PLATFORM_KEY_F5;
         } else if(vk_code == VK_SPACE) {
