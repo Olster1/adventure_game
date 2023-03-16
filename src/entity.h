@@ -65,7 +65,9 @@ struct Entity {
     int idHash;
     EntityType type;
 
+    //NOTES: Could be flags
     bool spriteFlipped;
+    bool grounded; 
 
     float3 pos;
     float deltaTLeft;

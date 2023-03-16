@@ -16,6 +16,7 @@ d3d_shader_program sdfFontShader;
 d3d_shader_program textureShader;
 d3d_shader_program rectOutlineShader;
 d3d_shader_program lineShader;
+d3d_shader_program pixelArtShader;
 
 
 //NOTE: Example of 16byte aligned struct 
@@ -381,6 +382,7 @@ static UINT backendRender_init(BackendRenderer *r, HWND hwnd) {
 		d3d_createShaderProgram_vs_ps(d3d11Device, L"..\\src\\shaders\\texture.hlsl", L"..\\src\\shaders\\texture.hlsl", &textureShader);
 		d3d_createShaderProgram_vs_ps(d3d11Device, L"..\\src\\shaders\\rect_outline.hlsl", L"..\\src\\shaders\\rect_outline.hlsl", &rectOutlineShader);
 		d3d_createShaderProgram_vs_ps(d3d11Device, L"..\\src\\shaders\\line.hlsl", L"..\\src\\shaders\\line.hlsl", &lineShader);
+		d3d_createShaderProgram_vs_ps(d3d11Device, L"..\\src\\shaders\\pixel_art_texture.hlsl", L"..\\src\\shaders\\pixel_art_texture.hlsl", &pixelArtShader);
 		
 #else 
 
@@ -388,6 +390,7 @@ static UINT backendRender_init(BackendRenderer *r, HWND hwnd) {
 		d3d_createShaderProgram_vs_ps(d3d11Device, L".\\shaders\\texture.hlsl", L".\\shaders\\texture.hlsl", &textureShader);
 		d3d_createShaderProgram_vs_ps(d3d11Device, L".\\shaders\\rect_outline.hlsl", L".\\shaders\\rect_outline.hlsl", &rectOutlineShader);
 		d3d_createShaderProgram_vs_ps(d3d11Device, L".\\shaders\\line.hlsl", L".\\shaders\\line.hlsl", &lineShader);
+		d3d_createShaderProgram_vs_ps(d3d11Device, L".\\shaders\\pixel_art_texture.hlsl", L".\\shaders\\pixel_art_texture.hlsl", &pixelArtShader);
 		
 	
 #endif

@@ -310,6 +310,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		playerMoved = true;
 
+		//NOTE: RUN ANIAMTION
 		if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerRunAnimation)  {
 			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerRunAnimation, 0.08f);	
@@ -342,7 +343,18 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerJumpAnimation, 0.08f);	
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
+	} else {
+		if(editorState->player->animationController.lastAnimationOn == &editorState->playerJumpAnimation && editorState->player->grounded)  {
+			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
+			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
+		} else if(editorState->player->animationController.lastAnimationOn == &editorState->playerJumpAnimation && !editorState->player->grounded) {
+			//NOTE: FALLING ANIMATION
+
+		}
+		
 	}
+
+	
 
 	// editorState->player->pos.xy = plus_float2(scale_float2(dt, editorState->player->velocity.xy),  editorState->player->pos.xy);
 	// editorState->player->rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
@@ -366,32 +378,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	//NOTE: Push all lights for the renderer to use
 	pushAllEntityLights(editorState, dt);
 
-	pushShader(renderer, &textureShader);
+	pushShader(renderer, &pixelArtShader);
 	pushMatrix(renderer, fovMatrix);
 
-	//NOTE: Draw the tile map
-	for(int i = 0; i < editorState->tileCount; ++i) {
-		MapTile t = editorState->tiles[i];
-
-		Texture *sprite = 0;
-
-		//NOTE: Get the right texture
-		switch(t.type) {
-			case TILE_SET_SWAMP: {
-				TileSet *set = &editorState->swampTileSet;
-
-				int indexIntoArray = t.xId + (set->countX*t.yId);
-				assert(indexIntoArray < set->count);
-				sprite = set->tiles[indexIntoArray];
-
-			} break;
-		}
-
-		float pX = (t.x + 0.5f) - editorState->cameraPos.x;
-		float pY = (t.y + 0.5f)  - editorState->cameraPos.y;
-
-		pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
-	}
+	renderTileMap(editorState, renderer);
 
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(editorState, dt);
@@ -413,7 +403,6 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	//NOTE: Draw the points
 	float16 orthoMatrix1 = make_ortho_matrix_bottom_left_corner(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	pushMatrix(renderer, orthoMatrix1);
-
 
 	pushShader(renderer, &sdfFontShader);
 	char *name_str = easy_createString_printf(&globalPerFrameArena, "%d points", editorState->points); 

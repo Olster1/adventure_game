@@ -248,6 +248,8 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
 
         a->deltaPos.xy = scale_float2(dt, a->velocity.xy);
         a->deltaTLeft = 1.0f;
+
+        a->grounded = false;
 	}
 
 	//NOTE: Collision detection
@@ -333,6 +335,12 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
                 } else {
                     a->deltaPos = make_float3(0, 0, 0);
                     a->deltaTLeft = 0;
+                }
+
+                //NOTE: See if the entity is standing on anything
+                float slopeFactor = 0.3f;
+                if(float2_dot(shortestRayCastResult.collisionNormal, make_float2(0, 1)) > slopeFactor) {
+                     a->grounded = true;
                 }
             } else {
                  a->pos.xy = plus_float2(a->deltaPos.xy,  a->pos.xy);

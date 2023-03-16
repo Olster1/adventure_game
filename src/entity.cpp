@@ -107,6 +107,32 @@ Entity *addFireballEnemy(EditorState *state) {
     return e;
 } 
 
+void renderTileMap(EditorState *editorState, Renderer *renderer) {
+    //NOTE: Draw the tile map
+	for(int i = 0; i < editorState->tileCount; ++i) {
+		MapTile t = editorState->tiles[i];
+
+		Texture *sprite = 0;
+
+		//NOTE: Get the right texture
+		switch(t.type) {
+			case TILE_SET_SWAMP: {
+				TileSet *set = &editorState->swampTileSet;
+
+				int indexIntoArray = t.xId + (set->countX*t.yId);
+				assert(indexIntoArray < set->count);
+				sprite = set->tiles[indexIntoArray];
+
+			} break;
+		}
+
+		float pX = (t.x + 0.5f) - editorState->cameraPos.x;
+		float pY = (t.y + 0.5f)  - editorState->cameraPos.y;
+
+		pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
+	}
+}
+
 void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {
     float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
 
