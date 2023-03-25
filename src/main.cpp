@@ -446,7 +446,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	}
 
 	if(editorState->gameMode != PLAY_MODE) {
-		// drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
+		drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
 	}
 
 	//NOTE: Draw the points

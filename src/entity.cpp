@@ -160,6 +160,7 @@ void renderTileMap(EditorState *editorState, Renderer *renderer) {
 
 				int indexIntoArray = t.xId + (set->countX*t.yId);
 				assert(indexIntoArray < set->count);
+                assert(indexIntoArray >= 0);
 				sprite = set->tiles[indexIntoArray];
 
 			} break;

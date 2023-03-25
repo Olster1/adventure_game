@@ -188,7 +188,7 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
 
 
         //NOTE: See if user added tile to map
-        if(!inSelectionBounds && global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {
+        if(!inSelectionBounds && global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0 && isActive) {
             //NOTE: Add tile to map
             MapTile t = {};
            
