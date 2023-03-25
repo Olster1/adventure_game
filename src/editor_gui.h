@@ -1,11 +1,13 @@
 enum InteractionType {
-    TILE_SELECTION_SWAMP
+    TILE_SELECTION_SWAMP,
+    EDITOR_PLAYER_SELECT
 };
 
 struct EditorGuiId {
     InteractionType type;
     int a;
     int b;
+    char *c;
 };
 
 struct GuiInteraction {
@@ -34,4 +36,5 @@ struct EditorGui {
     int undoRedoStartOfRingBuffer; //NOTE: Where the next most out of date spot is 
     int undoRedoCursorAt; //NOTE: Where the next most out of date spot is - this is relative 
     UndoRedoBlock undoRedoBlocks[1024]; 
+    
 };

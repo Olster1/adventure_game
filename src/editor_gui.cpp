@@ -37,6 +37,11 @@ static void addUndoRedoBlock(EditorGui *gui, UndoRedoBlock block) {
     gui->undoRedoTotalCount = gui->undoRedoCursorAt;
 }   
 
+bool sameEntityId(EditorGuiId a, EditorGuiId b) {
+    bool result = (a.type == b.type && a.a == b.a && easyString_stringsMatch_nullTerminated(a.c, b.c));
+    return result;
+}
+
 void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
 
     float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);

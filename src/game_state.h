@@ -7,7 +7,8 @@ struct GameLight {
 enum GameMode {
 	PLAY_MODE,
 	TILE_MODE,
-	SELECT_ENTITY_MODE
+	SELECT_ENTITY_MODE,
+	A_STAR_MODE
 };
 
 
@@ -78,11 +79,23 @@ typedef struct {
 	Animation playerJumpAnimation;
 	Animation playerFallingAnimation;
 
+
+	//NOTE: Skeleton animation
+	Animation skeletonIdleAnimation;
+	Animation skeletonRunAnimation;
+	Animation skeletonAttackAnimation;
+	Animation skeletonHurtAnimation;
+	Animation skeletonDieAnimation;
+	Animation skeletonShieldAnimation;
+
+
 	Animation fireballIdleAnimation;
 
 	EasyAnimation_ListItem *animationItemFreeListPtr;
 
 	EditorGui editorGuiState;
+
+	bool movingCamera;
 
     int lightCount;
     GameLight lights[64];

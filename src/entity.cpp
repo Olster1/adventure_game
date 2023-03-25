@@ -58,6 +58,7 @@ float16 getModelToViewTransform(Entity *e_, float3 cameraPos) {
     return result;
 
 }
+
 Entity *addPlayerEntity(EditorState *state) {
     Entity *e = 0;
     if(state->entityCount < arrayCount(state->entities)) {
@@ -74,9 +75,47 @@ Entity *addPlayerEntity(EditorState *state) {
         e->scale = make_float3(2, 2, 1);
 
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
+        
+        //NOTE: Attack collider
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_TRIGGER);
+
+        //NOTE: Hurt collider
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1.5f, 1.5f, 0), COLLIDER_ACTIVE | COLLIDER_TRIGGER);
 
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->playerIdleAnimation, 0.08f);
+		
+    }
+    return e;
+} 
+
+Entity *addSkeletonEntity(EditorState *state) {
+    Entity *e = 0;
+    if(state->entityCount < arrayCount(state->entities)) {
+        e = &state->entities[state->entityCount++];
+
+        e->id = makeEntityId(state);
+        e->idHash = get_crc32_for_string(e->id);
+        
+        e->type = ENTITY_ENEMY;
+
+        e->velocity = make_float3(0, 0, 0);
+        e->pos = make_float3(0, 0, 10);
+        e->flags |= ENTITY_ACTIVE;
+        e->scale = make_float3(2, 2, 1);
+
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
+        
+        //NOTE: Attack collider
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_TRIGGER);
+
+        //NOTE: Hurt collider
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1.5f, 1.5f, 0), COLLIDER_ACTIVE | COLLIDER_TRIGGER);
+
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->skeletonIdleAnimation, 0.08f);
+
+        e->aStarController = easyAi_initController(&global_long_term_arena);
 		
     }
     return e;
@@ -150,7 +189,13 @@ void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
     if(e->animationController.finishedAnimationLastUpdate) {
         //NOTE: Make not active anymore. Should Probably remove it from the list. 
         // e->flags &= ~ENTITY_ACTIVE;
+
+        if(e->animationController.lastAnimationOn == &editorState->playerAttackAnimation) {
+            //NOTE: Turn off attack collider when attack finishes
+            e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~ENTITY_ACTIVE; 
+	    }
     }
+
     pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
     // pushRect(renderer, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1));
 }
@@ -179,4 +224,60 @@ void pushAllEntityLights(EditorState *editorState, float dt) {
 			}
 		}
 	}
+}
+
+void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, float windowHeight) {
+     //NOTE: Update entity selection
+#if DEBUG_BUILD
+
+    if(state->gameMode == SELECT_ENTITY_MODE) 
+    {
+
+        float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
+        float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
+
+        bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+        bool released = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].releasedCount > 0;
+
+        float worldX = lerp(-0.5f*state->planeSizeX, 0.5f*state->planeSizeX, make_lerpTValue(mouseP_01.x));
+        float worldY = lerp(-0.5f*state->planeSizeY, 0.5f*state->planeSizeY, make_lerpTValue(mouseP_01.y));
+
+        worldX += state->cameraPos.x;
+        worldY += state->cameraPos.y;
+
+        float3 entityWorldPos = getWorldPosition(e);
+
+        float2 mouseWorldP = make_float2(worldX, worldY);
+
+        bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(entityWorldPos.xy, e->scale.xy), mouseWorldP);
+
+        if((inSelectionBounds && clicked)) {
+            editorGui_clearInteraction(&state->editorGuiState);
+        }
+
+        EditorGuiId thisId = {};
+
+        thisId.a = e->idHash;
+        thisId.c = e->id;
+        thisId.type = EDITOR_PLAYER_SELECT;
+
+        if(!state->editorGuiState.currentInteraction.active && inSelectionBounds && clicked) {
+            
+            state->editorGuiState.currentInteraction.id = thisId;
+            state->editorGuiState.currentInteraction.active = true;
+
+            state->movingCamera = false;
+            
+        } else if(state->editorGuiState.currentInteraction.active && sameEntityId(state->editorGuiState.currentInteraction.id, thisId)) {
+            e->pos.x = mouseWorldP.x;
+            e->pos.y = mouseWorldP.y;
+        }
+
+        if(released) {
+            editorGui_clearInteraction(&state->editorGuiState);
+            state->movingCamera = true;
+        }
+    }
+
+#endif
 }

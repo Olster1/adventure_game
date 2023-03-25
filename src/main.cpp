@@ -9,6 +9,7 @@
 #include "animation.c"
 #include "resize_array.cpp"
 // #include "transform.cpp"
+#include "easy_ai.h"
 #include "entity.h"
 #include "tileMap.h"
 #include "editor_gui.h"
@@ -53,11 +54,12 @@ struct CollisionRect {
 };
 
 #include "game_state.h"
-#include "entity.cpp"
-#include "collision.cpp"
 #include "assets.cpp"
 #include "tileMap.cpp"
 #include "editor_gui.cpp"
+#include "entity.cpp"
+#include "collision.cpp"
+
 
 static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font *font, float windowWidth, float windowHeight, float dt) {
 
@@ -196,6 +198,8 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		editorState->gameMode = PLAY_MODE;
 
+		editorState->movingCamera = true;
+
 		//NOTE: Init all animations for game
 		easyAnimation_initAnimation(&editorState->fireballIdleAnimation, "fireball_idle");
 
@@ -208,7 +212,14 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		loadImageStripXY(&editorState->playerHurtAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 5, 3);
 		loadImageStripXY(&editorState->playerDieAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 5, 12);
 		loadImageStripXY(&editorState->playerFallingAnimation, backendRenderer, "..\\src\\images\\char_blue.png", 56, 56, 4, 1);
-		
+
+		loadImageStrip(&editorState->skeletonIdleAnimation, backendRenderer, "..\\src\\images\\skeleton\\SIdle_4.png", 150);
+		loadImageStrip(&editorState->skeletonRunAnimation, backendRenderer, "..\\src\\images\\skeleton\\SWalk_4.png", 150);
+		loadImageStrip(&editorState->skeletonAttackAnimation, backendRenderer, "..\\src\\images\\skeleton\\SAttack_8.png", 150);
+		loadImageStrip(&editorState->skeletonHurtAnimation, backendRenderer, "..\\src\\images\\skeleton\\SHit_4.png", 150);
+		loadImageStrip(&editorState->skeletonDieAnimation, backendRenderer, "..\\src\\images\\skeleton\\SDeath_4.png", 150);
+		loadImageStrip(&editorState->skeletonShieldAnimation, backendRenderer, "..\\src\\images\\skeleton\\SShield_4.png", 150);
+
 		/////////////
 
 		int tileCount = 0;
@@ -222,19 +233,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		addPlayerEntity(editorState);
 
-		Entity *e = addFireballEnemy(editorState);
+		Entity *e = addSkeletonEntity(editorState);
 
 		e->pos.x = -3;
-		// e->rotation = 0.5f*HALF_PI32;
-		e->targetRotation = 0.5f*HALF_PI32;
-		// e->velocity = make_float3(0, 10, 0);
 
-		Entity *e1 = addFireballEnemy(editorState);
-
-		e1->pos.x = 1;
-		e1->parent = e;
-		e1->velocity = make_float3(0, 0, 0);
-		
 	#if DEBUG_BUILD
 		DEBUG_runUnitTests(editorState);
 	#endif
@@ -250,7 +252,11 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		editorState->gameMode = TILE_MODE;
 	} else if(global_platformInput.keyStates[PLATFORM_KEY_F3].pressedCount > 0) {
 		editorState->gameMode = SELECT_ENTITY_MODE;
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_F4].pressedCount > 0) {
+		editorState->gameMode = A_STAR_MODE;
 	}
+
+	
 
 
 
@@ -315,7 +321,9 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	bool playerMoved = false;
 
-	if(global_platformInput.keyStates[PLATFORM_KEY_LEFT].isDown) {
+	
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_LEFT].isDown && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
 		editorState->player->velocity.x = -5.0f;
 		editorState->hasInteratedYet = true;
 
@@ -330,7 +338,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		}
 	}
 
-	if(global_platformInput.keyStates[PLATFORM_KEY_RIGHT].isDown) {
+	if(global_platformInput.keyStates[PLATFORM_KEY_RIGHT].isDown && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
 		editorState->player->velocity.x = 5.0f;
 		editorState->hasInteratedYet = true;
 
@@ -345,37 +353,58 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	} 
 
 	//NOTE: IDLE ANIMATION
-	if(!playerMoved && editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerIdleAnimation)  {
+	if(!playerMoved && editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerIdleAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation)  {
 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
 	}
-
+	
 	//NOTE: JUMP ANIMATION
-	if(global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0) {
+	if(global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0 && editorState->player->grounded) {
 		editorState->player->velocity.y = 10.0f;
 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerJumpAnimation, 0.08f);	
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
 	} else {
 		if(editorState->player->animationController.lastAnimationOn == &editorState->playerJumpAnimation && editorState->player->grounded)  {
+			//NOTE: LANDED ANIMATION
 			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
-		} else if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && !editorState->player->grounded) {
+		} else if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && !editorState->player->grounded && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
 			//NOTE: FALLING ANIMATION
 			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
 
 		}
-		
 	}
 
-	
+	if(global_platformInput.keyStates[PLATFORM_KEY_X].pressedCount > 0 && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
+		//NOTE: SpriteFlipped = false
+		editorState->player->velocity.x = 5.0f;
+		editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0.5f, 0, 0);
+
+		if(editorState->player->spriteFlipped) {
+			editorState->player->velocity.x = -5.0f;
+			editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(-0.5f, 0, 0);
+		} 
+
+		//NOTE: Make active
+		editorState->player->colliders[ATTACK_COLLIDER_INDEX].flags |= ENTITY_ACTIVE;
+
+		playerMoved = true;
+
+		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
+		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerAttackAnimation, 0.08f);	
+		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
+
+	} 
 
 	// editorState->player->pos.xy = plus_float2(scale_float2(dt, editorState->player->velocity.xy),  editorState->player->pos.xy);
 	// editorState->player->rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
 
-	editorState->cameraPos.x = lerp(editorState->cameraPos.x, editorState->player->pos.x + cameraOffset.x, make_lerpTValue(0.4f));
-	editorState->cameraPos.y = lerp(editorState->cameraPos.y, editorState->player->pos.y + cameraOffset.y, make_lerpTValue(0.4f));
+	if(editorState->movingCamera) {
+		editorState->cameraPos.x = lerp(editorState->cameraPos.x, editorState->player->pos.x + cameraOffset.x, make_lerpTValue(0.4f));
+		editorState->cameraPos.y = lerp(editorState->cameraPos.y, editorState->player->pos.y + cameraOffset.y, make_lerpTValue(0.4f));
+	}
 
 	pushShader(renderer, &textureShader);
 
@@ -407,14 +436,17 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		// e->pos.xy = plus_float2(scale_float2(dt, e->velocity.xy),  e->pos.xy);
 		// e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
+		
 
 		if(e->flags & ENTITY_ACTIVE) {
+			
+			updateEntitySelection(editorState, e, windowWidth, windowHeight);
 			renderEntity(editorState, renderer, e, fovMatrix, dt);
 		}
 	}
 
 	if(editorState->gameMode != PLAY_MODE) {
-		drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
+		// drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
 	}
 
 	//NOTE: Draw the points

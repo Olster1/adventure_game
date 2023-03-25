@@ -6,9 +6,17 @@ enum EntityFlags {
 
 enum EntityType {
     ENTITY_PLAYER,
+    ENTITY_ENEMY,
     ENTITY_PIPE,
     ENTITY_FIREBALL,
     ENTITY_COIN
+};
+
+enum ColliderIndex {
+    PLATFORM_COLLIDER_INDEX,
+    ATTACK_COLLIDER_INDEX,
+    HIT_COLLIDER_INDEX,
+    ENTITY_COLLIDER_INDEX_COUNT
 };
 
 enum ColliderFlag {
@@ -59,7 +67,7 @@ struct Entity {
     Entity *parent; 
 
     int colliderCount;
-    Collider colliders[2];
+    Collider colliders[ENTITY_COLLIDER_INDEX_COUNT];
 
     char *id;
     int idHash;
@@ -86,4 +94,5 @@ struct Entity {
     float respawnTimer;
 
     EasyAnimation_Controller animationController;
+    EasyAiController *aStarController;
 };
