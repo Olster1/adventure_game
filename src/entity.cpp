@@ -227,7 +227,7 @@ void pushAllEntityLights(EditorState *editorState, float dt) {
 	}
 }
 
-void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, float windowHeight) {
+void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, float windowHeight, Renderer *renderer, float16 fovMatrix) {
      //NOTE: Update entity selection
 #if DEBUG_BUILD
 
@@ -252,9 +252,10 @@ void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, flo
 
         bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(entityWorldPos.xy, e->scale.xy), mouseWorldP);
 
-        if((inSelectionBounds && clicked)) {
+        if(clicked && inSelectionBounds) {
             editorGui_clearInteraction(&state->editorGuiState);
-        }
+            state->selectedEntityId = 0;
+        } 
 
         EditorGuiId thisId = {};
 
@@ -262,10 +263,24 @@ void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, flo
         thisId.c = e->id;
         thisId.type = EDITOR_PLAYER_SELECT;
 
+        if(state->selectedEntityId && easyString_stringsMatch_nullTerminated(state->selectedEntityId, e->id)) {
+            //NOTE: Outline entity
+            float16 modelToViewT = getModelToViewTransform(e, state->cameraPos);
+
+            modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
+
+            pushMatrix(renderer, modelToViewT);
+
+            pushRectOutlineWorldSpace(renderer,  make_float4(1, 0.5f, 0, 1));
+
+        }
+
         if(!state->editorGuiState.currentInteraction.active && inSelectionBounds && clicked) {
             
             state->editorGuiState.currentInteraction.id = thisId;
             state->editorGuiState.currentInteraction.active = true;
+
+            state->selectedEntityId = e->id;
 
             state->movingCamera = false;
             
@@ -277,6 +292,11 @@ void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, flo
         if(released) {
             editorGui_clearInteraction(&state->editorGuiState);
             state->movingCamera = true;
+        }
+    } else if(state->gameMode == A_STAR_MODE) {
+        if(state->selectedEntityId) {
+            void easyAi_pushNode(EasyAiController *controller, float3 pos);
+            EasyAi_Node *easyAi_removeNode(EasyAiController *controller, float3 pos);
         }
     }
 

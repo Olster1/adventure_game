@@ -430,6 +430,12 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(editorState, dt);
 
+	if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0 && editorState->selectedEntityId) {
+		editorGui_clearInteraction(&editorState->editorGuiState);
+		editorState->selectedEntityId = 0;
+	} 
+
+
 	//NOTE: Gameplay code
 	for(int i = 0; i < editorState->entityCount; ++i) {
 		Entity *e = &editorState->entities[i];
@@ -440,12 +446,12 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 		if(e->flags & ENTITY_ACTIVE) {
 			
-			updateEntitySelection(editorState, e, windowWidth, windowHeight);
+			updateEntitySelection(editorState, e, windowWidth, windowHeight, renderer, fovMatrix);
 			renderEntity(editorState, renderer, e, fovMatrix, dt);
 		}
 	}
 
-	if(editorState->gameMode != PLAY_MODE) {
+	if(editorState->gameMode == TILE_MODE) {
 		drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
 	}
 
@@ -461,6 +467,8 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 			name_str = "TILE MODE";
 		} else if(editorState->gameMode == SELECT_ENTITY_MODE) {
 			name_str = "SELECT ENTITY MODE";
+		} else if(editorState->gameMode == A_STAR_MODE) {
+			name_str = "A* MODE";
 		}
 
 		draw_text(renderer, &editorState->font, name_str, 50, fauxDimensionY - 50, 1, make_float4(0, 0, 0, 1)); 

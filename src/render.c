@@ -337,3 +337,11 @@ static void pushRect(Renderer *r, float3 pos, float2 size, float4 color) {
 	pushTexture(r, global_white_texture, pos, size, color, make_float4(0, 0, 1, 1));
 }
 
+static void pushRectOutlineWorldSpace(Renderer *r, float4 color) {
+	float worldSpaceWidth = 0.05f;
+	pushRect(r, make_float3(-0.5f, 0, 0), make_float2(worldSpaceWidth, 1), color);
+	pushRect(r, make_float3(0.5f, 0, 0), make_float2(worldSpaceWidth, 1), color);
+	pushRect(r, make_float3(0, -0.5f, 0), make_float2(1, worldSpaceWidth), color);
+	pushRect(r, make_float3(0, 0.5f, 0), make_float2(1, worldSpaceWidth), color);
+}
+

@@ -18,6 +18,8 @@ typedef struct {
 
 	GameMode gameMode;
 
+	char *selectedEntityId;
+
 	//NOTE: For creating unique entity ids like MongoDb ObjectIds
 	int randomIdStartApp;
 	int randomIdStart;
