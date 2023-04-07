@@ -83,11 +83,16 @@ struct Entity {
 
     float perlinNoiseLight; //NOTE: Used for the lights
 
+    float speed; //NOTE: How fast the entity moves - used to scale direction vectors
+
     float3 scale;
     float3 velocity;
     float rotation;
     float targetRotation;
     u64 flags;
+
+    //NOTE: Used by a star
+    float3 lastSetPos;
 
     ///////////////////////
     //NOTE: For fireball

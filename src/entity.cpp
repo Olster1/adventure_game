@@ -73,6 +73,7 @@ Entity *addPlayerEntity(EditorState *state) {
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(2, 2, 1);
+        e->speed = 5.0f;
 
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
         
@@ -103,6 +104,7 @@ Entity *addSkeletonEntity(EditorState *state) {
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(2, 2, 1);
+        e->speed = 2;
 
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
         
@@ -171,6 +173,95 @@ void renderTileMap(EditorState *editorState, Renderer *renderer) {
 
 		pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
 	}
+}
+
+
+static float3 roundToGridBoard(float3 in, float tileSize) {
+    float xMod = (in.x < 0) ? -tileSize : tileSize;
+    float yMod = (in.y < 0) ? -tileSize : tileSize;
+    
+    float3 result = {};
+    if(tileSize == 1) {
+        result = make_float3((int)(in.x + xMod*0.5f), (int)(in.y + yMod*0.5f), (int)(in.z));
+    } else {
+        result = make_float3((int)(in.x + xMod*0.5f), (int)(in.y + yMod*0.5f), (int)(in.z));
+
+        result.x -= ((int)result.x) % (int)tileSize;
+        result.y -= ((int)result.y) % (int)tileSize;
+    }
+    
+    return result;
+}
+
+void updateEntity(EditorState *editorState, Entity *e, float dt) {
+    float3 entP_inWorld_ = getWorldPosition(e);
+
+    float3 playerInWorldP_ = getWorldPosition(editorState->player);
+
+    float3 playerInWorldP = roundToGridBoard(playerInWorldP_, 1);
+	float3 entP_inWorld = roundToGridBoard(entP_inWorld_, 1);
+    entP_inWorld.z = 0;
+    playerInWorldP.z = 0;
+    entP_inWorld_.z = 0;
+    playerInWorldP_.z = 0;
+
+    if(e->aStarController) {
+        float distance = float3_magnitude(minus_float3(playerInWorldP, entP_inWorld));
+        //NOTE: See if we are far enough away from the player
+        // if(distance > 0.5f) 
+        {
+            if(e->aStarController->searchBouysCount > 0) {
+                playerInWorldP = playerInWorldP_ = e->aStarController->searchBouys[e->aStarController->bouyIndexAt];
+
+                //NOTE: See if we have reached the bouy position
+                float searchDist = 1.0f;
+                if(float3_magnitude_sqr(minus_float3(playerInWorldP, entP_inWorld)) < (searchDist*searchDist)) {
+
+                    // e->velocity.xy = make_float2(0, 0);
+                    e->aStarController->bouyIndexAt++;
+
+                    if(e->aStarController->bouyIndexAt >= e->aStarController->searchBouysCount) {
+                        e->aStarController->bouyIndexAt = 0;
+                    }
+                }
+            }
+        }  
+        
+        {
+            //NOTE: Update the A Start controller
+            EasyAi_A_Star_Result aiResult = easyAi_update_A_star(e->aStarController, entP_inWorld,  playerInWorldP);
+
+            //NOTE: Is in attacking animation
+            // bool attack = easyAnimation_getCurrentAnimation(&entity->animationController, getAnimationForEnemy(gameState, ENTITY_ANIMATION_ATTACK, entity->enemyType));
+
+            if(aiResult.found) {
+                e->lastSetPos = aiResult.nextPos;
+
+                if(float3_equal(e->lastSetPos, playerInWorldP)) {
+                    e->lastSetPos = playerInWorldP_; //get floating point version
+                }
+
+                float3 diff = minus_float3(e->lastSetPos, e->pos);
+
+                float2 dir = normalize_float2(diff.xy);
+
+                e->velocity.xy = scale_float2(e->speed, dir);
+
+                // if(getLengthSqrV3(diff) < 0.5f) { //if less than 1 metre away, try attacking
+                // 	if(!attack) //NOTE: If not already attacking
+                // 	{
+                // 		//NOTE: Attack 
+                // 		isAttackAnim = true;
+                // 		animToAdd = getAnimationForEnemy(gameState, ENTITY_ANIMATION_ATTACK, entity->enemyType);
+                // 	}
+                // } else { //NOTE: More than 1m away
+                // 	if(!attack) { //NOTE: Walk animation if not in the middle of attack animation
+                // 		animToAdd = getAnimationForEnemy(gameState, ENTITY_ANIMATION_WALK, entity->enemyType);
+                // 	}
+                // }    
+            }
+        }
+    }
 }
 
 void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {

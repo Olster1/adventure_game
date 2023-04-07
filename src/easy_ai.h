@@ -116,7 +116,6 @@ static bool easyAi_pushNode(EasyAiController *controller, float3 pos, EasyAi_Nod
 
 	bool shouldAdd = true;
 
-
 	while(*node && shouldAdd) {
 
 		int x = (*node)->pos.x;

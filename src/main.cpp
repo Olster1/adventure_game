@@ -308,7 +308,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	float rotationPower = 1;
 	if(global_platformInput.keyStates[PLATFORM_KEY_UP].pressedCount > 0) {
 		// editorState->player.pos.y += 1.0f;
-		editorState->player->velocity.y = 5.0f;
+		editorState->player->velocity.y = editorState->player->speed;
 		editorState->player->targetRotation = 0.5f*HALF_PI32;
 		rotationPower = 15.0f;
 
@@ -324,7 +324,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_LEFT].isDown && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-		editorState->player->velocity.x = -5.0f;
+		editorState->player->velocity.x = -editorState->player->speed;
 		editorState->hasInteratedYet = true;
 
 		editorState->player->spriteFlipped = true;
@@ -339,7 +339,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	}
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_RIGHT].isDown && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-		editorState->player->velocity.x = 5.0f;
+		editorState->player->velocity.x = editorState->player->speed;
 		editorState->hasInteratedYet = true;
 
 		editorState->player->spriteFlipped = false;
@@ -379,11 +379,11 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_X].pressedCount > 0 && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
 		//NOTE: SpriteFlipped = false
-		editorState->player->velocity.x = 5.0f;
+		editorState->player->velocity.x = editorState->player->speed;
 		editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0.5f, 0, 0);
 
 		if(editorState->player->spriteFlipped) {
-			editorState->player->velocity.x = -5.0f;
+			editorState->player->velocity.x = -editorState->player->speed;
 			editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(-0.5f, 0, 0);
 		} 
 
@@ -430,10 +430,10 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(editorState, dt);
 
-	if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0 && editorState->selectedEntityId) {
-		editorGui_clearInteraction(&editorState->editorGuiState);
-		editorState->selectedEntityId = 0;
-	} 
+	// if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0 && editorState->selectedEntityId) {
+	// 	editorGui_clearInteraction(&editorState->editorGuiState);
+	// 	editorState->selectedEntityId = 0;
+	// } 
 
 
 	//NOTE: Gameplay code
@@ -445,14 +445,21 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		
 
 		if(e->flags & ENTITY_ACTIVE) {
-			
+			#if DEBUG_BUILD
 			updateEntitySelection(editorState, e, windowWidth, windowHeight, renderer, fovMatrix);
+			#endif
+			updateEntity(editorState, e, dt);
 			renderEntity(editorState, renderer, e, fovMatrix, dt);
 		}
 	}
 
 	if(editorState->gameMode == TILE_MODE) {
 		drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
+	} else if(editorState->gameMode == A_STAR_MODE) {
+		pushShader(renderer, &textureShader);
+		pushMatrix(renderer, fovMatrix);
+
+		updateAStartEditor(editorState, renderer, windowWidth, windowHeight);
 	}
 
 	//NOTE: Draw the points

@@ -398,6 +398,23 @@ float2 float2_negate(float2 v) {
 	return v;
 }
 
+bool float3_equal(float3 a, float3 b) {
+	bool result = (a.x == b.x && a.y == b.y && a.z == b.z);
+
+	return result;
+}
+
+float2 normalize_float2(float2 v) {
+	float len = (v.x*v.x + v.y*v.y); 
+	len = sqrt(len);
+	if(len != 0) {
+		v.x /= len;
+		v.y /= len;
+	} 
+	
+	return v;
+}
+
 float float3_magnitude_sqr(float3 v) {
 	float result = (v.x*v.x + v.y*v.y + v.z*v.z); 
 	return result;

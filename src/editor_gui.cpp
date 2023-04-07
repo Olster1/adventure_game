@@ -42,6 +42,114 @@ bool sameEntityId(EditorGuiId a, EditorGuiId b) {
     return result;
 }
 
+float2 getClickedWorldPos(EditorState *state, float2 mouseP_01) {
+    float worldX = lerp(-0.5f*state->planeSizeX, 0.5f*state->planeSizeX, make_lerpTValue(mouseP_01.x));
+    float worldY = lerp(-0.5f*state->planeSizeY, 0.5f*state->planeSizeY, make_lerpTValue(mouseP_01.y));
+
+    worldX += state->cameraPos.x;
+    worldY += state->cameraPos.y;
+
+
+    //NOTE: Make sure the tile goes in the cell you click
+    if(worldX < 0) {
+        worldX = floor(worldX);
+    }
+
+    if(worldY < 0) {
+        worldY = floor(worldY);
+    }
+
+    return make_float2(worldX, worldY);
+}
+
+Entity *findEntityById(EditorState *state, char *id) {
+    Entity *result = 0;
+    int hash = get_crc32_for_string(id);
+    for(int i = 0; i < state->entityCount;++i) {
+        Entity *e = &state->entities[i];
+
+        if(e->idHash == hash && easyString_stringsMatch_nullTerminated(e->id, id)) {
+            result = e;
+            break;
+        }
+    }
+    return result;
+}
+
+void updateAStartEditor(EditorState *state, Renderer *renderer, float windowWidth, float windowHeight) {
+    if(state->selectedEntityId) {
+        float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
+
+        float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
+
+        bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+
+        Entity *e = findEntityById(state, state->selectedEntityId);
+
+        if(!e->aStarController) {
+            e->aStarController = easyAi_initController(&global_long_term_arena);
+        }
+            
+        if(e) {
+            if(clicked) {
+                float2 worldP = getClickedWorldPos(state, mouseP_01);
+                worldP.x = (int)worldP.x;
+                worldP.y = (int)worldP.y;   
+
+                if(global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
+                    //NOTE: Add Search bouys instead
+
+                    int index = easyAi_hasSearchBouy(e->aStarController, make_float3(worldP.x, worldP.y, 0));
+
+                    if(index >= 0) {
+                        //NOTE: Remove the search bouy
+                        easyAi_removeSearchBouy(e->aStarController, index);
+                    } else {
+                        easyAi_pushSearchBouy(e->aStarController, make_float3(worldP.x, worldP.y, 0));
+                    }
+
+                } else {
+                    EasyAi_Node *node = easyAi_hasNode(e->aStarController, make_float3(worldP.x, worldP.y, 0), e->aStarController->boardHash, true);
+                
+                    if(node) {
+                        //NOTE: Remove an ai block
+                        easyAi_removeNode(e->aStarController, make_float3(worldP.x, worldP.y, 0), e->aStarController->boardHash);
+                    } else {
+                        easyAi_pushNode(e->aStarController, make_float3(worldP.x, worldP.y, 0), e->aStarController->boardHash, true);
+                    }
+                }
+            }
+
+            //NOTE: Draw the a * board
+            EasyAiController *aiController = e->aStarController;
+            for(int i = 0; i < arrayCount(aiController->boardHash); ++i) {
+                EasyAi_Node *n = aiController->boardHash[i];
+
+                while(n) {
+
+                    float pX = (n->pos.x + 0.5f) - state->cameraPos.x;
+		            float pY = (n->pos.y + 0.5f)  - state->cameraPos.y;
+
+                    pushRect(renderer, make_float3(pX, pY, 10), make_float2(1, 1), n->canSeePlayerFrom ? make_float4(0.5f, 0.5f, 0, 1) : make_float4(0.5f, 0, 1, 1));
+
+                    n = n->next;
+                }
+            }   
+
+            //NOTE: Draw the search bouys
+            for(int i = 0; i < aiController->searchBouysCount; ++i) {
+                float3 *value = &aiController->searchBouys[i];
+
+                float pX = (value->x + 0.5f) - state->cameraPos.x;
+                float pY = (value->y + 0.5f)  - state->cameraPos.y;
+
+                pushRect(renderer, make_float3(pX, pY, 10), make_float2(0.5f, 0.5f), make_float4(0, 0, 1, 1));
+
+            }
+        }
+    }
+}
+
 void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
 
     float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
