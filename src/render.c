@@ -1,7 +1,15 @@
 static void* global_white_texture;
 
-struct Texture {
+struct TextureHandle {
+#ifdef __APPLE__
+	u32 handle;
+#else 
 	void *handle;
+#endif 
+};
+
+struct Texture {
+	TextureHandle *handle;
 
 	float width;
 	float height;

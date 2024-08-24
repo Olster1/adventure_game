@@ -1,6 +1,5 @@
 char *makeEntityId(EditorState *editorState) {
-    __time64_t t;
-    __time64_t timeSinceEpoch = _time64(&t);
+    u64 timeSinceEpoch = platform_getTimeSinceEpoch();
     char *result = easy_createString_printf(&global_long_term_arena, "%ld-%d-%d", timeSinceEpoch, editorState->randomIdStartApp, editorState->randomIdStart);
 
     //NOTE: This would have to be locked in threaded application

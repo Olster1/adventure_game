@@ -13,7 +13,11 @@ static void *easyPlatform_allocateMemory(u32 sizeInBytes, EasyPlatform_MemoryFla
     
     void *result = 0;
     
+#if __WIN32__
     result = HeapAlloc(GetProcessHeap(), 0, sizeInBytes);
+#else 
+    result = malloc(sizeInBytes);
+#endif
     
     if(!result) {
         // easyLogger_addLog("Platform out of memory on heap allocate!");
@@ -27,7 +31,12 @@ static void *easyPlatform_allocateMemory(u32 sizeInBytes, EasyPlatform_MemoryFla
 }
 
 static void easyPlatform_freeMemory(void *memory) {
+#if __WIN32__
     HeapFree(GetProcessHeap(), 0, memory);
+#else 
+    free(memory);
+#endif
+    
 }
 
 

@@ -21,7 +21,7 @@ typedef struct {
 
 typedef struct FontSheet FontSheet;
 typedef struct FontSheet {
-    void *handle; //NOTE: Platform agnostic
+    void *handle;
 
     u32 glyphCount;
     GlyphInfo glyphs[MY_MAX_GLYPH_COUNT];
@@ -281,8 +281,9 @@ static void draw_text(Renderer *renderer, Font *font, char *str, float startX, f
     char *at = str;
 
     while(*at) {
-
-        u32 rune = easyUnicode_utf8_codepoint_To_Utf32_codepoint(&((char *)at), true);
+        char *at_ptr = ((char *)at);
+        u32 rune = easyUnicode_utf8_codepoint_To_Utf32_codepoint(&at_ptr, true);
+        at = at_ptr;
 
         float factor = 1.0f;
 

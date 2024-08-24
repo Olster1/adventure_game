@@ -1,11 +1,3 @@
-#ifndef EASY_ANIMATION_2D_H
-#define EASY_ANIMATION_2D_H
-
-
-#ifndef EASY_ANIMATION_2D_IMPLEMENTATION
-#define EASY_ANIMATION_2D_IMPLEMENTATION 0
-#endif
-
 #ifndef EASY_HEADERS_ASSERT
 #define EASY_HEADERS_ASSERT(statement) if(!(statement)) { int *i_ptr = 0; *(i_ptr) = 0; }
 #endif
@@ -38,8 +30,6 @@ typedef struct EasyAnimation_ListItem {
     
     Animation *animation;
 
-    
-    
     EasyAnimation_ListItem *prev;
     EasyAnimation_ListItem *next;
 } EasyAnimation_ListItem;
@@ -51,34 +41,6 @@ typedef struct {
     bool finishedAnimationLastUpdate; //goes to true if it finished an animation in the last update so you can change it if you need to
     unsigned int currentLoopCount; //NOTE: How many times the current animation has looped for
 } EasyAnimation_Controller;
-
-///////////////////////************ Header definitions start here *************////////////////////
-
-//Constructor functions
-void easyAnimation_initController(EasyAnimation_Controller *controller);
-void easyAnimation_initAnimation(Animation *animation, char **FileNames, int FileNameCount, char *name);
-
-
-//Two workhorse functions
-void easyAnimation_addAnimationToController(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, Animation *animation, float period);
-char *easyAnimation_updateAnimation(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, float dt, Animation *NextAnimation, float period);
-
-//Get the animation the controller is currently on
-char *easyAnimation_getFrameOn(EasyAnimation_ListItem *AnimationListSentintel);
-
-//Helper functions
-//Find an animation in a list
-Animation *easyAnimation_findAnimation(Animation *Animations, int AnimationsCount, char *name);
-
-//See if there are any current animations 
-int easyAnimation_isControllerEmpty(EasyAnimation_Controller *c);
-//Empty the animation controller
-void easyAnimation_emptyAnimationContoller(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr);
-
-//Get the direction in radians of velocity. This could be used to find the correct animation
-float easyAnimation_getDirectionInRadians(float x, float y);
-
-#if EASY_ANIMATION_2D_IMPLEMENTATION
 
 static char *easyAnimation2d_copyString(char *str) {
 
@@ -292,6 +254,3 @@ inline static bool easyAnimation_getCurrentAnimation(EasyAnimation_Controller *c
     return (c->parent.next->animation == a);
 
 }
-
-#endif // END OF IMPLEMENTATION
-#endif // END OF HEADER INCLUDE

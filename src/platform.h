@@ -1,3 +1,20 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include "../libs/stb_image.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION 
+#include "../libs/stb_truetype.h"
+
+#include <stdint.h> //for the type uint8_t for our text input buffer
+#include <stdio.h>
+
+#define Megabytes(value) value*1000*1000
+#define Kilobytes(value) value*1000
+
+#define DEFAULT_WINDOW_WIDTH             1280
+#define DEFAULT_WINDOW_HEIGHT             720
+#define PERMANENT_STORAGE_SIZE  Megabytes(32)
+
+
 #ifdef max
 #undef max
 #endif
@@ -68,6 +85,15 @@ enum PlatformKeyType {
     PLATFORM_KEY_F4,
     PLATFORM_KEY_F5,
 
+    PLATFORM_KEY_1,
+    PLATFORM_KEY_2,
+    PLATFORM_KEY_3,
+    PLATFORM_KEY_4,
+    PLATFORM_KEY_5,
+    PLATFORM_KEY_6,
+    PLATFORM_KEY_7,
+    PLATFORM_KEY_8,
+
     PLATFORM_KEY_SPACE,
 
     PLATFORM_KEY_HOME,
@@ -102,12 +128,20 @@ struct PlatformKeyState {
     int releasedCount;
 };
 
+enum MouseKeyState {
+  MOUSE_BUTTON_NONE,
+  MOUSE_BUTTON_PRESSED,
+  MOUSE_BUTTON_DOWN,
+  MOUSE_BUTTON_RELEASED,
+};
+
 #define PLATFORM_MAX_TEXT_BUFFER_SIZE_IN_BYTES 256
 #define PLATFORM_MAX_KEY_INPUT_BUFFER 16
 
 struct PlatformInputState {
 
     PlatformKeyState keyStates[PLATFORM_KEY_TOTAL_COUNT]; 
+    MouseKeyState keys[PLATFORM_KEY_TOTAL_COUNT];
 
     //NOTE: Mouse data
     float mouseX;
@@ -122,11 +156,13 @@ struct PlatformInputState {
     PlatformKeyType keyInputCommandBuffer[PLATFORM_MAX_KEY_INPUT_BUFFER];
     int keyInputCommand_count;
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     WCHAR low_surrogate;
-
-    UINT dpi_for_window;
+#endif
+    uint32_t dpi_for_window;
 
     char *drop_file_name_wide_char_need_to_free; //NOTE: Not null if there is a file that got dropped
 };
 
+static PlatformLayer global_platform;
 static PlatformInputState global_platformInput;

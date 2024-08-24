@@ -9,28 +9,10 @@
 #include <shlwapi.h>
 #include <wchar.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../../libs/stb_image.h"
-
-#define STB_TRUETYPE_IMPLEMENTATION 
-#include "../../libs/stb_truetype.h"
-
-
-#include <stdint.h> //for the type uint8_t for our text input buffer
-#include <stdio.h>
-
-#define Megabytes(value) value*1000*1000
-#define Kilobytes(value) value*1000
-
-#define DEFAULT_WINDOW_WIDTH             1280
-#define DEFAULT_WINDOW_HEIGHT             720
-#define PERMANENT_STORAGE_SIZE  Megabytes(32)
-
 #include "../platform.h"
 
 #define EASY_STRING_IMPLEMENTATION 1
 #include "../easy_string_utf8.h"
-
 
 #include "../debug_stats.h"
 
@@ -39,7 +21,6 @@
 static DEBUG_stats global_debug_stats = {};
 
 
-static PlatformLayer global_platform;
 static HWND global_wndHandle;
 static ID3D11Device1 *global_d3d11Device;
 static bool global_windowDidResize = false;
@@ -806,7 +787,12 @@ static bool Platform_LoadEntireFile_wideChar(void *filename_wideChar_, void **da
     return read_successful;
 }
 
+u64 platform_getTimeSinceEpoch() {
+    __time64_t t;
+    __time64_t timeSinceEpoch = _time64(&t);
 
+    return (u64)t;
+}
 
 static void *Platform_loadTextureToGPU(void *data, u32 texWidth, u32 texHeight, u32 bytesPerPixel) {
     // Create Texture
@@ -871,10 +857,7 @@ static float2 platform_get_window_xy_pos() {
 
 
 #include "../render.c"
-
-
 #include "../render_backend/d3d_render.cpp"
-
 #include "../main.cpp"
 
 

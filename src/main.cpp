@@ -5,7 +5,6 @@
 #include "color.cpp"
 #include "font.cpp"
 #include "perlin.c"
-#define EASY_ANIMATION_2D_IMPLEMENTATION 1
 #include "animation.c"
 #include "resize_array.cpp"
 // #include "transform.cpp"
@@ -255,10 +254,6 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	} else if(global_platformInput.keyStates[PLATFORM_KEY_F4].pressedCount > 0) {
 		editorState->gameMode = A_STAR_MODE;
 	}
-
-	
-
-
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_F5].pressedCount > 0) {
 		editorState->draw_debug_memory_stats = !editorState->draw_debug_memory_stats;
