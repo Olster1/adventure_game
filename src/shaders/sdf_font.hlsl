@@ -28,8 +28,6 @@ SamplerState mysampler : register(s0);
 VS_Output vs_main(VS_Input input)
 {
     VS_Output output;
-
-    
     float3 pos = input.pos;
 
     pos.x *= input.scale1.x;

@@ -3,14 +3,23 @@
 
 // NOTE: Each location index in a vertex attribute index - i.e. 4 floats. that's why for matrix we skip 4 values
 #define VERTEX_ATTRIB_LOCATION 0
-#define NORMAL_ATTRIB_LOCATION 1
 #define UV_ATTRIB_LOCATION 2
+//INSTANCING LOCATIONS
 #define POS_ATTRIB_LOCATION 3
 #define UVATLAS_ATTRIB_LOCATION 4
 #define COLOR_ATTRIB_LOCATION 5
 #define SCALE_ATTRIB_LOCATION 6
 #define SAMPLER_INDEX_ATTRIB_LOCATION 8
 
+//INSTANCING LOCATIONS for line
+#define POS1_ATTRIB_LOCATION 3
+#define POS2_ATTRIB_LOCATION 4
+#define COLOR1_ATTRIB_LOCATION 5
+
+enum AttribInstancingType {
+    ATTRIB_INSTANCE_TYPE_DEFAULT,
+    ATTRIB_INSTANCE_TYPE_LINE,
+};
 
 struct InstanceData {
     float3 pos;
@@ -20,6 +29,11 @@ struct InstanceData {
     int textureIndex;
 };
 
+struct InstanceDataLine {
+    float3 pos1;
+    float3 pos2;
+    float4 color;
+};
 
 struct Shader {
     bool valid;
@@ -160,7 +174,7 @@ Texture backendRenderer_loadFromFileToGPU(BackendRenderer *backendRenderer, char
 }
 
 
-Shader loadShader(char *vertexShader, char *fragShader) {
+Shader loadShader(char *vertexShader, char *fragShader, AttribInstancingType attribType) {
     Shader result = {};
     
     result.valid = true;
@@ -191,20 +205,33 @@ Shader loadShader(char *vertexShader, char *fragShader) {
 
     glBindAttribLocation(result.handle, VERTEX_ATTRIB_LOCATION, "vertex");
     renderCheckError();
-    glBindAttribLocation(result.handle, NORMAL_ATTRIB_LOCATION, "normal");
-    renderCheckError();
+    // glBindAttribLocation(result.handle, NORMAL_ATTRIB_LOCATION, "normal");
+    // renderCheckError();
     glBindAttribLocation(result.handle, UV_ATTRIB_LOCATION, "texUV");
     renderCheckError();
-    glBindAttribLocation(result.handle, POS_ATTRIB_LOCATION, "pos");
-    renderCheckError();
-    glBindAttribLocation(result.handle, UVATLAS_ATTRIB_LOCATION, "uvAtlas");
-    renderCheckError();
-    glBindAttribLocation(result.handle, COLOR_ATTRIB_LOCATION, "color");
-    renderCheckError();
-    glBindAttribLocation(result.handle, SCALE_ATTRIB_LOCATION, "scale");
-    renderCheckError();
-    glBindAttribLocation(result.handle, SAMPLER_INDEX_ATTRIB_LOCATION, "samplerIndex");
-    renderCheckError();
+
+    if(attribType == ATTRIB_INSTANCE_TYPE_DEFAULT) {
+        glBindAttribLocation(result.handle, POS_ATTRIB_LOCATION, "pos");
+        renderCheckError();
+        glBindAttribLocation(result.handle, UVATLAS_ATTRIB_LOCATION, "uvAtlas");
+        renderCheckError();
+        glBindAttribLocation(result.handle, COLOR_ATTRIB_LOCATION, "color");
+        renderCheckError();
+        glBindAttribLocation(result.handle, SCALE_ATTRIB_LOCATION, "scale");
+        renderCheckError();
+        glBindAttribLocation(result.handle, SAMPLER_INDEX_ATTRIB_LOCATION, "samplerIndex");
+        renderCheckError();
+    } else if(attribType == ATTRIB_INSTANCE_TYPE_LINE) {
+        glBindAttribLocation(result.handle, POS1_ATTRIB_LOCATION, "pos1");
+        renderCheckError();
+        glBindAttribLocation(result.handle, POS2_ATTRIB_LOCATION, "pos2");
+        renderCheckError();
+        glBindAttribLocation(result.handle, COLOR1_ATTRIB_LOCATION, "color1");
+        renderCheckError();
+    } else {
+        assert(false);
+    }
+   
 
     // assert(MODEL_TRANSFORM_ATTRIB_LOCATION < (max_attribs - 1));
 
@@ -289,11 +316,6 @@ void addInstancingAttrib_int32(GLuint attribLoc, int numOfInt32s, size_t offsetF
     renderCheckError();
 }
 
-enum AttribInstancingType {
-    ATTRIB_INSTANCE_TYPE_DEFAULT,
-    ATTRIB_INSTANCE_TYPE_MODEL_MATRIX,
-};
-
 void addInstancingAttribsForShader(AttribInstancingType type) {
     if(type == ATTRIB_INSTANCE_TYPE_DEFAULT) {
         size_t offsetForStruct = sizeof(InstanceData); 
@@ -309,6 +331,18 @@ void addInstancingAttribsForShader(AttribInstancingType type) {
         renderCheckError();
         unsigned int samplerIndexOffset = (intptr_t)(&(((InstanceData *)0)->textureIndex));
         addInstancingAttrib_int32(SAMPLER_INDEX_ATTRIB_LOCATION, 1, offsetForStruct, samplerIndexOffset);
+        renderCheckError();
+    } else if(type == ATTRIB_INSTANCE_TYPE_LINE) {
+         size_t offsetForStruct = sizeof(InstanceDataLine); 
+
+        unsigned int pos1Offset = (intptr_t)(&(((InstanceDataLine *)0)->pos1));
+        addInstancingAttrib (POS1_ATTRIB_LOCATION, 3, offsetForStruct, pos1Offset);
+        renderCheckError();
+        unsigned int pos2Offset = (intptr_t)(&(((InstanceDataLine *)0)->pos2));
+        addInstancingAttrib (POS1_ATTRIB_LOCATION, 3, offsetForStruct, pos2Offset);
+        renderCheckError();
+        unsigned int colorOffset = (intptr_t)(&(((InstanceDataLine *)0)->color));
+        addInstancingAttrib (COLOR1_ATTRIB_LOCATION, 4, offsetForStruct, colorOffset);
         renderCheckError();
     } else {
         assert(false);
@@ -432,14 +466,14 @@ static uint backendRender_init(BackendRenderer *r, SDL_Window *hwnd) {
     Shader lineShader;
     Shader pixelArtShader;
 
-    sdfFontShader = loadShader(blockVertexShader, blockFragShader);
-    textureShader = loadShader(quadVertexShader, quadTextureFragShader);
-    rectOutlineShader = loadShader(quadVertexShader, fontTextureFragShader);
-    lineShader = loadShader(skyboxVertexShader, skyboxFragShader);
-    pixelArtShader = loadShader(quadVertexShader, quadFragShader);
+    sdfFontShader = loadShader(quadVertexShader, sdfFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
+    textureShader = loadShader(quadVertexShader, quadTextureFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
+    rectOutlineShader = loadShader(rectOutlineVertexShader, rectOutlineFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
+    pixelArtShader = loadShader(quadVertexShader, pixelArtFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
+    lineShader = loadShader(lineVertexShader, lineFragShader, ATTRIB_INSTANCE_TYPE_LINE);
     
     r->quadModel = generateVertexBuffer(global_quadData, 4, global_quadIndices, 6, ATTRIB_INSTANCE_TYPE_DEFAULT);
-    r->lineModel = generateVertexBuffer(global_lineData, 2, global_lineIndices, 2, ATTRIB_INSTANCE_TYPE_DEFAULT);
+    r->lineModel = generateVertexBuffer(global_lineData, 2, global_lineIndices, 2, ATTRIB_INSTANCE_TYPE_LINE);
 
 #if DEBUG_BUILD
 	if(!global_white_texture) {

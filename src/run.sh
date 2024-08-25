@@ -1,2 +1,2 @@
 ./build.sh
-./Minecraft
+./Brisbane_2025
