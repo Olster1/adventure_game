@@ -231,3 +231,20 @@ char *concat_(char *a, s32 lengthA, char *b, s32 lengthB, Memory_Arena *arena) {
     
     return newString;
 }
+
+inline char *easy_createString_printf(Memory_Arena *arena, char *formatString, ...) {
+
+    va_list args;
+    va_start(args, formatString);
+
+    char bogus[1];
+    int stringLengthToAlloc = vsnprintf(bogus, 1, formatString, args) + 1; //for null terminator, just to be sure
+    
+    char *strArray = pushArray(arena, stringLengthToAlloc, char);
+
+    vsnprintf(strArray, stringLengthToAlloc, formatString, args); 
+
+    va_end(args);
+
+    return strArray;
+}

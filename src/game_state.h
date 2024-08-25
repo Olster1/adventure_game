@@ -26,8 +26,6 @@ typedef struct {
 
 	Renderer renderer;
 
-	EditorMode mode;
-
 	Font font;
 
 	float shakeTimer;

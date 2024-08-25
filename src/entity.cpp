@@ -402,3 +402,4 @@ void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, flo
 
 #endif
 }
+

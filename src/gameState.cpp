@@ -7,8 +7,6 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 
 		initRenderer(&editorState->renderer);
 
-		editorState->mode = MODE_EDIT_BUFFER;
-
 		#if DEBUG_BUILD
 		editorState->font = initFont("../fonts/liberation-mono.ttf");
 		#else

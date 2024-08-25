@@ -164,5 +164,6 @@ struct PlatformInputState {
     char *drop_file_name_wide_char_need_to_free; //NOTE: Not null if there is a file that got dropped
 };
 
+
 static PlatformLayer global_platform;
 static PlatformInputState global_platformInput;

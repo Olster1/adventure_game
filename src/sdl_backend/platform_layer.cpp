@@ -57,6 +57,7 @@ static void platform_free_memory(void *data)
 #include <unistd.h>
 static u64 platform_get_memory_page_size() {
     long pagesize = sysconf(_SC_PAGE_SIZE);
+    printf("%ld\n", pagesize);
     return pagesize;
 }
 

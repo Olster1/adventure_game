@@ -699,10 +699,10 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
                 assert(program->handle);
 			} break;
 			case RENDER_SET_SCISSORS: {
-                // float w = c->scissors_bounds.maxX - c->scissors_bounds.minX;
-                // float h = c->scissors_bounds.maxY - c->scissors_bounds.minY;
+                float w = c->scissors_bounds.maxX - c->scissors_bounds.minX;
+                float h = c->scissors_bounds.maxY - c->scissors_bounds.minY;
 
-                // glScissor((GLint)c->scissors_bounds.minX, (GLint)c->scissors_bounds.minY, (GLint)w, (GLint)h);
+                glScissor((GLint)c->scissors_bounds.minX, (GLint)c->scissors_bounds.minY, (GLint)w, (GLint)h);
 			} break;
 
 			case RENDER_LINE: {

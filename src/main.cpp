@@ -1,3 +1,6 @@
+#include <time.h>
+#include <stdlib.h>
+
 #include "wl_memory.h"
 #include "save_settings.cpp"
 #include "file_helper.cpp"
@@ -12,95 +15,13 @@
 #include "entity.h"
 #include "tileMap.h"
 #include "editor_gui.h"
-
-#include <time.h>
-#include <stdlib.h>
-
-
-
-inline char *easy_createString_printf(Memory_Arena *arena, char *formatString, ...) {
-
-    va_list args;
-    va_start(args, formatString);
-
-    char bogus[1];
-    int stringLengthToAlloc = vsnprintf(bogus, 1, formatString, args) + 1; //for null terminator, just to be sure
-    
-    char *strArray = pushArray(arena, stringLengthToAlloc, char);
-
-    vsnprintf(strArray, stringLengthToAlloc, formatString, args); 
-
-    va_end(args);
-
-    return strArray;
-}
-
-
-#define MAX_WINDOW_COUNT 8
-#define MAX_BUFFER_COUNT 256 //TODO: Allow user to open unlimited buffers
-
-
-typedef enum {
-	MODE_EDIT_BUFFER,
-} EditorMode;
-
-struct CollisionRect {
-	Rect2f rect;
-
-	CollisionRect(Rect2f rect) {
-
-	}
-};
-
 #include "game_state.h"
 #include "assets.cpp"
 #include "tileMap.cpp"
 #include "editor_gui.cpp"
 #include "entity.cpp"
 #include "collision.cpp"
-
-
-static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font *font, float windowWidth, float windowHeight, float dt) {
-
-	float16 orthoMatrix = make_ortho_matrix_top_left_corner(windowWidth, windowHeight, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
-	pushMatrix(renderer, orthoMatrix);
-
-	//NOTE: Draw the backing
-	pushShader(renderer, &textureShader);
-	float2 scale = make_float2(200, 400);
-	// pushTexture(renderer, global_white_texture, make_float3(100, -200, 1.0f), scale, make_float4(0.3f, 0.3f, 0.3f, 1), make_float4(0, 0, 1, 1));
-	///////////////////////////
-
-
-	//NOTE: Draw the name of the file
-	pushShader(renderer, &sdfFontShader);
-		
-	float fontScale = 0.6f;
-	float4 color = make_float4(1, 1, 1, 1);
-
-	float xAt = 0;
-	float yAt = -1.5f*font->fontHeight*fontScale;
-
-	float spacing = font->fontHeight*fontScale;
-
-#define DEBUG_draw_stats_MACRO(title, size, draw_kilobytes) { char *name_str = 0; if(draw_kilobytes) { name_str = easy_createString_printf(&globalPerFrameArena, "%s  %d %dkilobytes", title, size, size/1000); } else { name_str = easy_createString_printf(&globalPerFrameArena, "%s  %d", title, size); } draw_text(renderer, font, name_str, xAt, yAt, fontScale, color); yAt -= spacing; }
-#define DEBUG_draw_stats_FLOAT_MACRO(title, f0, f1) { char *name_str = 0; name_str = easy_createString_printf(&globalPerFrameArena, "%s  %f  %f", title, f0, f1); draw_text(renderer, font, name_str, xAt, yAt, fontScale, color); yAt -= spacing; }
-	
-	DEBUG_draw_stats_MACRO("Total Heap Allocated", global_debug_stats.total_heap_allocated, true);
-	DEBUG_draw_stats_MACRO("Total Virtual Allocated", global_debug_stats.total_virtual_alloc, true);
-	DEBUG_draw_stats_MACRO("Render Command Count", global_debug_stats.render_command_count, false);
-	DEBUG_draw_stats_MACRO("Draw Count", global_debug_stats.draw_call_count, false);
-	DEBUG_draw_stats_MACRO("Heap Block Count ", global_debug_stats.memory_block_count, false);
-	DEBUG_draw_stats_MACRO("Per Frame Arena Total Size", DEBUG_get_total_arena_size(&globalPerFrameArena), true);
-
-	// WL_Window *w = &editorState->windows[editorState->active_window_index];
-	// DEBUG_draw_stats_FLOAT_MACRO("Start at: ", editorState->selectable_state.start_pos.x, editorState->selectable_state.start_pos.y);
-	// DEBUG_draw_stats_FLOAT_MACRO("Target Scroll: ", w->scroll_target_pos.x, w->scroll_target_pos.y);
-
-	DEBUG_draw_stats_FLOAT_MACRO("mouse scroll x ", global_platformInput.mouseX / windowWidth, global_platformInput.mouseY / windowHeight);
-	DEBUG_draw_stats_FLOAT_MACRO("dt for frame ", dt, dt);
-
-}
+#include "entity_update.cpp"
 
 static void drawGrid(EditorState *editorState) {
 	float zPos = 10;
@@ -145,13 +66,8 @@ static void drawGrid(EditorState *editorState) {
 #include "unit_tests.cpp"
 #endif
 
-static void shakeCamera(EditorState *editorState) {
-	if(editorState->shakeTimer < 0 || editorState->shakeTimer > 0.5f) {
-		editorState->shakeTimer = 0;
-	}
-}
-
 #include "gameState.cpp"
+#include "debug.cpp"
 
 static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
 	EditorState *editorState = (EditorState *)global_platform.permanent_storage;
@@ -163,17 +79,17 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 		global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
 	}
 
-	if(global_platformInput.keyStates[PLATFORM_KEY_F1].pressedCount > 0) {
+	if(global_platformInput.keyStates[PLATFORM_KEY_1].pressedCount > 0) {
 		editorState->gameMode = PLAY_MODE;
-	} else if(global_platformInput.keyStates[PLATFORM_KEY_F2].pressedCount > 0) {
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_2].pressedCount > 0) {
 		editorState->gameMode = TILE_MODE;
-	} else if(global_platformInput.keyStates[PLATFORM_KEY_F3].pressedCount > 0) {
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_3].pressedCount > 0) {
 		editorState->gameMode = SELECT_ENTITY_MODE;
-	} else if(global_platformInput.keyStates[PLATFORM_KEY_F4].pressedCount > 0) {
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_4].pressedCount > 0) {
 		editorState->gameMode = A_STAR_MODE;
 	}
 
-	if(global_platformInput.keyStates[PLATFORM_KEY_F5].pressedCount > 0) {
+	if(global_platformInput.keyStates[PLATFORM_KEY_5].pressedCount > 0) {
 		editorState->draw_debug_memory_stats = !editorState->draw_debug_memory_stats;
 	}
 
@@ -216,6 +132,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	float16 orthoMatrix = make_ortho_matrix_origin_center(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	pushMatrix(renderer, orthoMatrix);
 	pushShader(renderer, &rectOutlineShader);
+
 
 	float rotationPower = 1;
 	if(global_platformInput.keyStates[PLATFORM_KEY_UP].pressedCount > 0) {
@@ -333,78 +250,11 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 
 	drawGrid(editorState);
 
-	//NOTE: Push all lights for the renderer to use
-	pushAllEntityLights(editorState, dt);
+	updateAndRenderEntities(editorState, renderer, dt, fovMatrix, windowWidth, windowHeight);
 
-	pushShader(renderer, &pixelArtShader);
-	pushMatrix(renderer, fovMatrix);
-
-	renderTileMap(editorState, renderer);
-
-	//NOTE: Collision code - fill all colliders with info and move entities
-	updateEntityCollisions(editorState, dt);
-
-	// if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0 && editorState->selectedEntityId) {
-	// 	editorGui_clearInteraction(&editorState->editorGuiState);
-	// 	editorState->selectedEntityId = 0;
-	// } 
-
-
-	//NOTE: Gameplay code
-	for(int i = 0; i < editorState->entityCount; ++i) {
-		Entity *e = &editorState->entities[i];
-
-		// e->pos.xy = plus_float2(scale_float2(dt, e->velocity.xy),  e->pos.xy);
-		// e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
-		
-
-		if(e->flags & ENTITY_ACTIVE) {
-			#if DEBUG_BUILD
-			updateEntitySelection(editorState, e, windowWidth, windowHeight, renderer, fovMatrix);
-			#endif
-			updateEntity(editorState, e, dt);
-			renderEntity(editorState, renderer, e, fovMatrix, dt);
-		}
-	}
-
-	if(editorState->gameMode == TILE_MODE) {
-		drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
-	} else if(editorState->gameMode == A_STAR_MODE) {
-		pushShader(renderer, &textureShader);
-		pushMatrix(renderer, fovMatrix);
-
-		updateAStartEditor(editorState, renderer, windowWidth, windowHeight);
-	}
-
-	//NOTE: Draw the points
-	float16 orthoMatrix1 = make_ortho_matrix_bottom_left_corner(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
-	pushMatrix(renderer, orthoMatrix1);
-	pushShader(renderer, &sdfFontShader);
 
 #if DEBUG_BUILD
-	{
-		char *name_str = "PLAY MODE";
-		if(editorState->gameMode == TILE_MODE) {
-			name_str = "TILE MODE";
-		} else if(editorState->gameMode == SELECT_ENTITY_MODE) {
-			name_str = "SELECT ENTITY MODE";
-		} else if(editorState->gameMode == A_STAR_MODE) {
-			name_str = "A* MODE";
-		}
-
-		draw_text(renderer, &editorState->font, name_str, 50, fauxDimensionY - 50, 1, make_float4(0, 0, 0, 1)); 
-	}
-
-#endif
-	
-	char *name_str = easy_createString_printf(&globalPerFrameArena, "%d points", editorState->points); 
-	draw_text(renderer, &editorState->font, name_str, 50, 50, 1, make_float4(0, 0, 0, 1)); 
-
-#if DEBUG_BUILD
-	if(editorState->draw_debug_memory_stats) {
-		renderer_defaultScissors(renderer, windowWidth, windowHeight);
-		DEBUG_draw_stats(editorState, renderer, &editorState->font, windowWidth, windowHeight, dt);
-	}
+	drawDebugAndEditorText(editorState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
 #endif
 
 	return editorState;
