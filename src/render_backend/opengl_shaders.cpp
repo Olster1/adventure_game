@@ -68,7 +68,7 @@ static char *rectOutlineVertexShader =
     "color_frag = color;"
     "texture_array_index = samplerIndex;"
 
-    "uv_frag = uvAtlas;"
+    "uv_frag = texUV;"
     "scale_world_space = scale;"
 "}";
 
@@ -90,7 +90,7 @@ static char *lineVertexShader =
 "out vec4 color_frag;"
 
 "void main() {"
-    "vec3 pos = vertex.x * input.pos1 + vertex.y * input.pos2;"
+    "vec3 pos = vertex.x * pos1 + vertex.y * pos2;"
     "gl_Position = projection * vec4(pos, 1.0f);"
     "color_frag = color1;"
 "}";
@@ -127,7 +127,7 @@ static char *quadTextureFragShader =
 "out vec4 color;"
 "void main() {"
     "vec4 diffSample = texture(diffuse, uv_frag);"
-    "color = sample*color_frag;"
+    "color = diffSample*color_frag;"
 "}";
 
 static char *sdfFragShader = 
@@ -152,7 +152,6 @@ static char *sdfFragShader =
     "colorOut = color;"
 "}";
 
-
 static char *pixelArtFragShader = 
 "#version 330\n"
 "in vec4 color_frag;" 
@@ -161,7 +160,7 @@ static char *pixelArtFragShader =
 "out vec4 color;"
 "void main() {"
     "vec2 size = textureSize(diffuse, 0);"
-    "vec2 uv = uv_frag.uv * size;"
+    "vec2 uv = uv_frag * size;"
     "vec2 duv = fwidth(uv);"
     "uv = floor(uv) + 0.5 + clamp(((fract(uv) - 0.5 + duv)/duv), 0.0, 1.0);"
     "uv /= size;"
@@ -169,7 +168,6 @@ static char *pixelArtFragShader =
    
     "color = sample*color_frag;"
 "}";
-
 
 static char *lineFragShader = 
 "#version 330\n"

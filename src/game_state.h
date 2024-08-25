@@ -102,16 +102,3 @@ typedef struct {
     int lightCount;
     GameLight lights[64];
 } EditorState;
-
-void clearGameStatePerFrameValues(EditorState *state) {
-	state->lightCount = 0;
-}
-
-void pushGameLight(EditorState *state, float3 worldPos, float4 color, float perlinNoiseValue) {
-	if(state->lightCount < arrayCount(state->lights)) {
-		GameLight *l = &state->lights[state->lightCount++];
-
-		l->worldPos = worldPos;
-		l->color = scale_float4(perlinNoiseValue, color);
-	}
-}

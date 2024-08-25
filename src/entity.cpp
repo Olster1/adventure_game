@@ -1,3 +1,13 @@
+
+void pushGameLight(EditorState *state, float3 worldPos, float4 color, float perlinNoiseValue) {
+	if(state->lightCount < arrayCount(state->lights)) {
+		GameLight *l = &state->lights[state->lightCount++];
+
+		l->worldPos = worldPos;
+		l->color = scale_float4(perlinNoiseValue, color);
+	}
+}
+
 char *makeEntityId(EditorState *editorState) {
     u64 timeSinceEpoch = platform_getTimeSinceEpoch();
     char *result = easy_createString_printf(&global_long_term_arena, "%ld-%d-%d", timeSinceEpoch, editorState->randomIdStartApp, editorState->randomIdStart);

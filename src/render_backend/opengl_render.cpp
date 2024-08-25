@@ -23,10 +23,10 @@ enum AttribInstancingType {
 
 struct InstanceData {
     float3 pos;
-    float4 uv;
-    float4 color;
     float2 scale;
-    int textureIndex;
+    float4 color;
+    float4 uv;
+    float textureIndex;
 };
 
 struct InstanceDataLine {
@@ -152,7 +152,11 @@ static Texture platform_loadFromFileToGPU(char *image_to_load_utf8) {
 	unsigned char *testTextureBytes = (unsigned char *)stbi_load(image_to_load_utf8, &texWidth, &texHeight, 0, STBI_rgb_alpha);
 	int texBytesPerRow = 4 * texWidth;
 
-	assert(testTextureBytes);
+
+	if(!testTextureBytes) {
+        printf("Couldn't load %s\n", image_to_load_utf8);
+        assert(testTextureBytes);
+    }
 
 	result.handle = Platform_loadTextureToGPU(testTextureBytes, texWidth, texHeight, 4);
 
@@ -231,7 +235,6 @@ Shader loadShader(char *vertexShader, char *fragShader, AttribInstancingType att
     } else {
         assert(false);
     }
-   
 
     // assert(MODEL_TRANSFORM_ATTRIB_LOCATION < (max_attribs - 1));
 
@@ -266,6 +269,7 @@ Shader loadShader(char *vertexShader, char *fragShader, AttribInstancingType att
     }
     
     assert(result.valid);
+    assert(result.handle);
 
     return result;
 }
@@ -318,19 +322,27 @@ void addInstancingAttrib_int32(GLuint attribLoc, int numOfInt32s, size_t offsetF
 
 void addInstancingAttribsForShader(AttribInstancingType type) {
     if(type == ATTRIB_INSTANCE_TYPE_DEFAULT) {
+        
         size_t offsetForStruct = sizeof(InstanceData); 
+        
+        unsigned int posOffset = (intptr_t)(&(((InstanceData *)0)->pos));
+        addInstancingAttrib (POS_ATTRIB_LOCATION, 3, offsetForStruct, posOffset);
+        renderCheckError();
 
-        addInstancingAttrib (POS_ATTRIB_LOCATION, 3, offsetForStruct, 0);
         unsigned int uvOffset = (intptr_t)(&(((InstanceData *)0)->uv));
         addInstancingAttrib (UVATLAS_ATTRIB_LOCATION, 4, offsetForStruct, uvOffset);
+        renderCheckError();
+
         unsigned int colorOffset = (intptr_t)(&(((InstanceData *)0)->color));
         addInstancingAttrib (COLOR_ATTRIB_LOCATION, 4, offsetForStruct, colorOffset);
         renderCheckError();
+
         unsigned int scaleOffset = (intptr_t)(&(((InstanceData *)0)->scale));
         addInstancingAttrib (SCALE_ATTRIB_LOCATION, 2, offsetForStruct, scaleOffset);
         renderCheckError();
+
         unsigned int samplerIndexOffset = (intptr_t)(&(((InstanceData *)0)->textureIndex));
-        addInstancingAttrib_int32(SAMPLER_INDEX_ATTRIB_LOCATION, 1, offsetForStruct, samplerIndexOffset);
+        addInstancingAttrib(SAMPLER_INDEX_ATTRIB_LOCATION, 1, offsetForStruct, samplerIndexOffset);
         renderCheckError();
     } else if(type == ATTRIB_INSTANCE_TYPE_LINE) {
          size_t offsetForStruct = sizeof(InstanceDataLine); 
@@ -460,12 +472,6 @@ static uint backendRender_init(BackendRenderer *r, SDL_Window *hwnd) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
-    Shader sdfFontShader;
-    Shader textureShader;
-    Shader rectOutlineShader;
-    Shader lineShader;
-    Shader pixelArtShader;
-
     sdfFontShader = loadShader(quadVertexShader, sdfFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
     textureShader = loadShader(quadVertexShader, quadTextureFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
     rectOutlineShader = loadShader(rectOutlineVertexShader, rectOutlineFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
@@ -477,11 +483,11 @@ static uint backendRender_init(BackendRenderer *r, SDL_Window *hwnd) {
 
 #if DEBUG_BUILD
 	if(!global_white_texture) {
-		global_white_texture = (void *)platform_loadFromFileToGPU("..\\src\\images\\white_texture.png").handle;
+		global_white_texture = (void *)platform_loadFromFileToGPU("./images/white_texture.png").handle;
 	}
 #else 
 	if(!global_white_texture) {
-		global_white_texture = (void *)platform_loadFromFileToGPU(".\\white_texture.png").handle;
+		global_white_texture = (void *)platform_loadFromFileToGPU("./white_texture.png").handle;
 	}
 #endif
 
@@ -637,9 +643,10 @@ void bindTextureArray(char *uniformName, GLint textureId, Shader *shader, uint32
 }
 
 void drawModels(BackendRenderer *r, ModelBuffer *model, uint32_t textureId, int instanceCount, GLenum toplogyType) {
-    // printf("%d\n", instanceCount);
+    // printf("%d\n", model->indexCount);
     Shader *shader = r->currentShader;
     assert(shader);
+    assert(shader->handle);
     
     glBindVertexArray(model->handle);
     renderCheckError();
@@ -652,12 +659,9 @@ void drawModels(BackendRenderer *r, ModelBuffer *model, uint32_t textureId, int 
 
     glDrawElementsInstanced(toplogyType, model->indexCount, GL_UNSIGNED_INT, 0, instanceCount); 
     renderCheckError();
-    
+
     glBindVertexArray(0);
     renderCheckError();    
-
-    glUseProgram(0);
-    renderCheckError();
 }
 
 
@@ -692,25 +696,24 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
                 renderCheckError();
 
                 backend_r->currentShader = program;
+                assert(program->handle);
 			} break;
 			case RENDER_SET_SCISSORS: {
-                float w = c->scissors_bounds.maxX - c->scissors_bounds.minX;
-                float h = c->scissors_bounds.maxY - c->scissors_bounds.minY;
+                // float w = c->scissors_bounds.maxX - c->scissors_bounds.minX;
+                // float h = c->scissors_bounds.maxY - c->scissors_bounds.minY;
 
-                glScissor((GLint)c->scissors_bounds.minX, (GLint)c->scissors_bounds.minY, (GLint)w, (GLint)h);
+                // glScissor((GLint)c->scissors_bounds.minX, (GLint)c->scissors_bounds.minY, (GLint)w, (GLint)h);
 			} break;
 
 			case RENDER_LINE: {
-
 				u8 *data = r->lineInstanceData + c->offset_in_bytes;
 				int sizeInBytes = c->size_in_bytes;
 
+                assert(sizeInBytes > 0);
+                assert(data);
+
+                updateInstanceData(backend_r->lineModel.instanceBufferhandle, data, sizeInBytes);
 				drawModels(backend_r, &backend_r->lineModel, 0, c->instanceCount, GL_LINES);
-
-				#if DEBUG_BUILD
-				    global_debug_stats.draw_call_count++;
-				#endif
-
 
 				#if DEBUG_BUILD
 				    global_debug_stats.draw_call_count++;
@@ -733,8 +736,14 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
 				
 				assert(c->textureHandle_count > 0);
 
+                
 				//NOTE: We just use the first texture handle
 				TextureHandle *textureHandle = (TextureHandle *)c->texture_handles[0];
+                assert(textureHandle);
+                assert(sizeInBytes > 0);
+                assert(data);
+
+                updateInstanceData(backend_r->quadModel.instanceBufferhandle, data, sizeInBytes);
 
 				drawModels(backend_r, &backend_r->quadModel, textureHandle->handle, c->instanceCount, GL_TRIANGLES);
 
