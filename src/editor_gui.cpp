@@ -150,7 +150,7 @@ void updateAStartEditor(EditorState *state, Renderer *renderer, float windowWidt
     }
 }
 
-void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
+void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
 
     float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
 
@@ -161,6 +161,22 @@ void drawEditorGui(EditorState *state, Renderer *renderer, float x, float y, flo
     TileSet *swampSet = &state->swampTileSet; 
 
     EditorGui *gui = &state->editorGuiState;
+
+    if(global_platformInput.keyStates[PLATFORM_KEY_O].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
+        char *result = platform_openFileDialog();
+        loadTileMapLevel(state, result);
+
+        //TODO: Not sure how to free this string
+
+    }
+
+    if(global_platformInput.keyStates[PLATFORM_KEY_S].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
+        char *result = platform_saveFileDialog();
+        saveTileMapLevel_version1(state, result);
+
+        //TODO: Not sure how to free this string
+
+    }
 
     if(global_platformInput.keyStates[PLATFORM_KEY_Z].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
         if(global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {

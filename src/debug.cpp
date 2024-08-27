@@ -35,14 +35,14 @@ static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font 
 	// DEBUG_draw_stats_FLOAT_MACRO("Start at: ", editorState->selectable_state.start_pos.x, editorState->selectable_state.start_pos.y);
 	// DEBUG_draw_stats_FLOAT_MACRO("Target Scroll: ", w->scroll_target_pos.x, w->scroll_target_pos.y);
 
-	DEBUG_draw_stats_FLOAT_MACRO("mouse scroll x ", global_platformInput.mouseX / windowWidth, global_platformInput.mouseY / windowHeight);
+	DEBUG_draw_stats_FLOAT_MACRO("mouse position 01 ", global_platformInput.mouseX / windowWidth, global_platformInput.mouseY / windowHeight);
 	DEBUG_draw_stats_FLOAT_MACRO("dt for frame ", dt, dt);
 
 }
 
 void drawDebugAndEditorText(EditorState *editorState, Renderer *renderer, float fauxDimensionX, float fauxDimensionY, float windowWidth, float windowHeight, float dt, float16 fovMatrix) {
 	if(editorState->gameMode == TILE_MODE) {
-		drawEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
+		drawAndUpdateEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
 	} else if(editorState->gameMode == A_STAR_MODE) {
 		pushShader(renderer, &textureShader);
 		pushMatrix(renderer, fovMatrix);

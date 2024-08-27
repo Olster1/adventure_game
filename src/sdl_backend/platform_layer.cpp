@@ -12,6 +12,10 @@
 
 #include "../debug_stats.h"
 
+#include "../../libs/tinyfiledialogs.h"
+#include "../../libs/tinyfiledialogs.c"
+
+
 // #include "./win32/win32_threads.cpp"
 
 static DEBUG_stats global_debug_stats = {};
@@ -71,6 +75,31 @@ static bool win32_isValidText(u16 wparam) {
      return result;
 }
 
+static char *platform_openFileDialog() {
+    char const * result = tinyfd_openFileDialog (
+	"Open File",
+	"",
+	0,
+	NULL,
+	NULL,
+	0);
+
+    return (char *)result;
+}
+
+static char *platform_saveFileDialog() {
+    char const * result = tinyfd_saveFileDialog (
+	"Save File",
+	"",
+	0,
+	NULL,
+	NULL);
+
+    return (char *)result;
+}
+
+
+
 #include <sys/mman.h>
 //NOTE: Used by the game layer
 static void *platform_alloc_memory_pages(size_t size) {
@@ -104,21 +133,25 @@ static u8 *platform_realloc_memory(void *src, u32 bytesToMove, size_t sizeToAllo
 }
 
 void updateKeyState(PlatformKeyType keyType, bool keyIsDown) {
-
     MouseKeyState state = global_platformInput.keys[keyType];
     int wasPressed = 0;
     int wasReleased = 0;
 
     if(keyIsDown) {
         if(state == MOUSE_BUTTON_NONE) {
-        global_platformInput.keys[keyType] = MOUSE_BUTTON_PRESSED;
-        wasPressed++;
+          global_platformInput.keys[keyType] = MOUSE_BUTTON_PRESSED;
+          
+          wasPressed++;
         } else if(state == MOUSE_BUTTON_PRESSED) {
-        global_platformInput.keys[keyType] = MOUSE_BUTTON_DOWN;
+          global_platformInput.keys[keyType] = MOUSE_BUTTON_DOWN;
         }
-    } else if(global_platformInput.keys[keyType] == MOUSE_BUTTON_DOWN || global_platformInput.keys[keyType] == MOUSE_BUTTON_PRESSED) {
-        global_platformInput.keys[keyType] = MOUSE_BUTTON_RELEASED;
-        wasReleased++;
+    } else {
+      if(global_platformInput.keys[keyType] == MOUSE_BUTTON_DOWN || global_platformInput.keys[keyType] == MOUSE_BUTTON_PRESSED) {
+          global_platformInput.keys[keyType] = MOUSE_BUTTON_RELEASED;
+          wasReleased++;
+      } else {
+        global_platformInput.keys[keyType] = MOUSE_BUTTON_NONE;
+      }
     }
 
     global_platformInput.keyStates[keyType].pressedCount += wasPressed;
@@ -130,14 +163,14 @@ void updateKeyState(PlatformKeyType keyType, bool keyIsDown) {
 
 void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight, bool *running) {
       SDL_Event e;
-       while (SDL_PollEvent(&e)) {
-       if (e.type == SDL_QUIT) {
-          *running = false;
-        }
-    }
+      while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_QUIT) {
+            *running = false;
+          }
+      }
 
     const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
-    
+
     updateKeyState(PLATFORM_KEY_UP, currentKeyStates[SDL_SCANCODE_UP] == 1 || currentKeyStates[SDL_SCANCODE_W] == 1);
     updateKeyState(PLATFORM_KEY_DOWN, currentKeyStates[SDL_SCANCODE_DOWN] == 1 || currentKeyStates[SDL_SCANCODE_S] == 1);
     updateKeyState(PLATFORM_KEY_LEFT, currentKeyStates[SDL_SCANCODE_LEFT] == 1 || currentKeyStates[SDL_SCANCODE_A] == 1);
@@ -145,6 +178,9 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     updateKeyState(PLATFORM_KEY_SPACE, currentKeyStates[SDL_SCANCODE_SPACE] == 1);
     updateKeyState(PLATFORM_KEY_SHIFT, currentKeyStates[SDL_SCANCODE_LSHIFT] == 1);
     updateKeyState(PLATFORM_KEY_CTRL, currentKeyStates[SDL_SCANCODE_LCTRL] == 1);
+    updateKeyState(PLATFORM_KEY_Z, currentKeyStates[SDL_SCANCODE_Z] == 1);
+    updateKeyState(PLATFORM_KEY_S, currentKeyStates[SDL_SCANCODE_S] == 1);
+    updateKeyState(PLATFORM_KEY_O, currentKeyStates[SDL_SCANCODE_O] == 1);
     updateKeyState(PLATFORM_KEY_1, currentKeyStates[SDL_SCANCODE_1] == 1);
     updateKeyState(PLATFORM_KEY_2, currentKeyStates[SDL_SCANCODE_2] == 1);
     updateKeyState(PLATFORM_KEY_3, currentKeyStates[SDL_SCANCODE_3] == 1);
@@ -171,26 +207,9 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     Uint32 mouseState = SDL_GetMouseState(&x, &y);
     
     global_platformInput.mouseX = (float)x;
-    global_platformInput.mouseY = (float)(-y); //NOTE: Bottom corner is origin 
+    global_platformInput.mouseY = (float)(y);
 
-    // gameState->mouseP_01.x = gameState->mouseP_screenSpace.x / w;
-    // gameState->mouseP_01.y = gameState->mouseP_screenSpace.y / h;
-  
-  MouseKeyState btnState = global_platformInput.keys[PLATFORM_MOUSE_LEFT_BUTTON];
-  if(mouseState && SDL_BUTTON(1)) {
-    //NOTE: Mouse btn is down
-    if(btnState == MOUSE_BUTTON_NONE) {
-      btnState = MOUSE_BUTTON_PRESSED;
-    } else if(btnState == MOUSE_BUTTON_PRESSED) {
-      btnState = MOUSE_BUTTON_DOWN;
-    }
-  } else {
-    if(btnState == MOUSE_BUTTON_DOWN || btnState == MOUSE_BUTTON_PRESSED) {
-      btnState = MOUSE_BUTTON_RELEASED;
-    } else {
-      btnState = MOUSE_BUTTON_NONE;
-    }
-  }
+    updateKeyState(PLATFORM_MOUSE_LEFT_BUTTON, mouseState && SDL_BUTTON(1));
 }
 
 #include "../memory_arena.cpp"
@@ -202,6 +221,58 @@ u64 platform_getTimeSinceEpoch() {
     return (u64)t;
 }
 
+static Platform_File_Handle platform_begin_file_write_utf8_file_path (char *path_utf8) {
+
+    Platform_File_Handle Result = {};
+
+    FILE *fileHandle = fopen(path_utf8, "w+");
+    
+    if(fileHandle)
+    {
+        Result.data = fileHandle;
+    }
+    else
+    {
+        Result.has_errors = true;
+    }
+    
+    return Result;
+}
+
+static void platform_close_file(Platform_File_Handle handle)
+{
+    FILE *fileHandle = (FILE *)handle.data;
+    if(fileHandle)
+    {
+        fclose(fileHandle);
+    }
+}
+
+static bool platform_write_file_data(Platform_File_Handle handle, void *memory, size_t size_to_write, size_t offset) {   
+    bool success = false;
+    if(!handle.has_errors) {
+        FILE *FileHandle = (FILE *)handle.data;
+        if(FileHandle)
+        {
+            if(fseek(FileHandle, offset, SEEK_SET) == 0)
+            {
+                size_t elementsWritten = fwrite(memory, size_to_write, 1, FileHandle);
+                if(elementsWritten == 1)
+                {
+                    //NOTE: Success
+                    success = true;
+                }
+                else
+                {
+                    assert(!"Read file did not succeed");
+                }
+            }
+        }
+    } else {
+        assert(!"File handle not correct");
+    }
+    return success;
+}
 
 //TODO: Change this to sdl specific functions
 static bool Platform_LoadEntireFile_utf8(char *filename_utf8, void **data, size_t *data_size) {
@@ -232,6 +303,8 @@ static bool Platform_LoadEntireFile_utf8(char *filename_utf8, void **data, size_
         } else {
           platform_free_memory(read_data);
         }
+
+        fclose(fileHandle);
     }
 
     return succeed;

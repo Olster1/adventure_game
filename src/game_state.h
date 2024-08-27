@@ -63,8 +63,9 @@ typedef struct {
 
 	int points;
 
+	//TODO: This should be a hash table
 	int tileCount;
-	MapTile tiles[1028];
+	MapTile tiles[10000];
 
 	bool hasInteratedYet;
 
