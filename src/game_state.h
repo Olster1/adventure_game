@@ -67,19 +67,22 @@ typedef struct {
 	int tileCount;
 	MapTile tiles[10000];
 
-	bool hasInteratedYet;
-
 	//NOTE: Resizeable array for the coins - if id in list, means user got it. 
 	int *coinsGot;
 
 	Animation playerIdleAnimation;
-	Animation playerRunAnimation;
+	Animation playerRunForwardAnimation;
+	Animation playerRunbackwardAnimation;
+	Animation playerRunsidewardAnimation;
+	
 	Animation playerAttackAnimation;
 	Animation playerHurtAnimation;
 	Animation playerDieAnimation;
 	Animation playerJumpAnimation;
 	Animation playerFallingAnimation;
 
+	Animation playerbackwardSidewardRun;
+	Animation playerforwardSidewardRun;
 
 	//NOTE: Skeleton animation
 	Animation skeletonIdleAnimation;

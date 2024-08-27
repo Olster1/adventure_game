@@ -82,7 +82,7 @@ Entity *addPlayerEntity(EditorState *state) {
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(2, 2, 1);
-        e->speed = 5.0f;
+        e->speed = 1.0f;
 
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
         

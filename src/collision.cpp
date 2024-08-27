@@ -244,7 +244,7 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
 
         //NOTE: Apply drag 
         //TODO: This isn't frame independent
-        a->velocity.x = 0.85f*a->velocity.x; //NOTE: Just x drag
+        a->velocity.xy = scale_float2(0.85f, a->velocity.xy); 
 
         a->deltaPos.xy = scale_float2(dt, a->velocity.xy);
         a->deltaTLeft = 1.0f;

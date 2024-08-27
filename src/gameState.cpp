@@ -16,7 +16,6 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 		editorState->fontScale = 0.6f;
 
 		editorState->draw_debug_memory_stats = false;
-		editorState->hasInteratedYet = false;
 
 		editorState->shakeTimer = -1;//NOTE: Turn the timer off
 
@@ -49,13 +48,28 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 
 		loadImageStrip(&editorState->fireballIdleAnimation, backendRenderer, "../src/images/fireball.png", 64);
 
-		loadImageStripXY(&editorState->playerIdleAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 0, 6);
-		loadImageStripXY(&editorState->playerRunAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 2, 8);
-		loadImageStripXY(&editorState->playerAttackAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 1, 6);
-		loadImageStripXY(&editorState->playerJumpAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 3, 16);
-		loadImageStripXY(&editorState->playerHurtAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 5, 3);
-		loadImageStripXY(&editorState->playerDieAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 5, 12);
-		loadImageStripXY(&editorState->playerFallingAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 4, 1);
+		// loadImageStripXY(&editorState->playerIdleAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 0, 6);
+		// loadImageStripXY(&editorState->playerRunAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 2, 8);
+		// loadImageStripXY(&editorState->playerAttackAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 1, 6);
+		// loadImageStripXY(&editorState->playerJumpAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 3, 16);
+		// loadImageStripXY(&editorState->playerHurtAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 5, 3);
+		// loadImageStripXY(&editorState->playerDieAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 5, 12);
+		// loadImageStripXY(&editorState->playerFallingAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 4, 1);
+
+		loadImageStrip(&editorState->playerIdleAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&editorState->playerRunForwardAnimation, backendRenderer, "../src/images/player/Man_forward_4.png", 64);
+		loadImageStrip(&editorState->playerRunbackwardAnimation, backendRenderer, "../src/images/player/Man_back_4.png", 64);
+		loadImageStrip(&editorState->playerRunsidewardAnimation, backendRenderer, "../src/images/player/Man_left_walk_4.png", 64);
+		
+		
+		loadImageStrip(&editorState->playerAttackAnimation, backendRenderer, "../src/images/player/Man_forward_attack_4.png", 64);
+		loadImageStrip(&editorState->playerJumpAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&editorState->playerHurtAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&editorState->playerDieAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&editorState->playerFallingAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+
+		loadImageStrip(&editorState->playerbackwardSidewardRun, backendRenderer, "../src/images/player/Man_back_sideways_4.png", 64);
+		loadImageStrip(&editorState->playerforwardSidewardRun, backendRenderer, "../src/images/player/Man_forward_sideways_4.png", 64);
 
 		loadImageStrip(&editorState->skeletonIdleAnimation, backendRenderer, "../src/images/skeleton/SIdle_4.png", 150);
 		loadImageStrip(&editorState->skeletonRunAnimation, backendRenderer, "../src/images/skeleton/SWalk_4.png", 150);
@@ -77,9 +91,9 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 
 		addPlayerEntity(editorState);
 
-		Entity *e = addSkeletonEntity(editorState);
+		// Entity *e = addSkeletonEntity(editorState);
 
-		e->pos.x = -3;
+		// e->pos.x = -3;
 
 	#if DEBUG_BUILD
 		DEBUG_runUnitTests(editorState);

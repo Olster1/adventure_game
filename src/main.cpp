@@ -68,6 +68,8 @@ static void drawGrid(EditorState *editorState) {
 
 #include "gameState.cpp"
 #include "debug.cpp"
+#include "player.cpp"
+#include "camera.cpp"
 
 static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
 	EditorState *editorState = (EditorState *)global_platform.permanent_storage;
@@ -77,20 +79,6 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	} else {
 		releaseMemoryMark(&global_perFrameArenaMark);
 		global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
-	}
-
-	if(global_platformInput.keyStates[PLATFORM_KEY_1].pressedCount > 0) {
-		editorState->gameMode = PLAY_MODE;
-	} else if(global_platformInput.keyStates[PLATFORM_KEY_2].pressedCount > 0) {
-		editorState->gameMode = TILE_MODE;
-	} else if(global_platformInput.keyStates[PLATFORM_KEY_3].pressedCount > 0) {
-		editorState->gameMode = SELECT_ENTITY_MODE;
-	} else if(global_platformInput.keyStates[PLATFORM_KEY_4].pressedCount > 0) {
-		editorState->gameMode = A_STAR_MODE;
-	}
-
-	if(global_platformInput.keyStates[PLATFORM_KEY_5].pressedCount > 0) {
-		editorState->draw_debug_memory_stats = !editorState->draw_debug_memory_stats;
 	}
 
 	Renderer *renderer = &editorState->renderer;
@@ -112,146 +100,16 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	float fauxDimensionY = 1000;
 	float fauxDimensionX = fauxDimensionY * (windowWidth/windowHeight);
 
-	float2 cameraOffset = make_float2(0, 0);
+	updatePlayerInput(editorState);
+	updateCamera(editorState, dt);
 
-	if(editorState->shakeTimer >= 0) {
-
-		float offset = perlin1d(editorState->shakeTimer, 40, 3)*(1.0f - editorState->shakeTimer);
-		//NOTE: Update the camera position offset
-		cameraOffset.x = offset;
-		cameraOffset.y = offset;
-
-		editorState->shakeTimer += dt;
-
-		if(editorState->shakeTimer >= 1.0f) {
-			editorState->shakeTimer = -1.0f;
-		}
-	}
-
-
-	float16 orthoMatrix = make_ortho_matrix_origin_center(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
-	pushMatrix(renderer, orthoMatrix);
-	pushShader(renderer, &rectOutlineShader);
-
-
-	float rotationPower = 1;
-	if(global_platformInput.keyStates[PLATFORM_KEY_UP].pressedCount > 0) {
-		// editorState->player.pos.y += 1.0f;
-		editorState->player->velocity.y = editorState->player->speed;
-		editorState->player->targetRotation = 0.5f*HALF_PI32;
-		rotationPower = 15.0f;
-
-		editorState->hasInteratedYet = true;
-
-	} else if(editorState->hasInteratedYet) {
-		editorState->player->velocity.y -= 0.3f;
-		editorState->player->targetRotation = -0.5f*HALF_PI32;
-	}
-
-	bool playerMoved = false;
-
-	
-
-	if(global_platformInput.keyStates[PLATFORM_KEY_LEFT].isDown && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-		editorState->player->velocity.x = -editorState->player->speed;
-		editorState->hasInteratedYet = true;
-
-		editorState->player->spriteFlipped = true;
-
-		playerMoved = true;
-
-		//NOTE: RUN ANIAMTION
-		if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerRunAnimation)  {
-			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerRunAnimation, 0.08f);	
-		}
-	}
-
-	if(global_platformInput.keyStates[PLATFORM_KEY_RIGHT].isDown && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-		editorState->player->velocity.x = editorState->player->speed;
-		editorState->hasInteratedYet = true;
-
-		editorState->player->spriteFlipped = false;
-
-		playerMoved = true;
-
-		if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerRunAnimation)  {
-			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerRunAnimation, 0.08f);	
-		}
-	} 
-
-	//NOTE: IDLE ANIMATION
-	if(!playerMoved && editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerIdleAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation)  {
-		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
-	}
-	
-	//NOTE: JUMP ANIMATION
-	if(global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0 && editorState->player->grounded) {
-		editorState->player->velocity.y = 10.0f;
-		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerJumpAnimation, 0.08f);	
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
-	} else {
-		if(editorState->player->animationController.lastAnimationOn == &editorState->playerJumpAnimation && editorState->player->grounded)  {
-			//NOTE: LANDED ANIMATION
-			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
-		} else if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && !editorState->player->grounded && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-			//NOTE: FALLING ANIMATION
-			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
-
-		}
-	}
-
-	if(global_platformInput.keyStates[PLATFORM_KEY_X].pressedCount > 0 && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-		//NOTE: SpriteFlipped = false
-		editorState->player->velocity.x = editorState->player->speed;
-		editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0.5f, 0, 0);
-
-		if(editorState->player->spriteFlipped) {
-			editorState->player->velocity.x = -editorState->player->speed;
-			editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(-0.5f, 0, 0);
-		} 
-
-		//NOTE: Make active
-		editorState->player->colliders[ATTACK_COLLIDER_INDEX].flags |= ENTITY_ACTIVE;
-
-		playerMoved = true;
-
-		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerAttackAnimation, 0.08f);	
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
-
-	} 
-
-	// editorState->player->pos.xy = plus_float2(scale_float2(dt, editorState->player->velocity.xy),  editorState->player->pos.xy);
-	// editorState->player->rotation = lerp(editorState->player.rotation, editorState->player.targetRotation, make_lerpTValue(rotationPower*0.05f)); 
-
-	if(editorState->movingCamera) {
-		editorState->cameraPos.x = lerp(editorState->cameraPos.x, editorState->player->pos.x + cameraOffset.x, make_lerpTValue(0.4f));
-		editorState->cameraPos.y = lerp(editorState->cameraPos.y, editorState->player->pos.y + cameraOffset.y, make_lerpTValue(0.4f));
-	}
-
-	pushShader(renderer, &textureShader);
-
-	//NOTE: Background texture
-	assert(editorState->backgroundTexture.handle);
-	pushTexture(renderer, editorState->backgroundTexture.handle, make_float3(0, 0, 10), make_float2(fauxDimensionX, fauxDimensionY), make_float4(1, 1, 1, 1), make_float4(0, 0, 1, 1));
-	// return editorState;
-	
 	editorState->planeSizeY = (windowHeight / windowWidth) * editorState->planeSizeX;
 	float16 fovMatrix = make_ortho_matrix_origin_center(editorState->planeSizeX, editorState->planeSizeY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	// float16 fovMatrix = make_perspective_matrix_origin_center(60.0f, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE, windowWidth / windowHeight);
 
 	pushMatrix(renderer, fovMatrix);
-
 	drawGrid(editorState);
-
 	updateAndRenderEntities(editorState, renderer, dt, fovMatrix, windowWidth, windowHeight);
-
 
 #if DEBUG_BUILD
 	drawDebugAndEditorText(editorState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);

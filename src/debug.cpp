@@ -41,6 +41,33 @@ static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font 
 }
 
 void drawDebugAndEditorText(EditorState *editorState, Renderer *renderer, float fauxDimensionX, float fauxDimensionY, float windowWidth, float windowHeight, float dt, float16 fovMatrix) {
+	if(global_platformInput.keyStates[PLATFORM_KEY_1].pressedCount > 0) {
+		editorState->gameMode = PLAY_MODE;
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_2].pressedCount > 0) {
+		if(editorState->gameMode == TILE_MODE) {
+			editorState->gameMode = PLAY_MODE;
+		} else {
+			editorState->gameMode = TILE_MODE;
+		}
+		
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_3].pressedCount > 0) {
+		if(editorState->gameMode == SELECT_ENTITY_MODE) {
+			editorState->gameMode = PLAY_MODE;
+		} else {
+			editorState->gameMode = SELECT_ENTITY_MODE;
+		}
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_4].pressedCount > 0) {
+		if(editorState->gameMode == A_STAR_MODE) {
+			editorState->gameMode = PLAY_MODE;
+		} else {
+			editorState->gameMode = A_STAR_MODE;
+		}
+	}
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_5].pressedCount > 0) {
+		editorState->draw_debug_memory_stats = !editorState->draw_debug_memory_stats;
+	}
+	
 	if(editorState->gameMode == TILE_MODE) {
 		drawAndUpdateEditorGui(editorState, renderer, 0, 0, windowWidth, windowHeight);
 	} else if(editorState->gameMode == A_STAR_MODE) {

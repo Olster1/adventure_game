@@ -61,7 +61,6 @@ static void platform_free_memory(void *data)
 #include <unistd.h>
 static u64 platform_get_memory_page_size() {
     long pagesize = sysconf(_SC_PAGE_SIZE);
-    printf("%ld\n", pagesize);
     return pagesize;
 }
 
@@ -179,6 +178,7 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     updateKeyState(PLATFORM_KEY_SHIFT, currentKeyStates[SDL_SCANCODE_LSHIFT] == 1);
     updateKeyState(PLATFORM_KEY_CTRL, currentKeyStates[SDL_SCANCODE_LCTRL] == 1);
     updateKeyState(PLATFORM_KEY_Z, currentKeyStates[SDL_SCANCODE_Z] == 1);
+    updateKeyState(PLATFORM_KEY_X, currentKeyStates[SDL_SCANCODE_X] == 1);
     updateKeyState(PLATFORM_KEY_S, currentKeyStates[SDL_SCANCODE_S] == 1);
     updateKeyState(PLATFORM_KEY_O, currentKeyStates[SDL_SCANCODE_O] == 1);
     updateKeyState(PLATFORM_KEY_1, currentKeyStates[SDL_SCANCODE_1] == 1);
