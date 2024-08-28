@@ -4,13 +4,18 @@ enum EntityFlags {
     LIGHT_COMPONENT = 1 << 2,
 };
 
-enum EntityType {
-    ENTITY_PLAYER,
-    ENTITY_ENEMY,
-    ENTITY_PIPE,
-    ENTITY_FIREBALL,
-    ENTITY_COIN
-};
+#define MY_ENTITY_TYPE(FUNC) \
+FUNC(ENTITY_PLAYER)\
+FUNC(ENTITY_ENEMY)\
+FUNC(ENTITY_PIPE)\
+FUNC(ENTITY_FIREBALL)\
+FUNC(ENTITY_COIN)\
+
+typedef enum {
+    MY_ENTITY_TYPE(ENUM)
+} EntityType;
+
+static char *MyEntity_TypeStrings[] = { MY_ENTITY_TYPE(STRING) };
 
 enum ColliderIndex {
     PLATFORM_COLLIDER_INDEX,

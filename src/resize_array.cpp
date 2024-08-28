@@ -5,7 +5,7 @@ struct ResizeArrayHeader {
     int incrementCount;
 };
 
-#define DEFAULT_RESIZE_ARRAY_SIZE 1
+#define DEFAULT_RESIZE_ARRAY_SIZE 64
 
 #define initResizeArray(type) (type *)initResizeArray_(sizeof(type))
 
@@ -35,6 +35,13 @@ int getArrayLength(void *array) {
     ResizeArrayHeader *header = getResizeArrayHeader((u8 *)array);
     assert(header->elementsCount <= header->maxCount);
     int result = header->elementsCount;
+    return result;
+}
+
+size_t getArraySizeInBytes(void *array) {
+    ResizeArrayHeader *header = getResizeArrayHeader((u8 *)array);
+    assert(header->elementsCount <= header->maxCount);
+    size_t result = header->elementsCount*header->sizeOfElement;
     return result;
 }
 

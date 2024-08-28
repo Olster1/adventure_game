@@ -164,7 +164,7 @@ void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, flo
 
     if(global_platformInput.keyStates[PLATFORM_KEY_O].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
         char *result = platform_openFileDialog();
-        loadTileMapLevel(state, result);
+        loadSaveLevel_json(state, result);
 
         //TODO: Not sure how to free this string
 
@@ -172,7 +172,7 @@ void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, flo
 
     if(global_platformInput.keyStates[PLATFORM_KEY_S].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
         char *result = platform_saveFileDialog();
-        saveTileMapLevel_version1(state, result);
+        saveLevel_version1_json(state, result);
 
         //TODO: Not sure how to free this string
 
