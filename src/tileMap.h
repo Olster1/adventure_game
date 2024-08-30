@@ -1,6 +1,11 @@
-enum TileSetType {
-	TILE_SET_SWAMP
-};
+#define MY_TILE_MAP_TYPE(FUNC) \
+FUNC(TILE_SET_SWAMP)\
+
+typedef enum {
+    MY_TILE_MAP_TYPE(ENUM)
+} TileSetType;
+
+static char *MyTileMap_TypeStrings[] = { MY_TILE_MAP_TYPE(STRING) };
 
 struct MapTile {
 	int x;

@@ -10,7 +10,7 @@ void pushGameLight(EditorState *state, float3 worldPos, float4 color, float perl
 
 char *makeEntityId(EditorState *editorState) {
     u64 timeSinceEpoch = platform_getTimeSinceEpoch();
-    char *result = easy_createString_printf(&global_long_term_arena, "%ld-%d-%d", timeSinceEpoch, editorState->randomIdStartApp, editorState->randomIdStart);
+    char *result = easy_createString_printf(&globalPerEntityLoadArena, "%ld-%d-%d", timeSinceEpoch, editorState->randomIdStartApp, editorState->randomIdStart);
 
     //NOTE: This would have to be locked in threaded application
     editorState->randomIdStart++;
@@ -73,6 +73,8 @@ Entity *addPlayerEntity(EditorState *state) {
     if(state->entityCount < arrayCount(state->entities)) {
         e = &state->entities[state->entityCount++];
 
+        memset(e, 0, sizeof(Entity));
+
         e->id = makeEntityId(state);
         e->idHash = get_crc32_for_string(e->id);
         
@@ -126,7 +128,7 @@ Entity *addSkeletonEntity(EditorState *state) {
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->skeletonIdleAnimation, 0.08f);
 
-        e->aStarController = easyAi_initController(&global_long_term_arena);
+        e->aStarController = easyAi_initController(&globalPerEntityLoadArena);
 		
     }
     return e;

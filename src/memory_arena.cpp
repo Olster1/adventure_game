@@ -184,6 +184,9 @@ void releaseMemoryMark(MemoryArenaMark *mark) {
 static Memory_Arena globalPerFrameArena = {0};
 static MemoryArenaMark global_perFrameArenaMark;
 
+static Memory_Arena globalPerEntityLoadArena = {0};
+static MemoryArenaMark global_perEntityLoadArenaMark;
+
 static Memory_Arena global_long_term_arena = {0};
 
 

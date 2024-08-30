@@ -365,6 +365,9 @@ int main(int argc, char **argv) {
         globalPerFrameArena = initMemoryArena(Kilobytes(100));
         global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
 
+        globalPerEntityLoadArena = initMemoryArena(Megabytes(10));
+        global_perEntityLoadArenaMark = takeMemoryMark(&globalPerEntityLoadArena);
+
         //NOTE: Get the settings file we need
         // {
         //     save_file_location_utf8 = platform_get_save_file_location_utf8(&global_long_term_arena);

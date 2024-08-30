@@ -87,7 +87,7 @@ void updateAStartEditor(EditorState *state, Renderer *renderer, float windowWidt
         Entity *e = findEntityById(state, state->selectedEntityId);
 
         if(!e->aStarController) {
-            e->aStarController = easyAi_initController(&global_long_term_arena);
+            e->aStarController = easyAi_initController(&globalPerEntityLoadArena);
         }
             
         if(e) {
@@ -164,6 +164,7 @@ void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, flo
 
     if(global_platformInput.keyStates[PLATFORM_KEY_O].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
         char *result = platform_openFileDialog();
+
         loadSaveLevel_json(state, result);
 
         //TODO: Not sure how to free this string

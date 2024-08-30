@@ -47,23 +47,48 @@ void saveLevel_version1_json(EditorState *editorState, char *utf8_full_file_name
 
     size_t offset = 0;
 
+#define writeVarString(format, ...) {char *s = easy_createString_printf(&globalPerFrameArena, format, __VA_ARGS__); size_t inBytes = easyString_getSizeInBytes_utf8(s); platform_write_file_data(handle, s, inBytes, offset); offset += inBytes; }
 	for(int i = 0; i < editorState->entityCount; ++i) {
 		Entity *e = &editorState->entities[i];
 
         MemoryArenaMark memMark = takeMemoryMark(&globalPerFrameArena);
 
-#define writeVarString(format, ...) {char *s = easy_createString_printf(&globalPerFrameArena, format, __VA_ARGS__); size_t inBytes = easyString_getSizeInBytes_utf8(s); platform_write_file_data(handle, s, inBytes, offset); offset += inBytes; }
         writeVarString("{\n", "");
         writeVarString("id: \"%s\"\n", e->id);
-        writeVarString("idHash: \"%s\"\n", e->idHash);
+        writeVarString("idHash: %d\n", e->idHash);
         writeVarString("type: \"%s\"\n", MyEntity_TypeStrings[(int)e->type]);
         writeVarString("pos: %f %f %f\n", e->pos.x, e->pos.y, e->pos.z);
         writeVarString("}\n", "");
-#undef writeVarString
+
         releaseMemoryMark(&memMark);
 	}
 
+    for(int i = 0; i < editorState->tileCount; ++i) {
+		MapTile t = editorState->tiles[i];
+
+        MemoryArenaMark memMark = takeMemoryMark(&globalPerFrameArena);
+
+        writeVarString("{\n", "");
+        writeVarString("type: \"%s\"\n", "ENTITY_TILE_MAP");
+        writeVarString("tileType: \"%s\"\n", MyTileMap_TypeStrings[(int)t.type]);
+        writeVarString("pos: %f %f %f\n", (float)t.x, (float)t.y, 0);
+        writeVarString("tileMapId: %d %d\n", t.xId, t.yId);
+        writeVarString("}\n", "");
+
+        releaseMemoryMark(&memMark);
+    }
+
+#undef writeVarString
+
 	platform_close_file(handle);
+}
+
+char *getStringFromTokenizer(EasyTokenizer *tokenizer, Memory_Arena *arena) {
+    EasyToken t = lexGetNextToken(tokenizer);
+    assert(t.type == TOKEN_STRING);
+    char *s = easy_createString_printf(arena, "%.*s", t.size, t.at);
+
+    return s;
 }
 
 float3 getFloat3FromTokenizer(EasyTokenizer *tokenizer) {
@@ -85,6 +110,32 @@ float3 getFloat3FromTokenizer(EasyTokenizer *tokenizer) {
     return make_float3(x, y, z);
 }
 
+int findEnumValue(char *name, int nameLength, char **names, int nameCount) {
+    int result = -1; //not found
+    for(int i = 0; i < nameCount; i++) {
+        if(easyString_stringsMatch_null_and_count(names[i], name, nameLength)) {
+            result = i;
+            break;
+        }
+    }
+    assert(result >= 0);
+    return result;
+}
+
+void clearEntities(EditorState *state) {
+    // releaseMemoryMark(&global_perFrameArenaMark);
+	// global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
+
+    state->animationItemFreeListPtr = 0;
+
+    // for(int i = 0; i < state->entityCount; ++i) {
+    //     Entity *e = &state->entities[i];
+    // }
+
+    state->entityCount = 0;
+    state->tileCount = 0;
+}
+
 void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
     u8 *data = 0;
 	size_t data_size = 0;
@@ -96,6 +147,12 @@ void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
         EasyTokenizer tokenizer = lexBeginParsing(data, (EasyLexOptions)(EASY_LEX_EAT_SLASH_COMMENTS | EASY_LEX_OPTION_EAT_WHITE_SPACE));
 
         Entity entity = {};
+
+        float2 tileMapId = make_float2(0, 0);
+        TileSetType tileType = TILE_SET_SWAMP;
+
+        //NOTE: Delete all the entities
+        clearEntities(state);
 
         bool parsing = true;
         while(parsing) {
@@ -116,22 +173,70 @@ void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
                     if(easyString_stringsMatch_null_and_count("id", token.at, token.size)) {
                         EasyToken t = lexGetNextToken(&tokenizer);
                         assert(t.type == TOKEN_COLON);
-                        // entity.id = getFloat3FromTokenizer(&tokenizer);
+                        entity.id = getStringFromTokenizer(&tokenizer, &globalPerEntityLoadArena);
                     }
                     if(easyString_stringsMatch_null_and_count("idHash", token.at, token.size)) {
                         EasyToken t = lexGetNextToken(&tokenizer);
                         assert(t.type == TOKEN_COLON);
-                        // entity.idHash = getFloat3FromTokenizer(&tokenizer);
+                        t = lexGetNextToken(&tokenizer);
+                        assert(t.type == TOKEN_INTEGER);
+                        entity.idHash = t.intVal;
                     }
                     if(easyString_stringsMatch_null_and_count("type", token.at, token.size)) {
                         EasyToken t = lexGetNextToken(&tokenizer);
                         assert(t.type == TOKEN_COLON);
-                        // entity.type = getFloat3FromTokenizer(&tokenizer);
+
+                        t = lexGetNextToken(&tokenizer);
+                        assert(t.type == TOKEN_STRING);
+
+                        entity.type = (EntityType)findEnumValue(t.at, t.size, MyEntity_TypeStrings, arrayCount(MyEntity_TypeStrings));
                     }
+                    if(easyString_stringsMatch_null_and_count("tileType", token.at, token.size)) {
+                        EasyToken t = lexGetNextToken(&tokenizer);
+                        assert(t.type == TOKEN_COLON);
+
+                        t = lexGetNextToken(&tokenizer);
+                        assert(t.type == TOKEN_STRING);
+
+                        tileType = (TileSetType)findEnumValue(t.at, t.size, MyTileMap_TypeStrings, arrayCount(MyTileMap_TypeStrings));
+                    }
+                    if(easyString_stringsMatch_null_and_count("tileMapId", token.at, token.size)) {
+                        EasyToken t = lexGetNextToken(&tokenizer);
+                        assert(t.type == TOKEN_COLON);
+
+                        t = lexGetNextToken(&tokenizer);
+                        assert(t.type == TOKEN_INTEGER);
+                        tileMapId.x = t.intVal;
+
+                        t = lexGetNextToken(&tokenizer);
+                        assert(t.type == TOKEN_INTEGER);
+                        tileMapId.y = t.intVal;
+                    }
+
+                    
                 } break;
                 case TOKEN_CLOSE_BRACKET: {
+                    if(entity.type == ENTITY_PLAYER) {
+                        Entity *e = addPlayerEntity(state);
 
+                        e->id = entity.id;
+                        e->idHash = entity.idHash;
+                        e->pos = entity.pos;
 
+                        state->player = e;
+                        assert(state->entityCount == 1);
+                    } else if(entity.type == ENTITY_TILE_MAP) {
+                        assert(state->tileCount < arrayCount(state->tiles));
+                        MapTile *tile = state->tiles + state->tileCount++;
+
+                        tile->x = entity.pos.x;
+                        tile->y = entity.pos.y;
+                        tile->xId = tileMapId.x;
+                        tile->yId = tileMapId.y;
+                        //TODO: More robust way of mapping save type to in-game type
+                        tile->type = (TileSetType)tileType;
+                    }
+                    
                 } break;
                 case TOKEN_NEWLINE: {
 
@@ -141,6 +246,13 @@ void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
                 } break;
             }
         }
+
+        printf("entities loaded: %d\n", state->entityCount);
+        printf("tiles loaded: %d\n", state->tileCount);
+
+        if(data) {
+		    platform_free_memory(data);	
+    	}
     }
 }
 

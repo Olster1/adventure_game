@@ -30,6 +30,7 @@ static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font 
 	DEBUG_draw_stats_MACRO("Draw Count", global_debug_stats.draw_call_count, false);
 	DEBUG_draw_stats_MACRO("Heap Block Count ", global_debug_stats.memory_block_count, false);
 	DEBUG_draw_stats_MACRO("Per Frame Arena Total Size", DEBUG_get_total_arena_size(&globalPerFrameArena), true);
+	DEBUG_draw_stats_MACRO("Per Entity Load Arena Total Size", DEBUG_get_total_arena_size(&globalPerEntityLoadArena), true);
 
 	// WL_Window *w = &editorState->windows[editorState->active_window_index];
 	// DEBUG_draw_stats_FLOAT_MACRO("Start at: ", editorState->selectable_state.start_pos.x, editorState->selectable_state.start_pos.y);

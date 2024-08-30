@@ -372,7 +372,6 @@ static EasyToken peekTokenForward_tokenNotComplete(char *at, char *end_of_buffer
     u32 lineNumber = 0;            
 
     if(at < end_of_buffer) {
-
         switch(*at) {
             case ' ': {
                 token = lexInitToken(TOKEN_SPACE, at, 1, lineNumber);
@@ -785,7 +784,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
         } break;
         case '\'': 
         case '\"': {
-            token = lexInitToken(TOKEN_STRING, at, 1, *lineNumber);
+            token = lexInitToken(TOKEN_STRING, at + 1, 1, *lineNumber);
             char endOfString = (*at == '\"') ? '\"' : '\'';
             at++;
             while(*at && *at != endOfString) {
@@ -796,7 +795,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
                 at++;
             }
             if(*at == endOfString) at++;
-            token.size = (at - token.at);//quotation are kept with the value
+            token.size = (at - (token.at + 1));//quotation aren't kept with the value
         } break;
         case '/': {
             token = lexInitToken(TOKEN_FORWARD_SLASH, at, 1, *lineNumber);
