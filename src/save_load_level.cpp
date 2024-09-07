@@ -228,7 +228,7 @@ void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
                     } else if(entity.type == ENTITY_TILE_MAP) {
                         assert(state->tileCount < arrayCount(state->tiles));
 	                    MapTile *tile = state->tiles + state->tileCount++;
-                        *tile = getDefaultMapTile(state, (TileSetType)tileType, entity.pos.x, entity.pos.y, tileMapId.y, tileMapId.x, false);
+                        *tile = getDefaultMapTile(state, (TileSetType)tileType, entity.pos.x, entity.pos.y, tileMapId.x, tileMapId.y, true);
                     }
                     
                 } break;
