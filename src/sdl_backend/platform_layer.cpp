@@ -189,6 +189,9 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     updateKeyState(PLATFORM_KEY_6, currentKeyStates[SDL_SCANCODE_6] == 1);
     updateKeyState(PLATFORM_KEY_7, currentKeyStates[SDL_SCANCODE_7] == 1);
     updateKeyState(PLATFORM_KEY_8, currentKeyStates[SDL_SCANCODE_8] == 1);
+    updateKeyState(PLATFORM_KEY_MINUS, currentKeyStates[SDL_SCANCODE_MINUS] == 1);
+    updateKeyState(PLATFORM_KEY_PLUS, currentKeyStates[SDL_SCANCODE_EQUALS] == 1);
+    
     int w; 
     int h;
     SDL_GetWindowSize(window, &w, &h);

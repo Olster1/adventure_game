@@ -162,23 +162,6 @@ void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, flo
 
     EditorGui *gui = &state->editorGuiState;
 
-    if(global_platformInput.keyStates[PLATFORM_KEY_O].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
-        char *result = platform_openFileDialog();
-
-        loadSaveLevel_json(state, result);
-
-        //TODO: Not sure how to free this string
-
-    }
-
-    if(global_platformInput.keyStates[PLATFORM_KEY_S].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
-        char *result = platform_saveFileDialog();
-        saveLevel_version1_json(state, result);
-
-        //TODO: Not sure how to free this string
-
-    }
-
     if(global_platformInput.keyStates[PLATFORM_KEY_Z].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
         if(global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
            //NOTE: REDO
@@ -313,16 +296,13 @@ void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, flo
 
 
         //NOTE: See if user added tile to map
-        if(!inSelectionBounds && global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0 && isActive) {
+        if(!inSelectionBounds && global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown && isActive) {
             //NOTE: Add tile to map
-            MapTile t = {};
-           
-            float worldX = lerp(-0.5f*state->planeSizeX, 0.5f*state->planeSizeX, make_lerpTValue(mouseP_01.x));
-            float worldY = lerp(-0.5f*state->planeSizeY, 0.5f*state->planeSizeY, make_lerpTValue(mouseP_01.y));
+            float worldX = lerp(-0.5f*state->planeSizeX*state->zoomLevel, 0.5f*state->planeSizeX*state->zoomLevel, make_lerpTValue(mouseP_01.x));
+            float worldY = lerp(-0.5f*state->planeSizeY*state->zoomLevel, 0.5f*state->planeSizeY*state->zoomLevel, make_lerpTValue(mouseP_01.y));
 
             worldX += state->cameraPos.x;
             worldY += state->cameraPos.y;
-
 
             //NOTE: Make sure the tile goes in the cell you click
             if(worldX < 0) {
@@ -333,13 +313,7 @@ void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, flo
                 worldY = floor(worldY);
             }
             
-            t.x = worldX;
-            t.y = worldY;
-            
-            t.xId = xIndex;
-            t.yId = (swampSet->countY - 1) - yIndex;
-
-            t.type = TILE_SET_SWAMP;
+            MapTile t = getDefaultMapTile(state, TILE_SET_SWAMP, worldX, worldY, xIndex, (swampSet->countY - 1) - yIndex, true);
 
             UndoRedoBlock block = {};
             // block->lastMapTile;
@@ -347,23 +321,30 @@ void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, flo
 
             MapTileFindResult mapTileQueryResult = findMapTile(state, t);
 
-            if(mapTileQueryResult.found) {
-                block.hasLastTile = true;
-                block.lastMapTile = state->tiles[mapTileQueryResult.indexAt];
+            bool addTile = true;
 
-                removeMapTile(state, mapTileQueryResult.indexAt);
+            //NOTE: See if there is a tile here already
+            if(mapTileQueryResult.found) {
+                if(isSameMapTile(mapTileQueryResult.tile, t)) {
+                    //NOTE: Don't add if their exactly the same tile
+                    addTile = false;
+                } else {
+                    block.hasLastTile = true;
+                    block.lastMapTile = state->tiles[mapTileQueryResult.indexAt];
+
+                    removeMapTile(state, mapTileQueryResult.indexAt);
+                }
             } else {
                 block.hasLastTile = false;
             }
 
-            assert(state->tileCount < arrayCount(state->tiles));
-            state->tiles[state->tileCount++] = t;
+            if(addTile) {
+                assert(state->tileCount < arrayCount(state->tiles));
+                state->tiles[state->tileCount++] = t;
 
-            addUndoRedoBlock(&state->editorGuiState, block);
+                addUndoRedoBlock(&state->editorGuiState, block);
+            }
         }
-
-
-
     }
 
 }

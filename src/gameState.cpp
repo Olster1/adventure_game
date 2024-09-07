@@ -41,7 +41,8 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 
 		editorState->gameMode = PLAY_MODE;
 
-		editorState->movingCamera = true;
+		editorState->cameraFollowPlayer = true;
+		editorState->zoomLevel = 1;
 
 		//NOTE: Init all animations for game
 		easyAnimation_initAnimation(&editorState->fireballIdleAnimation, "fireball_idle");
@@ -90,6 +91,8 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 		editorState->coinsGot = initResizeArray(int);
 
 		addPlayerEntity(editorState);
+
+		editorState->gravityOn = false;
 
 		// Entity *e = addSkeletonEntity(editorState);
 

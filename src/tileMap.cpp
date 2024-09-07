@@ -1,4 +1,18 @@
 
+MapTile getDefaultMapTile(EditorState *state, TileSetType type, int x, int y, int xId, int yId, bool collidable) {
+	MapTile tile = {};
+	tile.x = x;
+	tile.y = y;
+
+	tile.xId = xId;
+	tile.yId = yId;
+	
+	tile.type = type;
+	tile.collidable = collidable;
+
+	return tile;
+}
+
 MapTileFindResult findMapTile(EditorState *editorState, MapTile tile) {
     MapTileFindResult result = {};
 
@@ -9,11 +23,20 @@ MapTileFindResult findMapTile(EditorState *editorState, MapTile tile) {
         if(t.x == tile.x && t.y == tile.y) {
             result.found = true;
             result.indexAt = i;
+			result.tile = t;
             break;
         }
     }
 
     return result;                    
+}
+
+bool isSameMapTile(MapTile tileA, MapTile tileB) {
+	bool result = false;
+	if(tileA.xId == tileB.xId && tileA.yId == tileB.yId && tileA.type == tileB.type) {
+		result = true;
+	}
+	return result;
 }
 
 void removeMapTile(EditorState *editorState, int indexAt) {

@@ -242,6 +242,11 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
 			prepareCollisions(colA);
 		}
 
+        //NOTE: Apply gravity
+        if(editorState->gravityOn) {
+            a->velocity.y += -10; 
+        }
+
         //NOTE: Apply drag 
         //TODO: This isn't frame independent
         a->velocity.xy = scale_float2(0.85f, a->velocity.xy); 
@@ -268,20 +273,22 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
                 for(int i = 0; i < editorState->tileCount; ++i) {
                     MapTile t = editorState->tiles[i];
 
-                    float2 tileP = make_float2(t.x + 0.5f, t.y + 0.5f);
+                    if(t.collidable) {
+                        float2 tileP = make_float2(t.x + 0.5f, t.y + 0.5f);
 
-                    Rect2f tileRect = make_rect2f_center_dim(tileP, make_float2(1, 1));
-                    Rect2f entRect = make_rect2f_center_dim(entWorldP.xy, a->scale.xy);
+                        Rect2f tileRect = make_rect2f_center_dim(tileP, make_float2(1, 1));
+                        Rect2f entRect = make_rect2f_center_dim(entWorldP.xy, a->scale.xy);
 
-                    Rect2f minowskiPlus = rect2f_minowski_plus(tileRect, entRect, tileP);
+                        Rect2f minowskiPlus = rect2f_minowski_plus(tileRect, entRect, tileP);
 
-                    //NOTE: Ray cast agains minkowski rectangle
-                    RayCastResult r = rayCast_rectangle(entWorldP, a->deltaPos, minowskiPlus);
+                        //NOTE: Ray cast agains minkowski rectangle
+                        RayCastResult r = rayCast_rectangle(entWorldP, a->deltaPos, minowskiPlus);
 
-                    if(r.hit && r.distanceToTest < shortestDistance) {
-                        //NOTE: See if shortest distance
-                        shortestRayCastResult = r;
-                        shortestDistance = r.distanceToTest;
+                        if(r.hit && r.distanceToTest < shortestDistance) {
+                            //NOTE: See if shortest distance
+                            shortestRayCastResult = r;
+                            shortestDistance = r.distanceToTest;
+                        }
                     }
                 }
             }

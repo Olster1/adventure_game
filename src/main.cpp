@@ -107,7 +107,7 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	updateCamera(editorState, dt);
 
 	editorState->planeSizeY = (windowHeight / windowWidth) * editorState->planeSizeX;
-	float16 fovMatrix = make_ortho_matrix_origin_center(editorState->planeSizeX, editorState->planeSizeY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
+	float16 fovMatrix = make_ortho_matrix_origin_center(editorState->planeSizeX*editorState->zoomLevel, editorState->planeSizeY*editorState->zoomLevel, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	// float16 fovMatrix = make_perspective_matrix_origin_center(60.0f, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE, windowWidth / windowHeight);
 
 	pushMatrix(renderer, fovMatrix);

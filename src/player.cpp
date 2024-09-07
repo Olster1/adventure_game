@@ -8,6 +8,10 @@ void updatePlayerMoveKey(EditorState *editorState, PlatformKeyType type, float2 
 }
 
 void updatePlayerInput(EditorState *editorState) {
+
+	if(!editorState->cameraFollowPlayer) {
+		return;
+	}
     
 	bool playerMoved = false;
 
@@ -79,7 +83,6 @@ void updatePlayerInput(EditorState *editorState) {
 	// 		//NOTE: FALLING ANIMATION
 	// 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 	// 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
-
 	// 	}
 	// }
 
@@ -96,8 +99,6 @@ void updatePlayerInput(EditorState *editorState) {
 
 		//NOTE: Make active
 		editorState->player->colliders[ATTACK_COLLIDER_INDEX].flags |= ENTITY_ACTIVE;
-
-		playerMoved = true;
 
 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerAttackAnimation, 0.08f);	

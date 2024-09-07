@@ -227,14 +227,8 @@ void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
                         assert(state->entityCount == 1);
                     } else if(entity.type == ENTITY_TILE_MAP) {
                         assert(state->tileCount < arrayCount(state->tiles));
-                        MapTile *tile = state->tiles + state->tileCount++;
-
-                        tile->x = entity.pos.x;
-                        tile->y = entity.pos.y;
-                        tile->xId = tileMapId.x;
-                        tile->yId = tileMapId.y;
-                        //TODO: More robust way of mapping save type to in-game type
-                        tile->type = (TileSetType)tileType;
+	                    MapTile *tile = state->tiles + state->tileCount++;
+                        *tile = getDefaultMapTile(state, (TileSetType)tileType, entity.pos.x, entity.pos.y, tileMapId.y, tileMapId.x, false);
                     }
                     
                 } break;

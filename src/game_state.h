@@ -97,9 +97,13 @@ typedef struct {
 
 	EasyAnimation_ListItem *animationItemFreeListPtr;
 
+	bool gravityOn;
+
 	EditorGui editorGuiState;
 
-	bool movingCamera;
+	bool cameraFollowPlayer;
+
+	float zoomLevel;
 
     int lightCount;
     GameLight lights[64];

@@ -342,8 +342,8 @@ void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, flo
         bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
         bool released = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].releasedCount > 0;
 
-        float worldX = lerp(-0.5f*state->planeSizeX, 0.5f*state->planeSizeX, make_lerpTValue(mouseP_01.x));
-        float worldY = lerp(-0.5f*state->planeSizeY, 0.5f*state->planeSizeY, make_lerpTValue(mouseP_01.y));
+        float worldX = lerp(-0.5f*state->planeSizeX*state->zoomLevel, 0.5f*state->planeSizeX*state->zoomLevel, make_lerpTValue(mouseP_01.x));
+        float worldY = lerp(-0.5f*state->planeSizeY*state->zoomLevel, 0.5f*state->planeSizeY*state->zoomLevel, make_lerpTValue(mouseP_01.y));
 
         worldX += state->cameraPos.x;
         worldY += state->cameraPos.y;
@@ -384,7 +384,7 @@ void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, flo
 
             state->selectedEntityId = e->id;
 
-            state->movingCamera = false;
+            state->cameraFollowPlayer = false;
             
         } else if(state->editorGuiState.currentInteraction.active && sameEntityId(state->editorGuiState.currentInteraction.id, thisId)) {
             e->pos.x = mouseWorldP.x;
@@ -393,7 +393,7 @@ void updateEntitySelection(EditorState *state, Entity *e, float windowWidth, flo
 
         if(released) {
             editorGui_clearInteraction(&state->editorGuiState);
-            state->movingCamera = true;
+            state->cameraFollowPlayer = true;
         }
     } else if(state->gameMode == A_STAR_MODE) {
         if(state->selectedEntityId) {

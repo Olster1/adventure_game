@@ -15,11 +15,14 @@ struct MapTile {
 	int yId;
 
 	TileSetType type;
+
+	bool collidable;
 };
 
 struct MapTileFindResult {
     bool found;
     int indexAt;
+	MapTile tile;
 };  
 
 

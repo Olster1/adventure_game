@@ -42,12 +42,30 @@ static void DEBUG_draw_stats(EditorState *editorState, Renderer *renderer, Font 
 }
 
 void drawDebugAndEditorText(EditorState *editorState, Renderer *renderer, float fauxDimensionX, float fauxDimensionY, float windowWidth, float windowHeight, float dt, float16 fovMatrix) {
+
+	 if(global_platformInput.keyStates[PLATFORM_KEY_O].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
+        char *result = platform_openFileDialog();
+
+        loadSaveLevel_json(editorState, result);
+
+        //TODO: Not sure how to free this string
+    }
+
+    if(global_platformInput.keyStates[PLATFORM_KEY_S].pressedCount > 0 && global_platformInput.keyStates[PLATFORM_KEY_CTRL].isDown) {
+        char *result = platform_saveFileDialog();
+        saveLevel_version1_json(editorState, result);
+
+        //TODO: Not sure how to free this string
+    }
+
 	if(global_platformInput.keyStates[PLATFORM_KEY_1].pressedCount > 0) {
 		editorState->gameMode = PLAY_MODE;
 	} else if(global_platformInput.keyStates[PLATFORM_KEY_2].pressedCount > 0) {
 		if(editorState->gameMode == TILE_MODE) {
 			editorState->gameMode = PLAY_MODE;
+			editorState->cameraFollowPlayer = true;
 		} else {
+			editorState->cameraFollowPlayer = false;
 			editorState->gameMode = TILE_MODE;
 		}
 		
@@ -63,7 +81,22 @@ void drawDebugAndEditorText(EditorState *editorState, Renderer *renderer, float 
 		} else {
 			editorState->gameMode = A_STAR_MODE;
 		}
+	} else if(global_platformInput.keyStates[PLATFORM_KEY_6].pressedCount > 0) {
+		editorState->gravityOn = !editorState->gravityOn;
 	}
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_MINUS].pressedCount > 0) {
+		editorState->zoomLevel += 0.1f;
+	}
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_PLUS].pressedCount > 0) {
+		editorState->zoomLevel -= 0.1f;
+		if(editorState->zoomLevel < 0.01f) {
+			editorState->zoomLevel = 0.01f;
+		}
+	}
+
+	
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_5].pressedCount > 0) {
 		editorState->draw_debug_memory_stats = !editorState->draw_debug_memory_stats;
