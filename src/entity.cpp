@@ -95,7 +95,7 @@ Entity *addPlayerEntity(EditorState *state) {
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_TRIGGER);
 
         //NOTE: Hurt collider
-        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1.5f, 1.5f, 0), COLLIDER_ACTIVE | COLLIDER_TRIGGER);
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1.0f, 1.0f, 0), COLLIDER_ACTIVE | COLLIDER_TRIGGER);
         assert(e->colliders[HIT_COLLIDER_INDEX].flags & COLLIDER_ACTIVE);
 
         easyAnimation_initController(&e->animationController);
@@ -122,7 +122,7 @@ Entity *addEnemyEntity(EditorState *state, DefaultEntityAnimations *animations) 
 
         e->velocity = make_float3(0, 0, 0);
         e->pos = make_float3(0, 0, 10);
-        e->flags |= ENTITY_ACTIVE;
+        e->flags |= (ENTITY_ACTIVE | ENTITY_FLAG_ONCE_OFF_ATTACK);
         e->scale = make_float3(2, 2, 1);
         e->speed = 2;
         e->damage = 1;
@@ -336,7 +336,19 @@ Animation *getBestWalkAnimation(Entity *e) {
 }
 
 void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float dt, float16 fovMatrix) {
+        {
+        float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
+        
+        modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
+
+        pushMatrix(renderer, modelToViewT);
+
+        //NOTEL Draw the attack box
+        pushRect(renderer, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 0, 0, 1));
+    }
+
     updateAStarEntity(editorState, e, dt);
+    
     if(e->type == ENTITY_PLAYER) {
         Collider c = e->colliders[HIT_COLLIDER_INDEX];
         assert(c.flags & COLLIDER_ACTIVE);
@@ -345,35 +357,17 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
         if(c.collideEventsCount > 0) {
             for(int i = 0; i < c.collideEventsCount; ++i) {
                 const CollideEvent event = c.events[i];  
-                
-                if(event.type == COLLIDE_ENTER && event.entityType == ENTITY_ENEMY) {
+
+                if((event.type == COLLIDE_STAY || event.type == COLLIDE_ENTER) && event.entityType == ENTITY_ENEMY && event.damage > 0) {
                     //NOTE: Hit by enemy
                     e->health -= event.damage;
-                    printf("HEALTH damged %f\n", e->health);
-                }
-
-                if(event.type == COLLIDE_EXIT) {
-                    printf("EXITED\n");
                 }
             }
         }
     }
 
     if(e->type == ENTITY_ENEMY) {
-        //  if (e->colliders[ATTACK_COLLIDER_INDEX].flags & COLLIDER_ACTIVE)
-         {
-            Collider c = e->colliders[ATTACK_COLLIDER_INDEX];
-
-            float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
-            
-            modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
-
-            pushMatrix(renderer, modelToViewT);
-
-            //NOTEL Draw the attack box
-            pushRect(renderer, make_float3(c.offset.x, c.offset.y, 0), c.scale.xy, make_float4(1, 0, 0, 1));
-        }
-
+       
         Animation *animToAdd = &e->animations->idle;
         e->aStarController->waitTimer += dt;
         //NOTE: Update the enemy 
@@ -396,8 +390,7 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
 
                  float speed = 50*dt;
                 
-                // if(float2_magnitude(dir) < 1.0f) {
-                if(false) {
+                if(float2_magnitude(dir) < 1.0f) {
                     //NOTE: Attack now
                     speed = 15; //NOTE: No *dt because it's an impulse not a acceleration - i.e. just added this frame
                     e->aStarController->waitTimer = 0;
@@ -406,25 +399,7 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
                     
                     animToAdd = &e->animations->attack;
 
-                    float3 colliderOffset = make_float3(0, 0, 0);
-
-                    float offsetSize = 0.2f;
-                    float margin = 0.2f;
-                    if(e->velocity.x < -margin) {
-                        colliderOffset.x = -offsetSize;
-                    } else if(e->velocity.x > margin) {
-                        colliderOffset.x = offsetSize;
-                    } 
-                    if(e->velocity.y < -margin) {
-                        colliderOffset.y = -offsetSize;
-                    } else if(e->velocity.y > margin) {
-                        colliderOffset.y = offsetSize;
-                    } 
-
-                    e->colliders[ATTACK_COLLIDER_INDEX].offset = colliderOffset;
-
-                    //NOTE: Make active
-                    e->colliders[ATTACK_COLLIDER_INDEX].flags |= COLLIDER_ACTIVE;
+                    e->flags |= ENTITY_FLAG_ATTACKING;
                 }
 
                 updateEntityVeclocity(e, speed, dir);
@@ -434,6 +409,12 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
                 }
             } break;
             case(EASY_AI_ATTACK): {
+                //NOTE: Once in the attack loop remove the flag because we want to be attacking just once
+                //      This depends if the enemy is constantly attacking for the whole attack anaimation
+                if(e->flags & ENTITY_FLAG_ONCE_OFF_ATTACK) {
+                    e->flags &= ~(ENTITY_FLAG_ATTACKING);
+                }
+                
                 animToAdd = &e->animations->attack;
 
                 if(e->velocity.y > 0) {
@@ -443,7 +424,8 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
                 if(e->animationController.finishedAnimationLastUpdate && (e->animationController.lastAnimationOn == &e->animations->attack || e->animationController.lastAnimationOn == &e->animations->attackBack)) {
                     animToAdd = &e->animations->idle;
                     e->aStarController->aiMode = EASY_AI_IDLE;
-                    e->colliders[ATTACK_COLLIDER_INDEX].flags &= (~COLLIDER_ACTIVE);
+                    e->flags &= ~(ENTITY_FLAG_ATTACKING); //NOTE: Make sure not attacking anymore
+                    
                 }
 
             } break;

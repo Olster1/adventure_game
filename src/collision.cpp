@@ -19,16 +19,15 @@ void addCollisionEvent(Collider *a1, Entity *b) {
         } 
     }
 
+    CollideEvent *e = oldEvent;
     //NOTE: Add a new event
     if(!oldEvent && a1->collideEventsCount < arrayCount(a1->events)) {
-        CollideEvent *e = a1->events + a1->collideEventsCount++;
+        e = a1->events + a1->collideEventsCount++;
         
         e->type = type;
         e->entityId = b->id;
         e->entityHash = b->idHash;
         e->entityType = b->type;
-
-        e->damage = b->damage;
         e->hitThisFrame = true;
     } else if(oldEvent) {
         assert(oldEvent);
@@ -37,6 +36,15 @@ void addCollisionEvent(Collider *a1, Entity *b) {
             //NOTE: Don't override info that has been added this frame
             oldEvent->type = type;
             oldEvent->hitThisFrame = true;
+        }
+    }
+
+    //NOTE: Update the damage value based on entity state
+    if(e) {
+        if(b->flags & ENTITY_FLAG_ATTACKING) {
+            e->damage = b->damage;
+        } else {
+            e->damage = 0;
         }
     }
 }

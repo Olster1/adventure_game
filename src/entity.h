@@ -2,6 +2,8 @@ enum EntityFlags {
     ENTITY_ACTIVE = 1 << 0,
     FIRE_BALL_COMPONENT = 1 << 1,
     LIGHT_COMPONENT = 1 << 2,
+    ENTITY_FLAG_ATTACKING = 1 << 3,
+    ENTITY_FLAG_ONCE_OFF_ATTACK = 1 << 4,
 };
 
 #define MY_ENTITY_TYPE(FUNC) \
