@@ -772,6 +772,14 @@ float float3_magnitude(float3 v) {
 	return result;
 }
 
+float float2_magnitude(float2 v) {
+	float result = (v.x*v.x + v.y*v.y); 
+
+	result = sqrt(result);
+
+	return result;
+}
+
 
 float16 float16_scale(float16 a, float3 scale) {
 	a.E_[0][0] *= scale.x;

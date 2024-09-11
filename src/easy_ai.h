@@ -52,6 +52,7 @@ typedef struct {
 	EasyAi_Node *freeList;
 
 	EasyAi_Mode aiMode;
+	float waitTimer;
 	
 	float3 searchBouys[8]; 
 	int searchBouysCount;
@@ -66,6 +67,7 @@ static EasyAiController *easyAi_initController(Memory_Arena *allocationArena) {
 	result->freeList = 0;
 	result->allocationArena = allocationArena;
 	result->aiMode = EASY_AI_IDLE;
+	result->waitTimer = 0;
 
 	result->bouyIndexAt = 0;
 	result->searchBouysCount = 0;

@@ -2,6 +2,31 @@ void clearGameStatePerFrameValues(EditorState *state) {
 	state->lightCount = 0;
 }
 
+
+DefaultEntityAnimations loadEntityAnimations(EditorState *editorState, BackendRenderer *backendRenderer, char *folder, int sizePerWidth) {
+	DefaultEntityAnimations result = {};
+
+	char *formatStr = "../src/images/%s/%s.png";
+
+	#define DEFINE_loadImageForEntity(animPtr, name) loadImageStrip(animPtr, backendRenderer,  easy_createString_printf(&globalPerFrameArena, formatStr, folder, name), sizePerWidth);
+
+	DEFINE_loadImageForEntity(&result.idle, "idle");
+	DEFINE_loadImageForEntity(&result.runForward, "run_forward");
+	DEFINE_loadImageForEntity(&result.runBack, "run_back");
+	DEFINE_loadImageForEntity(&result.runSideward, "run_sideways");
+	DEFINE_loadImageForEntity(&result.runSidewardBack, "run_sideways_back");
+	DEFINE_loadImageForEntity(&result.attack, "attack");
+	DEFINE_loadImageForEntity(&result.hurt, "hurt");
+	DEFINE_loadImageForEntity(&result.suprised, "suprised");
+	DEFINE_loadImageForEntity(&result.die, "die");
+	DEFINE_loadImageForEntity(&result.attackBack, "attack_back");
+	
+
+	#undef DEFINE_loadImageForEntity
+
+	return result;
+}
+
 void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 		editorState->initialized = true;
 
@@ -43,6 +68,8 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 
 		editorState->cameraFollowPlayer = true;
 		editorState->zoomLevel = 1;
+
+		editorState->batAnimations = loadEntityAnimations(editorState, backendRenderer, "bat", 32);
 
 		//NOTE: Init all animations for game
 		easyAnimation_initAnimation(&editorState->fireballIdleAnimation, "fireball_idle");
@@ -95,6 +122,8 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 		editorState->gravityOn = false;
 
 		// Entity *e = addSkeletonEntity(editorState);
+
+		addEnemyEntity(editorState, &editorState->batAnimations);
 
 		// e->pos.x = -3;
 

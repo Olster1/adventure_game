@@ -4,12 +4,14 @@ void addCollisionEvent(Collider *a1, Entity *b) {
 
     CollideEvent *oldEvent = 0;
 
+    //NOTE: See if there is already an event for this entity
     for(int i = 0; i < a1->collideEventsCount; ++i) {
-        CollideEvent *oldEvent = &a1->events[a1->collideEventsCount];
+        oldEvent = &a1->events[i];
+
         if(oldEvent->entityHash == b->idHash && easyString_stringsMatch_nullTerminated(oldEvent->entityId, b->id)) {
             if(oldEvent->type == COLLIDE_EXIT) {
                 type = COLLIDE_ENTER;
-            } else {
+            } else if(!oldEvent->hitThisFrame) {
                 type = COLLIDE_STAY;
             }
             
@@ -22,9 +24,11 @@ void addCollisionEvent(Collider *a1, Entity *b) {
         CollideEvent *e = a1->events + a1->collideEventsCount++;
         
         e->type = type;
-        e->hitThisFrame = true;
         e->entityId = b->id;
         e->entityHash = b->idHash;
+        e->entityType = b->type;
+
+        e->damage = b->damage;
         e->hitThisFrame = true;
     } else if(oldEvent) {
         assert(oldEvent);
@@ -38,17 +42,18 @@ void addCollisionEvent(Collider *a1, Entity *b) {
 }
 
 void updateExitCollision(Collider *a1, Entity *b) {
+    //NOTE: Loop though all the collision events on this collider and see if there was one with this colliding entity. 
     for(int i = 0; i < a1->collideEventsCount; ++i) {
-        CollideEvent *oldEvent = &a1->events[a1->collideEventsCount];
+        CollideEvent *oldEvent = &a1->events[i];
         if(oldEvent->entityHash == b->idHash && easyString_stringsMatch_nullTerminated(oldEvent->entityId, b->id)) {
             if(oldEvent->type == COLLIDE_EXIT) {
-                //NOTE: Remove event
-                
+                //NOTE: Marked for removal by not setting hitThisFrame
+                int b = 0;
             } else {
+                //NOTE: Was ENTER or STAY collision type, so make it now exit
                 oldEvent->type = COLLIDE_EXIT;
                 oldEvent->hitThisFrame = true;
             }
-            
             break;
         } 
 
@@ -57,7 +62,8 @@ void updateExitCollision(Collider *a1, Entity *b) {
 
 void prepareCollisions(Collider *a1) {
     for(int i = 0; i < a1->collideEventsCount; ++i) {
-        CollideEvent *e = &a1->events[a1->collideEventsCount];
+        CollideEvent *e = &a1->events[i];
+        assert(e->entityHash);
         e->hitThisFrame = false;
     }
 }
@@ -65,7 +71,7 @@ void prepareCollisions(Collider *a1) {
 void clearStaleCollisions(Collider *a1) {
     for(int i = 0; i < a1->collideEventsCount; ) {
         int addend = 1;
-        CollideEvent *e = &a1->events[a1->collideEventsCount];
+        CollideEvent *e = &a1->events[i];
 
         if(!e->hitThisFrame) {
             //NOTE: Remove event
@@ -76,21 +82,19 @@ void clearStaleCollisions(Collider *a1) {
     }
 }
 
-void updateTriggerCollision(Entity *a, Entity *b, Collider *a1, Collider *b1) {
+void updateTriggerCollision(Entity *a, Entity *b, Collider *a1) {
     float3 aPos = getWorldPosition(a);
     float3 bPos = getWorldPosition(b);
 
     Rect2f aRect = make_rect2f_center_dim(plus_float3(aPos, a1->offset).xy, float3_hadamard(a1->scale, a->scale).xy);
-    Rect2f bRect = make_rect2f_center_dim(plus_float3(bPos, b1->offset).xy, float3_hadamard(b1->scale, b->scale).xy);
+    Rect2f bRect = make_rect2f_center_dim(bPos.xy, b->scale.xy);
 
     //NOTE: See if it hit anything
-    Rect2f minowskiPlus = rect2f_minowski_plus(aRect, bRect, plus_float3(b->pos, b1->offset).xy);
+    Rect2f minowskiPlus = rect2f_minowski_plus(aRect, bRect, b->pos.xy);
     if(in_rect2f_bounds(minowskiPlus, a->pos.xy)) {
         addCollisionEvent(a1, b);
-        addCollisionEvent(b1, a);
     } else {
         updateExitCollision(a1, b);
-        updateExitCollision(b1, a);
     }
 }
 
@@ -258,7 +262,7 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
 	}
 
 	//NOTE: Collision detection
-	for(int iterationIndex = 0; iterationIndex < 4; ++iterationIndex) {
+	for(int iterationIndex = 0; iterationIndex < 1; ++iterationIndex) {
 		for(int i = 0; i < editorState->entityCount; ++i) {
 
 			Entity *a = &editorState->entities[i];
@@ -293,36 +297,38 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
                 }
             }
 
-			// //NOTE: Process other entity collisions
-            // for(int j = 0; j  < editorState->entityCount; ++j) {
-            //     if(i == j) {
-            //         continue;
-            //     }
+			
 
-            //     Entity *b = &editorState->entities[j];
+            for(int colliderIndex = 0; colliderIndex < a->colliderCount; ++colliderIndex) {
+                Collider *colA = &a->colliders[colliderIndex];
+                    
+                //NOTE: Process other entity collisions
+                for(int j = 0; j < editorState->entityCount; ++j) {
+                    if(i == j) {
+                        continue;
+                    }
 
-            //     for(int colliderIndex = 0; colliderIndex < a->colliderCount; ++colliderIndex) {
-            //         for(int colliderIndex1 = 0; colliderIndex1 < b->colliderCount; ++colliderIndex1) {
-            //             Collider *colA = &a->colliders[colliderIndex];
-            //             Collider *colB = &b->colliders[colliderIndex1];
+                    Entity *b = &editorState->entities[j];
 
-            //             // if((colA->flags & COLLIDER_ACTIVE) && (colB->flags & COLLIDER_ACTIVE)) 
-            //             {
-            //                 //NOTE: See if trigger
-            //                 if((colA->flags & COLLIDER_TRIGGER) || (colB->flags & COLLIDER_TRIGGER)) {
-            //                     updateTriggerCollision(a, b, colA, colB);
-            //                 } else { 
-            //                     //TODO: continous collision
-            //                    updateCollisions(a, b, colA, colB, &shortestDistance, &shortestRayCastResult);
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
+                    assert(a->idHash != b->idHash);
+
+                    // if((colA->flags & COLLIDER_ACTIVE) && (colB->flags & COLLIDER_ACTIVE)) 
+                    if(b->flags & ENTITY_ACTIVE)
+                    {
+                        //NOTE: See if trigger
+                        if((colA->flags & COLLIDER_TRIGGER)) {
+                            updateTriggerCollision(a, b, colA);
+                            
+                        } else { 
+                            //TODO: continous collision
+                        //    updateCollisions(a, b, colA, colB, &shortestDistance, &shortestRayCastResult);
+                        }
+                    }
+                }
+            }
 
             //NOTE: Update position and velocity
             if(shortestRayCastResult.hit) {
-
                 if(shortestRayCastResult.colA) {
                     addCollisionEvent(shortestRayCastResult.colA, shortestRayCastResult.b);
                     addCollisionEvent(shortestRayCastResult.colB, shortestRayCastResult.a);

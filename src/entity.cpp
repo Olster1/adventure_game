@@ -77,14 +77,17 @@ Entity *addPlayerEntity(EditorState *state) {
 
         e->id = makeEntityId(state);
         e->idHash = get_crc32_for_string(e->id);
-        
+
         e->type = ENTITY_PLAYER;
+
+        e->health = 10;
 
         e->velocity = make_float3(0, 0, 0);
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(2, 2, 1);
         e->speed = 1.0f;
+        e->damage = 1;
 
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
         
@@ -93,6 +96,7 @@ Entity *addPlayerEntity(EditorState *state) {
 
         //NOTE: Hurt collider
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1.5f, 1.5f, 0), COLLIDER_ACTIVE | COLLIDER_TRIGGER);
+        assert(e->colliders[HIT_COLLIDER_INDEX].flags & COLLIDER_ACTIVE);
 
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->playerIdleAnimation, 0.08f);
@@ -101,34 +105,46 @@ Entity *addPlayerEntity(EditorState *state) {
     return e;
 } 
 
-Entity *addSkeletonEntity(EditorState *state) {
+Entity *addEnemyEntity(EditorState *state, DefaultEntityAnimations *animations) {
     Entity *e = 0;
     if(state->entityCount < arrayCount(state->entities)) {
         e = &state->entities[state->entityCount++];
 
+        memset(e, 0, sizeof(Entity));
+
         e->id = makeEntityId(state);
         e->idHash = get_crc32_for_string(e->id);
-        
+
         e->type = ENTITY_ENEMY;
+        e->health = 10;
+
+        e->animations = animations;
 
         e->velocity = make_float3(0, 0, 0);
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(2, 2, 1);
         e->speed = 2;
+        e->damage = 1;
+
+        assert(e->colliderCount == 0);
 
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_ACTIVE);
         
         //NOTE: Attack collider
-        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1, 1, 0), COLLIDER_TRIGGER);
+        assert(e->colliderCount == ATTACK_COLLIDER_INDEX);
+        e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(0.6f, 0.6f, 0), COLLIDER_TRIGGER);
+        assert(!(e->colliders[ATTACK_COLLIDER_INDEX].flags & COLLIDER_ACTIVE));
 
         //NOTE: Hurt collider
         e->colliders[e->colliderCount++] = make_collider(make_float3(0, 0, 0), make_float3(1.5f, 1.5f, 0), COLLIDER_ACTIVE | COLLIDER_TRIGGER);
 
         easyAnimation_initController(&e->animationController);
-		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->skeletonIdleAnimation, 0.08f);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->batAnimations.idle, 0.08f);
 
         e->aStarController = easyAi_initController(&globalPerEntityLoadArena);
+
+        e->animations = &state->batAnimations;
 		
     }
     return e;
@@ -204,7 +220,7 @@ static float3 roundToGridBoard(float3 in, float tileSize) {
     return result;
 }
 
-void updateEntity(EditorState *editorState, Entity *e, float dt) {
+void updateAStarEntity(EditorState *editorState, Entity *e, float dt) {
     float3 entP_inWorld_ = getWorldPosition(e);
 
     float3 playerInWorldP_ = getWorldPosition(editorState->player);
@@ -275,6 +291,177 @@ void updateEntity(EditorState *editorState, Entity *e, float dt) {
     }
 }
 
+void updateEntityVeclocity(Entity *e, float speed, float2 dir) {
+    dir = normalize_float2(dir);
+	dir = scale_float2(speed, dir); 
+
+	e->velocity.xy = plus_float2(e->velocity.xy, dir);
+}
+
+Animation *getBestWalkAnimation(Entity *e) {
+    Animation *animation = &e->animations->idle;
+    float margin = 0.3f;
+    e->spriteFlipped = false;
+
+    float2 impluse = e->velocity.xy;
+
+    if((impluse.x > margin  && impluse.y < -margin) || (impluse.x < -margin && impluse.y > margin) || ((impluse.x > margin && impluse.y < margin && impluse.y > -margin))) { //NOTE: The extra check is becuase the front & back sideways animation aren't matching - should flip one in the aesprite
+        e->spriteFlipped = true;
+    }
+
+    if(impluse.y > margin) {
+        if(impluse.x < -margin || impluse.x > margin) {
+            animation = &e->animations->runSidewardBack;	
+        } else {
+            animation = &e->animations->runBack;
+        }
+    } else if(impluse.y < -margin) {
+        if(impluse.x < -margin || impluse.x > margin) {
+            animation = &e->animations->runSideward;	
+
+            //TODO: Remove this when the animations are coorect
+            if((impluse.x > margin  && impluse.y < -margin) || (impluse.x < -margin && impluse.y > margin) || ((impluse.x > margin && impluse.y < margin && impluse.y > -margin))) { //NOTE: The extra check is becuase the front & back sideways animation aren't matching - should flip one in the aesprite
+                e->spriteFlipped = false;
+            } else {
+                e->spriteFlipped = true;
+            }
+        } else {
+            animation = &e->animations->runForward;
+        }
+    } else if(impluse.x < -margin || impluse.x > margin) {
+        animation = &e->animations->runSideward;
+    }
+
+    return animation;
+}
+
+void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float dt, float16 fovMatrix) {
+    updateAStarEntity(editorState, e, dt);
+    if(e->type == ENTITY_PLAYER) {
+        Collider c = e->colliders[HIT_COLLIDER_INDEX];
+        assert(c.flags & COLLIDER_ACTIVE);
+        assert(e->colliderCount > 1);
+
+        if(c.collideEventsCount > 0) {
+            for(int i = 0; i < c.collideEventsCount; ++i) {
+                const CollideEvent event = c.events[i];  
+                
+                if(event.type == COLLIDE_ENTER && event.entityType == ENTITY_ENEMY) {
+                    //NOTE: Hit by enemy
+                    e->health -= event.damage;
+                    printf("HEALTH damged %f\n", e->health);
+                }
+
+                if(event.type == COLLIDE_EXIT) {
+                    printf("EXITED\n");
+                }
+            }
+        }
+    }
+
+    if(e->type == ENTITY_ENEMY) {
+        //  if (e->colliders[ATTACK_COLLIDER_INDEX].flags & COLLIDER_ACTIVE)
+         {
+            Collider c = e->colliders[ATTACK_COLLIDER_INDEX];
+
+            float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
+            
+            modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
+
+            pushMatrix(renderer, modelToViewT);
+
+            //NOTEL Draw the attack box
+            pushRect(renderer, make_float3(c.offset.x, c.offset.y, 0), c.scale.xy, make_float4(1, 0, 0, 1));
+        }
+
+        Animation *animToAdd = &e->animations->idle;
+        e->aStarController->waitTimer += dt;
+        //NOTE: Update the enemy 
+        assert(e->aStarController);
+        switch(e->aStarController->aiMode) {
+            case(EASY_AI_IDLE): {
+                //NOTE: Do nothing
+                if(e->aStarController->waitTimer > 0.5f) {
+                    e->aStarController->waitTimer = 0;
+                    e->aStarController->aiMode = EASY_AI_MOVE_TOWARDS;
+                }
+            } break;
+            case(EASY_AI_MOVE_TOWARDS): {
+                if(e->aStarController->waitTimer > 10) {
+                    e->aStarController->waitTimer = 0;
+                    e->aStarController->aiMode = EASY_AI_IDLE;
+                }
+
+                 float2 dir = minus_float2(editorState->player->pos.xy, e->pos.xy);
+
+                 float speed = 50*dt;
+                
+                // if(float2_magnitude(dir) < 1.0f) {
+                if(false) {
+                    //NOTE: Attack now
+                    speed = 15; //NOTE: No *dt because it's an impulse not a acceleration - i.e. just added this frame
+                    e->aStarController->waitTimer = 0;
+
+                    e->aStarController->aiMode = EASY_AI_ATTACK;
+                    
+                    animToAdd = &e->animations->attack;
+
+                    float3 colliderOffset = make_float3(0, 0, 0);
+
+                    float offsetSize = 0.2f;
+                    float margin = 0.2f;
+                    if(e->velocity.x < -margin) {
+                        colliderOffset.x = -offsetSize;
+                    } else if(e->velocity.x > margin) {
+                        colliderOffset.x = offsetSize;
+                    } 
+                    if(e->velocity.y < -margin) {
+                        colliderOffset.y = -offsetSize;
+                    } else if(e->velocity.y > margin) {
+                        colliderOffset.y = offsetSize;
+                    } 
+
+                    e->colliders[ATTACK_COLLIDER_INDEX].offset = colliderOffset;
+
+                    //NOTE: Make active
+                    e->colliders[ATTACK_COLLIDER_INDEX].flags |= COLLIDER_ACTIVE;
+                }
+
+                updateEntityVeclocity(e, speed, dir);
+
+                if(e->aStarController->aiMode != EASY_AI_ATTACK) {
+                    animToAdd = getBestWalkAnimation(e);
+                }
+            } break;
+            case(EASY_AI_ATTACK): {
+                animToAdd = &e->animations->attack;
+
+                if(e->velocity.y > 0) {
+                    animToAdd = &e->animations->attackBack;
+                }
+
+                if(e->animationController.finishedAnimationLastUpdate && (e->animationController.lastAnimationOn == &e->animations->attack || e->animationController.lastAnimationOn == &e->animations->attackBack)) {
+                    animToAdd = &e->animations->idle;
+                    e->aStarController->aiMode = EASY_AI_IDLE;
+                    e->colliders[ATTACK_COLLIDER_INDEX].flags &= (~COLLIDER_ACTIVE);
+                }
+
+            } break;
+            case(EASY_AI_COOL_DOWN): {
+
+            } break;
+            default: {
+                assert(false);
+            } break;
+        } 
+
+        if(animToAdd && e->animationController.lastAnimationOn != animToAdd) {
+            easyAnimation_emptyAnimationContoller(&e->animationController, &editorState->animationItemFreeListPtr);
+		    easyAnimation_addAnimationToController(&e->animationController, &editorState->animationItemFreeListPtr, animToAdd, 0.08f);	
+        }
+    }
+}
+
 void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {
     float16 modelToViewT = getModelToViewTransform(e, editorState->cameraPos);
 
@@ -295,7 +482,7 @@ void renderEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
 
         if(e->animationController.lastAnimationOn == &editorState->playerAttackAnimation) {
             //NOTE: Turn off attack collider when attack finishes
-            e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~ENTITY_ACTIVE; 
+            // e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~COLLIDER_ACTIVE; 
 	    }
     }
 

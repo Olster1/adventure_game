@@ -8,7 +8,6 @@ void updatePlayerMoveKey(EditorState *editorState, PlatformKeyType type, float2 
 }
 
 void updatePlayerInput(EditorState *editorState) {
-
 	if(!editorState->cameraFollowPlayer) {
 		return;
 	}
@@ -98,7 +97,7 @@ void updatePlayerInput(EditorState *editorState) {
 		} 
 
 		//NOTE: Make active
-		editorState->player->colliders[ATTACK_COLLIDER_INDEX].flags |= ENTITY_ACTIVE;
+		editorState->player->colliders[ATTACK_COLLIDER_INDEX].flags |= COLLIDER_ACTIVE;
 
 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerAttackAnimation, 0.08f);	

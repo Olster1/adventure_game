@@ -70,6 +70,8 @@ typedef struct {
 	//NOTE: Resizeable array for the coins - if id in list, means user got it. 
 	int *coinsGot;
 
+	DefaultEntityAnimations batAnimations;
+
 	Animation playerIdleAnimation;
 	Animation playerRunForwardAnimation;
 	Animation playerRunbackwardAnimation;

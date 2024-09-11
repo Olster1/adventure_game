@@ -19,9 +19,9 @@ typedef enum {
 static char *MyEntity_TypeStrings[] = { MY_ENTITY_TYPE(STRING) };
 
 enum ColliderIndex {
-    PLATFORM_COLLIDER_INDEX,
-    ATTACK_COLLIDER_INDEX,
-    HIT_COLLIDER_INDEX,
+    PLATFORM_COLLIDER_INDEX = 0,
+    ATTACK_COLLIDER_INDEX = 1,
+    HIT_COLLIDER_INDEX = 2,
     ENTITY_COLLIDER_INDEX_COUNT
 };
 
@@ -40,9 +40,14 @@ struct CollideEvent {
     char *entityId;
     int entityHash;
 
-    bool hitThisFrame;
-
     CollideEventType type;
+
+    //NOTE: Cached values from the other entity we can use without having to look up the entity in the updateEntities loop
+    EntityType entityType;
+    float damage;
+
+    //@private
+    bool hitThisFrame; //NOTE: Only used by the internal collision code 
 };
 
 struct Collider {
@@ -67,6 +72,20 @@ Collider make_collider(float3 offset, float3 scale, u32 flags) {
     return c;
 }
 
+struct DefaultEntityAnimations {
+    Animation idle;
+	Animation runForward;
+	Animation runBack;
+	Animation runSideward;
+    Animation runSidewardBack;
+	
+	Animation attack;
+    Animation attackBack;
+	Animation hurt;
+    Animation suprised;
+	Animation die;
+};
+
 typedef struct Entity Entity; 
 
 struct Entity {
@@ -82,6 +101,9 @@ struct Entity {
     //NOTES: Could be flags
     bool spriteFlipped;
     bool grounded; 
+
+    float damage; //NOTE: How much damage enemy can do
+    float health;
 
     float3 pos;
     float deltaTLeft;
@@ -103,6 +125,8 @@ struct Entity {
     ///////////////////////
     //NOTE: For fireball
     float respawnTimer;
+
+    DefaultEntityAnimations *animations; //NOTE: Points to animations saved in the gameState
 
     EasyAnimation_Controller animationController;
     EasyAiController *aStarController;

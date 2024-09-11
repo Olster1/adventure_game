@@ -29,7 +29,7 @@ void updateAndRenderEntities(EditorState *editorState, Renderer *renderer, float
 			#if DEBUG_BUILD
 			updateEntitySelection(editorState, e, windowWidth, windowHeight, renderer, fovMatrix);
 			#endif
-			updateEntity(editorState, e, dt);
+			updateEntity(editorState, renderer, e, dt, fovMatrix);
 			renderEntity(editorState, renderer, e, fovMatrix, dt);
 		}
 	}
