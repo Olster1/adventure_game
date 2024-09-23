@@ -84,7 +84,7 @@ Entity *addPlayerEntity(EditorState *state) {
 
         e->velocity = make_float3(0, 0, 0);
         e->pos = make_float3(0, 0, 10);
-        e->flags |= ENTITY_ACTIVE;
+        e->flags |= ENTITY_ACTIVE | ENTITY_FLAG_ONCE_OFF_ATTACK;
         e->scale = make_float3(2, 2, 1);
         e->speed = 1.0f;
         e->damage = 1;
@@ -116,7 +116,7 @@ Entity *addEnemyEntity(EditorState *state, DefaultEntityAnimations *animations) 
         e->idHash = get_crc32_for_string(e->id);
 
         e->type = ENTITY_ENEMY;
-        e->health = 10;
+        e->health = 1;
 
         e->animations = animations;
 
@@ -349,6 +349,8 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
 
     updateAStarEntity(editorState, e, dt);
     
+    float hitForce = 30;
+
     if(e->type == ENTITY_PLAYER) {
         Collider c = e->colliders[HIT_COLLIDER_INDEX];
         assert(c.flags & COLLIDER_ACTIVE);
@@ -361,14 +363,43 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
                 if((event.type == COLLIDE_STAY || event.type == COLLIDE_ENTER) && event.entityType == ENTITY_ENEMY && event.damage > 0) {
                     //NOTE: Hit by enemy
                     e->health -= event.damage;
+                    
+                    e->velocity.xy = plus_float2(e->velocity.xy, scale_float2(hitForce, event.hitDir));
                 }
             }
         }
     }
 
     if(e->type == ENTITY_ENEMY) {
-       
+
+        Collider c = e->colliders[HIT_COLLIDER_INDEX];
+        assert(c.flags & COLLIDER_ACTIVE);
+        assert(e->colliderCount > 1);
+
         Animation *animToAdd = &e->animations->idle;
+
+        if(c.collideEventsCount > 0) {
+            for(int i = 0; i < c.collideEventsCount; ++i) {
+                const CollideEvent event = c.events[i];  
+
+                if((event.type == COLLIDE_STAY || event.type == COLLIDE_ENTER) && event.entityType == ENTITY_PLAYER && event.damage > 0) {
+                    //NOTE: Hit by enemy
+                    e->health -= event.damage;
+                    e->velocity.xy = plus_float2(e->velocity.xy, scale_float2(hitForce, event.hitDir));
+                    //NOTE: Play the hit animation
+                    animToAdd = &e->animations->hurt;
+                    e->aStarController->aiMode = EASY_AI_HURT;
+                    e->aStarController->waitTimer = 0;
+
+                    if(e->health <= 0) {
+                        animToAdd = &e->animations->die;
+                        e->aStarController->aiMode = EASY_AI_DIE;
+                    }
+                }
+            }
+        }
+       
+        
         e->aStarController->waitTimer += dt;
         //NOTE: Update the enemy 
         assert(e->aStarController);
@@ -431,6 +462,17 @@ void updateEntity(EditorState *editorState, Renderer *renderer, Entity *e, float
             } break;
             case(EASY_AI_COOL_DOWN): {
 
+            } break;
+            case(EASY_AI_HURT): {
+                animToAdd = &e->animations->hurt;
+                //NOTE: Do nothing
+                if(e->aStarController->waitTimer > 1.0f) {
+                    e->aStarController->waitTimer = 0;
+                    e->aStarController->aiMode = EASY_AI_MOVE_TOWARDS;
+                }
+            } break;
+            case(EASY_AI_DIE): {
+                animToAdd = &e->animations->die;
             } break;
             default: {
                 assert(false);

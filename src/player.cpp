@@ -89,12 +89,14 @@ void updatePlayerInput(EditorState *editorState) {
 	if(global_platformInput.keyStates[PLATFORM_KEY_X].pressedCount > 0 && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
 		//NOTE: SpriteFlipped = false
 		editorState->player->velocity.x = editorState->player->speed;
-		editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0.5f, 0, 0);
+		editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0, 0, 0);
+		editorState->player->flags |= ENTITY_FLAG_ATTACKING;
 
 		if(editorState->player->spriteFlipped) {
 			editorState->player->velocity.x = -editorState->player->speed;
-			editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(-0.5f, 0, 0);
+			editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0, 0, 0);
 		} 
+		
 
 		//NOTE: Make active
 		editorState->player->colliders[ATTACK_COLLIDER_INDEX].flags |= COLLIDER_ACTIVE;
@@ -103,5 +105,7 @@ void updatePlayerInput(EditorState *editorState) {
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerAttackAnimation, 0.08f);	
 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
 
-	} 
+	} else if(editorState->player->flags & ENTITY_FLAG_ONCE_OFF_ATTACK) {
+        editorState->player->flags &= (~ENTITY_FLAG_ATTACKING);
+	}
 }

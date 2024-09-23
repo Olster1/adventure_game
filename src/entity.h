@@ -47,6 +47,7 @@ struct CollideEvent {
     //NOTE: Cached values from the other entity we can use without having to look up the entity in the updateEntities loop
     EntityType entityType;
     float damage;
+    float2 hitDir;
 
     //@private
     bool hitThisFrame; //NOTE: Only used by the internal collision code 

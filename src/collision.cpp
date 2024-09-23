@@ -1,5 +1,5 @@
 
-void addCollisionEvent(Collider *a1, Entity *b) {
+void addCollisionEvent(Collider *a1, Entity *b, float2 hitDir) {
     CollideEventType type = COLLIDE_ENTER;
 
     CollideEvent *oldEvent = 0;
@@ -41,6 +41,7 @@ void addCollisionEvent(Collider *a1, Entity *b) {
 
     //NOTE: Update the damage value based on entity state
     if(e) {
+        e->hitDir = hitDir;
         if(b->flags & ENTITY_FLAG_ATTACKING) {
             e->damage = b->damage;
         } else {
@@ -97,10 +98,12 @@ void updateTriggerCollision(Entity *a, Entity *b, Collider *a1) {
     Rect2f aRect = make_rect2f_center_dim(plus_float3(aPos, a1->offset).xy, float3_hadamard(a1->scale, a->scale).xy);
     Rect2f bRect = make_rect2f_center_dim(bPos.xy, b->scale.xy);
 
+    float2 dir = minus_float2(rect2f_getCenter(aRect), rect2f_getCenter(bRect));
+
     //NOTE: See if it hit anything
     Rect2f minowskiPlus = rect2f_minowski_plus(aRect, bRect, b->pos.xy);
     if(in_rect2f_bounds(minowskiPlus, a->pos.xy)) {
-        addCollisionEvent(a1, b);
+        addCollisionEvent(a1, b, dir);
     } else {
         updateExitCollision(a1, b);
     }
@@ -338,8 +341,8 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
             //NOTE: Update position and velocity
             if(shortestRayCastResult.hit) {
                 if(shortestRayCastResult.colA) {
-                    addCollisionEvent(shortestRayCastResult.colA, shortestRayCastResult.b);
-                    addCollisionEvent(shortestRayCastResult.colB, shortestRayCastResult.a);
+                    addCollisionEvent(shortestRayCastResult.colA, shortestRayCastResult.b, make_float2(0, 0));
+                    // addCollisionEvent(shortestRayCastResult.colB, shortestRayCastResult.a);
                 }
 
                 float2 moveVector = scale_float2(shortestRayCastResult.distance, a->deltaPos.xy);

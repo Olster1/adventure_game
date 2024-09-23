@@ -308,6 +308,11 @@ float3 rect3f_getCenter(Rect3f r) {
 	return result;
 }
 
+float2 rect2f_getCenter(Rect2f r) {
+	float2 result = make_float2(lerp(r.minX, r.maxX, make_lerpTValue(0.5f)), lerp(r.minY, r.maxY, make_lerpTValue(0.5f)));
+	return result;
+}
+
 static Rect3f make_rect3f(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
 	Rect3f result = {};
 

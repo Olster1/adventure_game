@@ -33,6 +33,16 @@ float min(float a, float b) {
     return result;
 }
 
+
+size_t MathMax_sizet(size_t a, size_t b) {
+	if(a < b) {
+		return b;
+	} else {
+		return a;
+	}
+
+}
+
 #include <stdint.h>
 
 typedef int64_t s64;

@@ -26,6 +26,8 @@ typedef enum {
 	EASY_AI_MOVE_TOWARDS,
 	EASY_AI_ATTACK,
 	EASY_AI_COOL_DOWN,
+	EASY_AI_HURT,
+	EASY_AI_DIE,
 } EasyAi_Mode;
 
 typedef struct EasyAi_Node {
