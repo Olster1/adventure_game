@@ -116,7 +116,7 @@ Entity *addEnemyEntity(EditorState *state, DefaultEntityAnimations *animations) 
         e->idHash = get_crc32_for_string(e->id);
 
         e->type = ENTITY_ENEMY;
-        e->health = 1;
+        e->health = 10;
 
         e->animations = animations;
 
