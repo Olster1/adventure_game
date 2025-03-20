@@ -3,7 +3,7 @@ void updateCamera(EditorState *editorState, float dt) {
 
 	if(editorState->shakeTimer >= 0) {
 
-		float offset = perlin1d(editorState->shakeTimer, 40, 3)*(1.0f - editorState->shakeTimer);
+		float offset = SimplexNoise_fractal_1d(40, editorState->shakeTimer, 3)*(1.0f - editorState->shakeTimer);
 		//NOTE: Update the camera position offset
 		cameraOffset.x = offset;
 		cameraOffset.y = offset;

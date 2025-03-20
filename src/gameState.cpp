@@ -40,7 +40,11 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 
 		editorState->fontScale = 0.6f;
 
+		editorState->terrain = Terrain();
+
 		editorState->draw_debug_memory_stats = false;
+
+		initDialogTrees(&editorState->dialogs);
 
 		editorState->shakeTimer = -1;//NOTE: Turn the timer off
 
@@ -63,6 +67,10 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/background_layer_1.png");//backgroundCastles.png");
 
 		editorState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/coin.png");
+
+		editorState->stoneTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/stone.png");
+		editorState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
+		editorState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
 
 		editorState->gameMode = PLAY_MODE;
 

@@ -50,6 +50,9 @@ typedef struct {
 	float planeSizeY;
 
 	Texture playerTexture;
+	Texture stoneTexture;
+	Texture grassTexture;
+	Texture dirtTexture;
 
 	Texture pipeTexture;
 
@@ -83,6 +86,8 @@ typedef struct {
 	Animation playerJumpAnimation;
 	Animation playerFallingAnimation;
 
+	GameDialogs dialogs;
+
 	Animation playerbackwardSidewardRun;
 	Animation playerforwardSidewardRun;
 
@@ -98,6 +103,8 @@ typedef struct {
 	Animation fireballIdleAnimation;
 
 	EasyAnimation_ListItem *animationItemFreeListPtr;
+
+	Terrain terrain;
 
 	bool gravityOn;
 

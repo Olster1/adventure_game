@@ -177,29 +177,44 @@ Entity *addFireballEnemy(EditorState *state) {
 
 void renderTileMap(EditorState *editorState, Renderer *renderer) {
     //NOTE: Draw the tile map
-	for(int i = 0; i < editorState->tileCount; ++i) {
-		MapTile t = editorState->tiles[i];
+    int renderDistance = 1;
 
-		Texture *sprite = 0;
+    float2 cameraBlockP = getChunkPosForWorldP(editorState->cameraPos.xy);
+    
+	for(int y_ = -renderDistance; y_ <= renderDistance; ++y_) {
+        for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
 
-		//NOTE: Get the right texture
-		switch(t.type) {
-			case TILE_SET_SWAMP: {
-				TileSet *set = &editorState->swampTileSet;
+            Chunk *c = editorState->terrain.getChunk(x_ + cameraBlockP.x, y_ + cameraBlockP.y);
+            if(c) {
+                for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
+                    for(int tilex = 0; tilex <= CHUNK_DIM; ++tilex) {
+                        Tile *tile = c->getTile(tilex, tiley);
 
-				int indexIntoArray = t.xId + (set->countX*t.yId);
-				assert(indexIntoArray < set->count);
-                assert(indexIntoArray >= 0);
-				sprite = set->tiles[indexIntoArray];
+                        if(tile) {
+                            Texture *sprite = 0;
 
-			} break;
-		}
+                            if(tile->type == tileTypeDirt) {
+                                sprite = &editorState->dirtTexture;
+                            } else if(tile->type == tileTypeGrass) {
+                                sprite = &editorState->grassTexture;
+                            } else if(tile->type == tileTypeStone) {
+                                sprite = &editorState->stoneTexture;
+                            }
 
-		float pX = (t.x + 0.5f) - editorState->cameraPos.x;
-		float pY = (t.y + 0.5f)  - editorState->cameraPos.y;
+                            if(sprite) {
+                                float2 p = getTileWorldP(c, tilex, tiley);
 
-		pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
-	}
+                                float pX = (p.x + 0.5f) - editorState->cameraPos.x;
+                                float pY = (p.y + 0.5f)  - editorState->cameraPos.y;
+
+                                pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 
@@ -531,7 +546,7 @@ void pushAllEntityLights(EditorState *editorState, float dt) {
 					e->perlinNoiseLight = 0.0f;
 				}
 
-				float value = perlin1d(e->perlinNoiseLight, 40, 3);
+				float value = SimplexNoise_fractal_1d(40, e->perlinNoiseLight, 3);
 
 				//NOTE: Push light
 				pushGameLight(editorState, worldPos, make_float4(1, 0.5f, 0, 1), value);
