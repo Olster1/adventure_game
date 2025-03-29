@@ -894,7 +894,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
         global_platform.permanent_storage = platform_alloc_memory_pages(global_platform.permanent_storage_size);
         
 
-        global_long_term_arena = initMemoryArena_withMemory(((u8 *)global_platform.permanent_storage) + sizeof(EditorState), global_platform.permanent_storage_size - sizeof(EditorState));
+        global_long_term_arena = initMemoryArena_withMemory(((u8 *)global_platform.permanent_storage) + sizeof(GameState), global_platform.permanent_storage_size - sizeof(GameState));
 
         globalPerFrameArena = initMemoryArena(Kilobytes(100));
         global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
@@ -927,7 +927,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
 
         hwnd = CreateWindowExW(WS_EX_OVERLAPPEDWINDOW,
                                 winClass.lpszClassName,
-                                L"Adventure Game",
+                                L"Cozy Shop Simulator",
                                 WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                 window_xAt, window_yAt,
                                 initialWidth, 
@@ -1085,7 +1085,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
         RECT winRect;
         GetClientRect(hwnd, &winRect);
 
-        EditorState *editorState = updateEditor(backendRenderer, dt, (float)(winRect.right - winRect.left), (float)(winRect.bottom - winRect.top), resized_window && !first_frame, save_file_location_utf8, settings_to_save);
+        GameState *gameState = updateEditor(backendRenderer, dt, (float)(winRect.right - winRect.left), (float)(winRect.bottom - winRect.top), resized_window && !first_frame, save_file_location_utf8, settings_to_save);
 
 
         // //NOTE: Process our command buffer
@@ -1135,7 +1135,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
 
 
         
-        backendRender_processCommandBuffer(&editorState->renderer, backendRenderer);
+        backendRender_processCommandBuffer(&gameState->renderer, backendRenderer);
 
         backendRender_presentFrame(backendRenderer);
         

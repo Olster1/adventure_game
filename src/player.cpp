@@ -1,14 +1,14 @@
 #define DEFAULT_PLAYER_ANIMATION_SPEED 0.1
 
-void updatePlayerMoveKey(EditorState *editorState, PlatformKeyType type, float2 moveVector, float2 *impluse, bool *playerMoved) {
-		if(global_platformInput.keyStates[type].isDown && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
+void updatePlayerMoveKey(GameState *gameState, PlatformKeyType type, float2 moveVector, float2 *impluse, bool *playerMoved) {
+		if(global_platformInput.keyStates[type].isDown && gameState->player->animationController.lastAnimationOn != &gameState->playerAttackAnimation) {
 		*impluse = plus_float2(moveVector, *impluse);
 		*playerMoved = true;
 	}
 }
 
-void updatePlayerInput(EditorState *editorState) {
-	if(!editorState->cameraFollowPlayer) {
+void updatePlayerInput(GameState *gameState) {
+	if(!gameState->cameraFollowPlayer) {
 		return;
 	}
     
@@ -17,95 +17,54 @@ void updatePlayerInput(EditorState *editorState) {
 	float2 impluse = make_float2(0, 0);
 
 	//NOTE: Move up
-	updatePlayerMoveKey(editorState, PLATFORM_KEY_UP, make_float2(0, 1), &impluse, &playerMoved);
-	updatePlayerMoveKey(editorState, PLATFORM_KEY_DOWN, make_float2(0, -1), &impluse, &playerMoved);
-	updatePlayerMoveKey(editorState, PLATFORM_KEY_LEFT, make_float2(-1, 0), &impluse, &playerMoved);
-	updatePlayerMoveKey(editorState, PLATFORM_KEY_RIGHT, make_float2(1, 0), &impluse, &playerMoved);
+	updatePlayerMoveKey(gameState, PLATFORM_KEY_UP, make_float2(0, 1), &impluse, &playerMoved);
+	updatePlayerMoveKey(gameState, PLATFORM_KEY_DOWN, make_float2(0, -1), &impluse, &playerMoved);
+	updatePlayerMoveKey(gameState, PLATFORM_KEY_LEFT, make_float2(-1, 0), &impluse, &playerMoved);
+	updatePlayerMoveKey(gameState, PLATFORM_KEY_RIGHT, make_float2(1, 0), &impluse, &playerMoved);
 
 	//NOTE: Update the walking animation 
 	if(playerMoved) {
 		Animation *animation = 0;
 		float margin = 0.1f;
-		editorState->player->spriteFlipped = false;
+		gameState->player->spriteFlipped = false;
 
 		if((impluse.x > margin  && impluse.y < -margin) || (impluse.x < -margin && impluse.y > margin) || ((impluse.x > margin && impluse.y < margin && impluse.y > -margin))) { //NOTE: The extra check is becuase the front & back sideways animation aren't matching - should flip one in the aesprite
-			editorState->player->spriteFlipped = true;
+			gameState->player->spriteFlipped = true;
 		}
 
 		if(impluse.y > margin) {
 			if(impluse.x < -margin || impluse.x > margin) {
-				animation = &editorState->playerbackwardSidewardRun;	
+				animation = &gameState->playerbackwardSidewardRun;	
 			} else {
-				animation = &editorState->playerRunbackwardAnimation;
+				animation = &gameState->playerRunbackwardAnimation;
 			}
 		} else if(impluse.y < -margin) {
 			if(impluse.x < -margin || impluse.x > margin) {
-				animation = &editorState->playerforwardSidewardRun;	
+				animation = &gameState->playerforwardSidewardRun;	
 			} else {
-				animation = &editorState->playerRunForwardAnimation;
+				animation = &gameState->playerRunForwardAnimation;
 			}
 		} else {
-			animation = &editorState->playerRunsidewardAnimation;
+			animation = &gameState->playerRunsidewardAnimation;
 		}
 
 		//NOTE: Push the Run Animation
-		if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != animation)  {
-			easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-			easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, animation, DEFAULT_PLAYER_ANIMATION_SPEED);	
+		if(gameState->player->animationController.lastAnimationOn != &gameState->playerJumpAnimation && gameState->player->animationController.lastAnimationOn != animation)  {
+			easyAnimation_emptyAnimationContoller(&gameState->player->animationController, &gameState->animationItemFreeListPtr);
+			easyAnimation_addAnimationToController(&gameState->player->animationController, &gameState->animationItemFreeListPtr, animation, DEFAULT_PLAYER_ANIMATION_SPEED);	
 		}
 	}
 
 	impluse = normalize_float2(impluse);
-	impluse = scale_float2(editorState->player->speed, impluse); 
+	impluse = scale_float2(gameState->player->speed, impluse); 
 
-	editorState->player->velocity.xy = plus_float2(editorState->player->velocity.xy, impluse);
-	
+	gameState->player->velocity.xy = plus_float2(gameState->player->velocity.xy, impluse);
 
 	//NOTE: IDLE ANIMATION
-	if(!playerMoved && editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerIdleAnimation && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation)  {
-		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
+	if(!playerMoved && gameState->player->animationController.lastAnimationOn != &gameState->playerJumpAnimation && gameState->player->animationController.lastAnimationOn != &gameState->playerIdleAnimation && gameState->player->animationController.lastAnimationOn != &gameState->playerAttackAnimation)  {
+		easyAnimation_emptyAnimationContoller(&gameState->player->animationController, &gameState->animationItemFreeListPtr);
+		easyAnimation_addAnimationToController(&gameState->player->animationController, &gameState->animationItemFreeListPtr, &gameState->playerIdleAnimation, 0.08f);	
 	}
 	
-	// //NOTE: JUMP ANIMATION
-	// if(global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0 && editorState->player->grounded) {
-	// 	editorState->player->velocity.y = 10.0f;
-	// 	easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-	// 	easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerJumpAnimation, 0.08f);	
-	// 	easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
-	// } else {
-	// 	if(editorState->player->animationController.lastAnimationOn == &editorState->playerJumpAnimation && editorState->player->grounded)  {
-	// 		//NOTE: LANDED ANIMATION
-	// 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-	// 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
-	// 	} else if(editorState->player->animationController.lastAnimationOn != &editorState->playerJumpAnimation && !editorState->player->grounded && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-	// 		//NOTE: FALLING ANIMATION
-	// 		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-	// 		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerFallingAnimation, 0.08f);	
-	// 	}
-	// }
-
-	//NOTE: Attack 
-	if(global_platformInput.keyStates[PLATFORM_KEY_X].pressedCount > 0 && editorState->player->animationController.lastAnimationOn != &editorState->playerAttackAnimation) {
-		//NOTE: SpriteFlipped = false
-		editorState->player->velocity.x = editorState->player->speed;
-		editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0, 0, 0);
-		editorState->player->flags |= ENTITY_FLAG_ATTACKING;
-
-		if(editorState->player->spriteFlipped) {
-			editorState->player->velocity.x = -editorState->player->speed;
-			editorState->player->colliders[ATTACK_COLLIDER_INDEX].offset = make_float3(0, 0, 0);
-		} 
-		
-
-		//NOTE: Make active
-		editorState->player->colliders[ATTACK_COLLIDER_INDEX].flags |= COLLIDER_ACTIVE;
-
-		easyAnimation_emptyAnimationContoller(&editorState->player->animationController, &editorState->animationItemFreeListPtr);
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerAttackAnimation, 0.08f);	
-		easyAnimation_addAnimationToController(&editorState->player->animationController, &editorState->animationItemFreeListPtr, &editorState->playerIdleAnimation, 0.08f);	
-
-	} else if(editorState->player->flags & ENTITY_FLAG_ONCE_OFF_ATTACK) {
-        editorState->player->flags &= (~ENTITY_FLAG_ATTACKING);
-	}
+	
 }

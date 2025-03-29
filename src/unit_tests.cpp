@@ -1,4 +1,4 @@
-void DEBUG_runUnitTests(EditorState *state) {
+void DEBUG_runUnitTests(GameState *state) {
     EditorGui *gui = &state->editorGuiState;
 
     //NOTE: Make sure array is power of two

@@ -1,5 +1,5 @@
 
-MapTile getDefaultMapTile(EditorState *state, TileSetType type, int x, int y, int xId, int yId, bool collidable) {
+MapTile getDefaultMapTile(GameState *state, TileSetType type, int x, int y, int xId, int yId, bool collidable) {
 	MapTile tile = {};
 	tile.x = x;
 	tile.y = y;
@@ -13,12 +13,12 @@ MapTile getDefaultMapTile(EditorState *state, TileSetType type, int x, int y, in
 	return tile;
 }
 
-MapTileFindResult findMapTile(EditorState *editorState, MapTile tile) {
+MapTileFindResult findMapTile(GameState *gameState, MapTile tile) {
     MapTileFindResult result = {};
 
     //NOTE: Draw the tile map
-	for(int i = 0; i < editorState->tileCount; ++i) {
-		MapTile t = editorState->tiles[i];
+	for(int i = 0; i < gameState->tileCount; ++i) {
+		MapTile t = gameState->tiles[i];
 
         if(t.x == tile.x && t.y == tile.y) {
             result.found = true;
@@ -39,8 +39,8 @@ bool isSameMapTile(MapTile tileA, MapTile tileB) {
 	return result;
 }
 
-void removeMapTile(EditorState *editorState, int indexAt) {
-    editorState->tiles[indexAt] = editorState->tiles[--editorState->tileCount]; 
+void removeMapTile(GameState *gameState, int indexAt) {
+    gameState->tiles[indexAt] = gameState->tiles[--gameState->tileCount]; 
 }
 
 TileSet buildTileSet(Texture **tiles, int count, TileSetType type, int countX, int countY, int tileSizeX, int tileSizeY) {

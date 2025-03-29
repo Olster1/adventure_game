@@ -1,10 +1,10 @@
-static void drawGrid(EditorState *editorState) {
+static void drawGrid(GameState *gameState) {
 	float zPos = 10;
 	float4 gridColor = make_float4(0.5f, 0.5f, 0.5f, 1.0f);
 
-	Renderer *renderer = &editorState->renderer;
+	Renderer *renderer = &gameState->renderer;
 
-	float3 snappedCamera = editorState->cameraPos;
+	float3 snappedCamera = gameState->cameraPos;
 	snappedCamera.x = (int)snappedCamera.x;
 	snappedCamera.y = (int)snappedCamera.y;
 
@@ -19,8 +19,8 @@ static void drawGrid(EditorState *editorState) {
 		float3 posA = make_float3(x, -defaultY, zPos);
 		float3 posB = make_float3(x, defaultY, zPos);
 
-		posA = minus_float3(plus_float3(posA, snappedCamera), editorState->cameraPos);
-		posB = minus_float3(plus_float3(posB, snappedCamera), editorState->cameraPos);
+		posA = minus_float3(plus_float3(posA, snappedCamera), gameState->cameraPos);
+		posB = minus_float3(plus_float3(posB, snappedCamera), gameState->cameraPos);
 		
 		pushLine(renderer, posA, posB, gridColor);
 	}
@@ -30,8 +30,8 @@ static void drawGrid(EditorState *editorState) {
 		float3 posA = make_float3(-defaultX, y, zPos);
 		float3 posB = make_float3(defaultX, y, zPos);
 
-		posA = minus_float3(plus_float3(posA, snappedCamera), editorState->cameraPos);
-		posB = minus_float3(plus_float3(posB, snappedCamera), editorState->cameraPos);
+		posA = minus_float3(plus_float3(posA, snappedCamera), gameState->cameraPos);
+		posB = minus_float3(plus_float3(posB, snappedCamera), gameState->cameraPos);
 		
 		pushLine(renderer, posA, posB, gridColor);
 	}

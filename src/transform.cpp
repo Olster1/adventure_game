@@ -4,5 +4,3 @@ struct Xform {
     float3 scale;
     float rotation;
 };
-
-float16 

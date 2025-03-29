@@ -42,7 +42,7 @@ bool sameEntityId(EditorGuiId a, EditorGuiId b) {
     return result;
 }
 
-float2 getClickedWorldPos(EditorState *state, float2 mouseP_01) {
+float2 getClickedWorldPos(GameState *state, float2 mouseP_01) {
     float worldX = lerp(-0.5f*state->planeSizeX, 0.5f*state->planeSizeX, make_lerpTValue(mouseP_01.x));
     float worldY = lerp(-0.5f*state->planeSizeY, 0.5f*state->planeSizeY, make_lerpTValue(mouseP_01.y));
 
@@ -62,7 +62,7 @@ float2 getClickedWorldPos(EditorState *state, float2 mouseP_01) {
     return make_float2(worldX, worldY);
 }
 
-Entity *findEntityById(EditorState *state, char *id) {
+Entity *findEntityById(GameState *state, char *id) {
     Entity *result = 0;
     int hash = get_crc32_for_string(id);
     for(int i = 0; i < state->entityCount;++i) {
@@ -76,7 +76,7 @@ Entity *findEntityById(EditorState *state, char *id) {
     return result;
 }
 
-void updateAStartEditor(EditorState *state, Renderer *renderer, float windowWidth, float windowHeight) {
+void updateAStartEditor(GameState *state, Renderer *renderer, float windowWidth, float windowHeight) {
     if(state->selectedEntityId) {
         float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
 
@@ -150,7 +150,7 @@ void updateAStartEditor(EditorState *state, Renderer *renderer, float windowWidt
     }
 }
 
-void drawAndUpdateEditorGui(EditorState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
+void drawAndUpdateEditorGui(GameState *state, Renderer *renderer, float x, float y, float windowWidth, float windowHeight) {
 
     float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
 

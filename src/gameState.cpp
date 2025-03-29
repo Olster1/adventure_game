@@ -1,9 +1,9 @@
-void clearGameStatePerFrameValues(EditorState *state) {
+void clearGameStatePerFrameValues(GameState *state) {
 	state->lightCount = 0;
 }
 
 
-DefaultEntityAnimations loadEntityAnimations(EditorState *editorState, BackendRenderer *backendRenderer, char *folder, int sizePerWidth) {
+DefaultEntityAnimations loadEntityAnimations(GameState *gameState, BackendRenderer *backendRenderer, char *folder, int sizePerWidth) {
 	DefaultEntityAnimations result = {};
 
 	char *formatStr = "../src/images/%s/%s.png";
@@ -27,92 +27,72 @@ DefaultEntityAnimations loadEntityAnimations(EditorState *editorState, BackendRe
 	return result;
 }
 
-void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
-		editorState->initialized = true;
+void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
+		gameState->initialized = true;
 
-		initRenderer(&editorState->renderer);
+		initRenderer(&gameState->renderer);
 
 		#if DEBUG_BUILD
-		editorState->font = initFont("../fonts/liberation-mono.ttf");
+		gameState->font = initFont("../fonts/liberation-mono.ttf");
 		#else
-		editorState->font = initFont("./fonts/liberation-mono.ttf");
+		gameState->font = initFont("./fonts/liberation-mono.ttf");
 		#endif
 
-		editorState->fontScale = 0.6f;
+		gameState->fontScale = 0.6f;
 
-		editorState->terrain = Terrain();
+		gameState->terrain = Terrain();
 
-		editorState->draw_debug_memory_stats = false;
+		gameState->draw_debug_memory_stats = false;
 
-		initDialogTrees(&editorState->dialogs);
+		initDialogTrees(&gameState->dialogs);
 
-		editorState->shakeTimer = -1;//NOTE: Turn the timer off
+		gameState->shakeTimer = -1;//NOTE: Turn the timer off
 
 		srand(time(NULL));   // Initialization, should only be called once.
 
 		//NOTE: Used to build the entity ids 
-		editorState->randomIdStartApp = rand();
-		editorState->randomIdStart = rand();
+		gameState->randomIdStartApp = rand();
+		gameState->randomIdStart = rand();
 
-		editorState->planeSizeY = 20;
-		editorState->planeSizeX = 20;
+		gameState->planeSizeY = 20;
+		gameState->planeSizeX = 20;
 
-		// editorState->player.velocity = make_float3(0, 0, 0);
-		// editorState->player.pos = make_float3(0, 0, 10);
-		// editorState->playerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\helicopter.png");
+		// gameState->player.velocity = make_float3(0, 0, 0);
+		// gameState->player.pos = make_float3(0, 0, 10);
+		// gameState->playerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\helicopter.png");
 
-		editorState->pipeTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/pipe.png");
-		editorState->pipeFlippedTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/pipeRotated.png");
+		gameState->pipeTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/pipe.png");
+		gameState->pipeFlippedTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/pipeRotated.png");
+		gameState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/background_layer_1.png");//backgroundCastles.png");
+		gameState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/coin.png");
+		gameState->stoneTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/stone.png");
+		gameState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
+		gameState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
 
-		editorState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/background_layer_1.png");//backgroundCastles.png");
+		gameState->gameMode = PLAY_MODE;
 
-		editorState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/coin.png");
+		gameState->cameraFollowPlayer = true;
+		gameState->zoomLevel = 1;
 
-		editorState->stoneTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/stone.png");
-		editorState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
-		editorState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
-
-		editorState->gameMode = PLAY_MODE;
-
-		editorState->cameraFollowPlayer = true;
-		editorState->zoomLevel = 1;
-
-		editorState->batAnimations = loadEntityAnimations(editorState, backendRenderer, "bat", 32);
+		gameState->potPlantAnimations = loadEntityAnimations(gameState, backendRenderer, "pot_plant", 16);
 
 		//NOTE: Init all animations for game
-		easyAnimation_initAnimation(&editorState->fireballIdleAnimation, "fireball_idle");
 
-		loadImageStrip(&editorState->fireballIdleAnimation, backendRenderer, "../src/images/fireball.png", 64);
-
-		// loadImageStripXY(&editorState->playerIdleAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 0, 6);
-		// loadImageStripXY(&editorState->playerRunAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 2, 8);
-		// loadImageStripXY(&editorState->playerAttackAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 1, 6);
-		// loadImageStripXY(&editorState->playerJumpAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 3, 16);
-		// loadImageStripXY(&editorState->playerHurtAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 5, 3);
-		// loadImageStripXY(&editorState->playerDieAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 5, 12);
-		// loadImageStripXY(&editorState->playerFallingAnimation, backendRenderer, "../src/images/char_blue.png", 56, 56, 4, 1);
-
-		loadImageStrip(&editorState->playerIdleAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&editorState->playerRunForwardAnimation, backendRenderer, "../src/images/player/Man_forward_4.png", 64);
-		loadImageStrip(&editorState->playerRunbackwardAnimation, backendRenderer, "../src/images/player/Man_back_4.png", 64);
-		loadImageStrip(&editorState->playerRunsidewardAnimation, backendRenderer, "../src/images/player/Man_left_walk_4.png", 64);
+		loadImageStrip(&gameState->playerIdleAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&gameState->playerRunForwardAnimation, backendRenderer, "../src/images/player/Man_forward_4.png", 64);
+		loadImageStrip(&gameState->playerRunbackwardAnimation, backendRenderer, "../src/images/player/Man_back_4.png", 64);
+		loadImageStrip(&gameState->playerRunsidewardAnimation, backendRenderer, "../src/images/player/Man_left_walk_4.png", 64);
 		
 		
-		loadImageStrip(&editorState->playerAttackAnimation, backendRenderer, "../src/images/player/Man_forward_attack_4.png", 64);
-		loadImageStrip(&editorState->playerJumpAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&editorState->playerHurtAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&editorState->playerDieAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&editorState->playerFallingAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&gameState->playerAttackAnimation, backendRenderer, "../src/images/player/Man_forward_attack_4.png", 64);
+		loadImageStrip(&gameState->playerJumpAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&gameState->playerHurtAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&gameState->playerDieAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
+		loadImageStrip(&gameState->playerFallingAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
 
-		loadImageStrip(&editorState->playerbackwardSidewardRun, backendRenderer, "../src/images/player/Man_back_sideways_4.png", 64);
-		loadImageStrip(&editorState->playerforwardSidewardRun, backendRenderer, "../src/images/player/Man_forward_sideways_4.png", 64);
+		loadImageStrip(&gameState->playerbackwardSidewardRun, backendRenderer, "../src/images/player/Man_back_sideways_4.png", 64);
+		loadImageStrip(&gameState->playerforwardSidewardRun, backendRenderer, "../src/images/player/Man_forward_sideways_4.png", 64);
 
-		loadImageStrip(&editorState->skeletonIdleAnimation, backendRenderer, "../src/images/skeleton/SIdle_4.png", 150);
-		loadImageStrip(&editorState->skeletonRunAnimation, backendRenderer, "../src/images/skeleton/SWalk_4.png", 150);
-		loadImageStrip(&editorState->skeletonAttackAnimation, backendRenderer, "../src/images/skeleton/SAttack_8.png", 150);
-		loadImageStrip(&editorState->skeletonHurtAnimation, backendRenderer, "../src/images/skeleton/SHit_4.png", 150);
-		loadImageStrip(&editorState->skeletonDieAnimation, backendRenderer, "../src/images/skeleton/SDeath_4.png", 150);
-		loadImageStrip(&editorState->skeletonShieldAnimation, backendRenderer, "../src/images/skeleton/SShield_4.png", 150);
 
 		/////////////
 
@@ -121,21 +101,20 @@ void initGameState(EditorState *editorState, BackendRenderer *backendRenderer) {
 		int countY = 0;
 		Texture ** tiles = loadTileSet(backendRenderer, "../src/images/Tileset.png", 32, 32, &global_long_term_arena, &tileCount, &countX, &countY);
 
-		editorState->swampTileSet = buildTileSet(tiles, tileCount, TILE_SET_SWAMP, countX, countY, 32, 32);
+		gameState->swampTileSet = buildTileSet(tiles, tileCount, TILE_SET_SWAMP, countX, countY, 32, 32);
 
-		editorState->coinsGot = initResizeArray(int);
+		gameState->coinsGot = initResizeArray(int);
 
-		addPlayerEntity(editorState);
+		addPlayerEntity(gameState);
 
-		editorState->gravityOn = false;
+		gameState->gravityOn = false;
 
-		// Entity *e = addSkeletonEntity(editorState);
-
-		addEnemyEntity(editorState, &editorState->batAnimations);
-
-		// e->pos.x = -3;
+		for(int i = 0; i < 10; ++i) {
+			Entity *e = addPotPlantEntity(gameState, &gameState->potPlantAnimations);
+			e->pos.x = i;
+		}
 
 	#if DEBUG_BUILD
-		DEBUG_runUnitTests(editorState);
+		DEBUG_runUnitTests(gameState);
 	#endif
 }

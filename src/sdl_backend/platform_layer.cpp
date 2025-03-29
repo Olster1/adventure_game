@@ -277,6 +277,18 @@ static bool platform_write_file_data(Platform_File_Handle handle, void *memory, 
     return success;
 }
 
+static bool doesFileExists(char *filename_utf8) {
+    bool result = false;
+    FILE *fileHandle = fopen(filename_utf8, "rb");
+
+    if (fileHandle) {
+        result = true;
+        fclose(fileHandle);
+    } 
+
+    return result;
+}
+
 //TODO: Change this to sdl specific functions
 static bool Platform_LoadEntireFile_utf8(char *filename_utf8, void **data, size_t *data_size) {
     bool succeed = false;
@@ -363,7 +375,7 @@ int main(int argc, char **argv) {
         global_platform.permanent_storage_size = PERMANENT_STORAGE_SIZE;
         global_platform.permanent_storage = platform_alloc_memory_pages(global_platform.permanent_storage_size);
         
-        global_long_term_arena = initMemoryArena_withMemory(((u8 *)global_platform.permanent_storage) + sizeof(EditorState), global_platform.permanent_storage_size - sizeof(EditorState));
+        global_long_term_arena = initMemoryArena_withMemory(((u8 *)global_platform.permanent_storage) + sizeof(GameState), global_platform.permanent_storage_size - sizeof(GameState));
 
         globalPerFrameArena = initMemoryArena(Kilobytes(100));
         global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
@@ -389,7 +401,7 @@ int main(int argc, char **argv) {
 
 
         //Now create the actual window
-        global_wndHandle = SDL_CreateWindow("Adventure Game",  SDL_WINDOWPOS_CENTERED,  SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
+        global_wndHandle = SDL_CreateWindow("Cozy Shop Simulator",  SDL_WINDOWPOS_CENTERED,  SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
 
         assert(global_wndHandle);
     }
@@ -469,9 +481,9 @@ int main(int argc, char **argv) {
             global_windowDidResize = false;
         }
 
-        EditorState *editorState = updateEditor(backendRenderer, dt, windowWidth, windowHeight, resized_window && !first_frame, save_file_location_utf8, settings_to_save);
+        GameState *gameState = updateEditor(backendRenderer, dt, windowWidth, windowHeight, resized_window && !first_frame, save_file_location_utf8, settings_to_save);
 
-        backendRender_processCommandBuffer(&editorState->renderer, backendRenderer);
+        backendRender_processCommandBuffer(&gameState->renderer, backendRenderer);
 
         backendRender_presentFrame(backendRenderer);
         

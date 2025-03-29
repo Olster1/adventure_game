@@ -42,11 +42,6 @@ void addCollisionEvent(Collider *a1, Entity *b, float2 hitDir) {
     //NOTE: Update the damage value based on entity state
     if(e) {
         e->hitDir = hitDir;
-        if(b->flags & ENTITY_FLAG_ATTACKING) {
-            e->damage = b->damage;
-        } else {
-            e->damage = 0;
-        }
     }
 }
 
@@ -247,36 +242,31 @@ void updateCollisions(Entity *a, Entity *b, Collider *a1, Collider *b1, float *s
     }
 }
 
-void updateEntityCollisions(EditorState *editorState, float dt) {
-    for(int i = 0; i < editorState->entityCount; ++i) {
-		Entity *a = &editorState->entities[i];
+void updateEntityCollisions(GameState *gameState, float dt) {
+    for(int i = 0; i < gameState->entityCount; ++i) {
+		Entity *a = &gameState->entities[i];
 
-		for(int colliderIndex = 0; colliderIndex < a->colliderCount; ++colliderIndex) {
-			Collider *colA = &a->colliders[colliderIndex];
+		// for(int colliderIndex = 0; colliderIndex < arrayCount(a->colliders); ++colliderIndex) {
+		// 	Collider *colA = &a->colliders[colliderIndex];
 
-			prepareCollisions(colA);
-		}
-
-        //NOTE: Apply gravity
-        if(editorState->gravityOn) {
-            a->velocity.y += -10; 
-        }
+        //     if(colA->flags & COLLIDER_ACTIVE) {
+		// 	    prepareCollisions(colA);
+        //     }
+		// }
 
         //NOTE: Apply drag 
         //TODO: This isn't frame independent
-        a->velocity.xy = scale_float2(0.85f, a->velocity.xy); 
+        a->velocity.xy = scale_float2(0.6f, a->velocity.xy); 
 
         a->deltaPos.xy = scale_float2(dt, a->velocity.xy);
         a->deltaTLeft = 1.0f;
-
-        a->grounded = false;
 	}
 
-	//NOTE: Collision detection
+// 	//NOTE: Collision detection
 	for(int iterationIndex = 0; iterationIndex < 1; ++iterationIndex) {
-		for(int i = 0; i < editorState->entityCount; ++i) {
+		for(int i = 0; i < gameState->entityCount; ++i) {
 
-			Entity *a = &editorState->entities[i];
+			Entity *a = &gameState->entities[i];
 
             float shortestDistance = 1.0f; //NOTE: Percentage
             RayCastResult shortestRayCastResult = {};
@@ -285,8 +275,8 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
             if(float3_magnitude(a->deltaPos) > 0.0f) { 
                 float3 entWorldP = getWorldPosition(a);
 
-                for(int i = 0; i < editorState->tileCount; ++i) {
-                    MapTile t = editorState->tiles[i];
+                for(int i = 0; i < gameState->tileCount; ++i) {
+                    MapTile t = gameState->tiles[i];
 
                     if(t.collidable) {
                         float2 tileP = make_float2(t.x + 0.5f, t.y + 0.5f);
@@ -308,35 +298,30 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
                 }
             }
 
-			
-
-            for(int colliderIndex = 0; colliderIndex < a->colliderCount; ++colliderIndex) {
-                Collider *colA = &a->colliders[colliderIndex];
                     
-                //NOTE: Process other entity collisions
-                for(int j = 0; j < editorState->entityCount; ++j) {
-                    if(i == j) {
-                        continue;
-                    }
+            //NOTE: Process other entity collisions
+            // for(int j = 0; j < gameState->entityCount; ++j) {
+            //     if(i == j) {
+            //         continue;
+            //     }
 
-                    Entity *b = &editorState->entities[j];
+            //     Entity *b = &gameState->entities[j];
 
-                    assert(a->idHash != b->idHash);
+            //     assert(a->idHash != b->idHash);
 
-                    // if((colA->flags & COLLIDER_ACTIVE) && (colB->flags & COLLIDER_ACTIVE)) 
-                    if(b->flags & ENTITY_ACTIVE)
-                    {
-                        //NOTE: See if trigger
-                        if((colA->flags & COLLIDER_TRIGGER)) {
-                            updateTriggerCollision(a, b, colA);
-                            
-                        } else { 
-                            //TODO: continous collision
-                        //    updateCollisions(a, b, colA, colB, &shortestDistance, &shortestRayCastResult);
-                        }
-                    }
-                }
-            }
+                
+            //     if(b->flags & ENTITY_ACTIVE)
+            //     {
+            //         //NOTE: See if trigger
+            //         if((colA->flags & COLLIDER_TRIGGER)) {
+            //             updateTriggerCollision(a, b, colA);
+                        
+            //         } else { 
+            //             //TODO: continous collision
+            //         //    updateCollisions(a, b, colA, colB, &shortestDistance, &shortestRayCastResult);
+            //         }
+            //     }
+            // }
 
             //NOTE: Update position and velocity
             if(shortestRayCastResult.hit) {
@@ -364,7 +349,7 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
                 //NOTE: See if the entity is standing on anything
                 float slopeFactor = 0.3f;
                 if(float2_dot(shortestRayCastResult.collisionNormal, make_float2(0, 1)) > slopeFactor) {
-                     a->grounded = true;
+                    //  a->grounded = true;
                 }
             } else {
                  a->pos.xy = plus_float2(a->deltaPos.xy,  a->pos.xy);
@@ -374,15 +359,17 @@ void updateEntityCollisions(EditorState *editorState, float dt) {
         }
     }
 
-	for(int i = 0; i < editorState->entityCount; ++i) {
-		Entity *a = &editorState->entities[i];
+	// for(int i = 0; i < gameState->entityCount; ++i) {
+	// 	Entity *a = &gameState->entities[i];
 
-		for(int colliderIndex = 0; colliderIndex < a->colliderCount; ++colliderIndex) {
-			Collider *colA = &a->colliders[colliderIndex];
+	// 	for(int colliderIndex = 0; colliderIndex < arrayCount(a->colliders); ++colliderIndex) {
+	// 		Collider *colA = &a->colliders[colliderIndex];
 
-			clearStaleCollisions(colA);
-		}
-	}
+    //         if(colA->flags & COLLIDER_ACTIVE) {
+	// 		    clearStaleCollisions(colA);
+    //         }
+	// 	}
+	// }
 }
 
 

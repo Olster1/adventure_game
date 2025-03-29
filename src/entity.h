@@ -1,17 +1,11 @@
 enum EntityFlags {
     ENTITY_ACTIVE = 1 << 0,
-    FIRE_BALL_COMPONENT = 1 << 1,
     LIGHT_COMPONENT = 1 << 2,
-    ENTITY_FLAG_ATTACKING = 1 << 3,
-    ENTITY_FLAG_ONCE_OFF_ATTACK = 1 << 4,
 };
 
 #define MY_ENTITY_TYPE(FUNC) \
 FUNC(ENTITY_PLAYER)\
-FUNC(ENTITY_ENEMY)\
-FUNC(ENTITY_PIPE)\
-FUNC(ENTITY_FIREBALL)\
-FUNC(ENTITY_COIN)\
+FUNC(ENTITY_OBJECT)\
 FUNC(ENTITY_TILE_MAP)\
 
 typedef enum {
@@ -24,6 +18,7 @@ enum ColliderIndex {
     PLATFORM_COLLIDER_INDEX = 0,
     ATTACK_COLLIDER_INDEX = 1,
     HIT_COLLIDER_INDEX = 2,
+    INTERACT_COLLIDER_INDEX = 3,
     ENTITY_COLLIDER_INDEX_COUNT
 };
 
@@ -93,20 +88,12 @@ typedef struct Entity Entity;
 
 struct Entity {
     Entity *parent; 
-
-    int colliderCount;
-    Collider colliders[ENTITY_COLLIDER_INDEX_COUNT];
-
     char *id;
     int idHash;
     EntityType type;
 
     //NOTES: Could be flags
     bool spriteFlipped;
-    bool grounded; 
-
-    float damage; //NOTE: How much damage enemy can do
-    float health;
 
     float3 pos;
     float deltaTLeft;
@@ -115,7 +102,6 @@ struct Entity {
     float perlinNoiseLight; //NOTE: Used for the lights
 
     float speed; //NOTE: How fast the entity moves - used to scale direction vectors
-
     float3 scale;
     float3 velocity;
     float rotation;

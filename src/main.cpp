@@ -36,24 +36,24 @@
 #include "player.cpp"
 #include "camera.cpp"
 
-static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
-	EditorState *editorState = (EditorState *)global_platform.permanent_storage;
-	assert(sizeof(EditorState) < global_platform.permanent_storage_size);
-	if(!editorState->initialized) {
-		initGameState(editorState, backendRenderer);
+static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
+	GameState *gameState = (GameState *)global_platform.permanent_storage;
+	assert(sizeof(GameState) < global_platform.permanent_storage_size);
+	if(!gameState->initialized) {
+		initGameState(gameState, backendRenderer);
 	} else {
 		releaseMemoryMark(&global_perFrameArenaMark);
 		global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
 	}
 
-	Renderer *renderer = &editorState->renderer;
+	Renderer *renderer = &gameState->renderer;
 
 	//NOTE: Clear the renderer out so we can start again
 	clearRenderer(renderer);
-	clearGameStatePerFrameValues(editorState);
+	clearGameStatePerFrameValues(gameState);
 
 	//NOTE: Get pointer to player - always at slot zero
-	editorState->player = &editorState->entities[0];
+	gameState->player = &gameState->entities[0];
 
 	pushViewport(renderer, make_float4(0, 0, 0, 0));
 	renderer_defaultScissors(renderer, windowWidth, windowHeight);
@@ -65,21 +65,21 @@ static EditorState *updateEditor(BackendRenderer *backendRenderer, float dt, flo
 	float fauxDimensionY = 1000;
 	float fauxDimensionX = fauxDimensionY * (windowWidth/windowHeight);
 
-	updatePlayerInput(editorState);
-	updateCamera(editorState, dt);
+	updatePlayerInput(gameState);
+	updateCamera(gameState, dt);
 
-	editorState->planeSizeY = (windowHeight / windowWidth) * editorState->planeSizeX;
-	float16 fovMatrix = make_ortho_matrix_origin_center(editorState->planeSizeX*editorState->zoomLevel, editorState->planeSizeY*editorState->zoomLevel, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
+	gameState->planeSizeY = (windowHeight / windowWidth) * gameState->planeSizeX;
+	float16 fovMatrix = make_ortho_matrix_origin_center(gameState->planeSizeX*gameState->zoomLevel, gameState->planeSizeY*gameState->zoomLevel, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	// float16 fovMatrix = make_perspective_matrix_origin_center(60.0f, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE, windowWidth / windowHeight);
 
 	pushMatrix(renderer, fovMatrix);
-	drawGrid(editorState);
-	updateAndRenderEntities(editorState, renderer, dt, fovMatrix, windowWidth, windowHeight);
+	drawGrid(gameState);
+	updateAndRenderEntities(gameState, renderer, dt, fovMatrix, windowWidth, windowHeight);
 
 #if DEBUG_BUILD
-	drawDebugAndEditorText(editorState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
+	drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
 #endif
 
-	return editorState;
+	return gameState;
 
 }

@@ -695,9 +695,9 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
 
 				
 
-				// EditorState *editorState = (EditorState *)global_platform.permanent_storage;
+				// GameState *gameState = (GameState *)global_platform.permanent_storage;
 				
-				// GlyphInfo glyph = easyFont_getGlyph(&editorState->font, (u32)'A');
+				// GlyphInfo glyph = easyFont_getGlyph(&gameState->font, (u32)'A');
 
 				// ID3D11ShaderResourceView* fontTextureView = (ID3D11ShaderResourceView *)glyph.handle;
 				// d3d11DeviceContext->PSSetShaderResources(0, 1, &fontTextureView);
@@ -796,9 +796,9 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
 
 				// d3d11DeviceContext->OMSetBlendState(backend_r->m_blendMode, blendFactor, sampleMask);
 
-				// EditorState *editorState = (EditorState *)global_platform.permanent_storage;
+				// GameState *gameState = (GameState *)global_platform.permanent_storage;
 				
-				// GlyphInfo glyph = easyFont_getGlyph(&editorState->font, (u32)'A');
+				// GlyphInfo glyph = easyFont_getGlyph(&gameState->font, (u32)'A');
 
 				// ID3D11ShaderResourceView* fontTextureView = (ID3D11ShaderResourceView *)glyph.handle;
 				// d3d11DeviceContext->PSSetShaderResources(0, 1, &fontTextureView);

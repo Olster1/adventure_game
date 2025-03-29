@@ -40,7 +40,7 @@ struct SaveLevelHeaderV1 {
 };
 #pragma pack(pop)
 
-void saveLevel_version1_json(EditorState *editorState, char *utf8_full_file_name) {
+void saveLevel_version1_json(GameState *gameState, char *utf8_full_file_name) {
 
     Platform_File_Handle handle = platform_begin_file_write_utf8_file_path(utf8_full_file_name);
     assert(!handle.has_errors);
@@ -48,8 +48,8 @@ void saveLevel_version1_json(EditorState *editorState, char *utf8_full_file_name
     size_t offset = 0;
 
 #define writeVarString(format, ...) {char *s = easy_createString_printf(&globalPerFrameArena, format, __VA_ARGS__); size_t inBytes = easyString_getSizeInBytes_utf8(s); platform_write_file_data(handle, s, inBytes, offset); offset += inBytes; }
-	for(int i = 0; i < editorState->entityCount; ++i) {
-		Entity *e = &editorState->entities[i];
+	for(int i = 0; i < gameState->entityCount; ++i) {
+		Entity *e = &gameState->entities[i];
 
         MemoryArenaMark memMark = takeMemoryMark(&globalPerFrameArena);
 
@@ -63,8 +63,8 @@ void saveLevel_version1_json(EditorState *editorState, char *utf8_full_file_name
         releaseMemoryMark(&memMark);
 	}
 
-    for(int i = 0; i < editorState->tileCount; ++i) {
-		MapTile t = editorState->tiles[i];
+    for(int i = 0; i < gameState->tileCount; ++i) {
+		MapTile t = gameState->tiles[i];
 
         MemoryArenaMark memMark = takeMemoryMark(&globalPerFrameArena);
 
@@ -122,7 +122,7 @@ int findEnumValue(char *name, int nameLength, char **names, int nameCount) {
     return result;
 }
 
-void clearEntities(EditorState *state) {
+void clearEntities(GameState *state) {
     // releaseMemoryMark(&global_perFrameArenaMark);
 	// global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
 
@@ -136,7 +136,7 @@ void clearEntities(EditorState *state) {
     state->tileCount = 0;
 }
 
-void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
+void loadSaveLevel_json(GameState *state, char *fileName_utf8) {
     u8 *data = 0;
 	size_t data_size = 0;
 
@@ -250,22 +250,22 @@ void loadSaveLevel_json(EditorState *state, char *fileName_utf8) {
     }
 }
 
-void saveLevel_version1_binary(EditorState *editorState, char *utf8_full_file_name) {
+void saveLevel_version1_binary(GameState *gameState, char *utf8_full_file_name) {
 
-	size_t toAllocate = sizeof(SaveLevelHeaderVersion) + sizeof(SaveLevelHeaderV1) + editorState->tileCount*sizeof(SaveTileV1);
+	size_t toAllocate = sizeof(SaveLevelHeaderVersion) + sizeof(SaveLevelHeaderV1) + gameState->tileCount*sizeof(SaveTileV1);
 
 	u8 *data = (u8 *)pushSize(&globalPerFrameArena, toAllocate);
 
 	SaveLevelHeaderVersion *v = (SaveLevelHeaderVersion *)data;
 	v->version = 1;
 	SaveLevelHeaderV1 *header = (SaveLevelHeaderV1 *)(data + sizeof(SaveLevelHeaderVersion));
-	header->tileCount = editorState->tileCount;
+	header->tileCount = gameState->tileCount;
 	header->bytesPerTile = sizeof(SaveTileV1);
 
 	SaveTileV1 *tiles = (SaveTileV1 *)(data + sizeof(SaveLevelHeaderV1) + sizeof(SaveLevelHeaderVersion));
 
-	for(int i = 0; i < editorState->tileCount; ++i) {
-		MapTile t = editorState->tiles[i];
+	for(int i = 0; i < gameState->tileCount; ++i) {
+		MapTile t = gameState->tiles[i];
 		SaveTileV1 tile = {};
 		tile.x = t.x;
 		tile.y = t.y;
@@ -284,7 +284,7 @@ void saveLevel_version1_binary(EditorState *editorState, char *utf8_full_file_na
 	platform_close_file(handle);
 }
 
-void loadSaveLevel_binary(EditorState *state, char *fileName_utf8) {
+void loadSaveLevel_binary(GameState *state, char *fileName_utf8) {
 	u8 *data = 0;
 	size_t data_size = 0;
 

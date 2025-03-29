@@ -41,8 +41,6 @@ typedef struct {
 	int entityCount;
 	Entity entities[256];
 
-	int colliderCount;
-	Collider colliders;
 
 	float3 cameraPos;
 
@@ -73,7 +71,7 @@ typedef struct {
 	//NOTE: Resizeable array for the coins - if id in list, means user got it. 
 	int *coinsGot;
 
-	DefaultEntityAnimations batAnimations;
+	DefaultEntityAnimations potPlantAnimations;
 
 	Animation playerIdleAnimation;
 	Animation playerRunForwardAnimation;
@@ -116,4 +114,4 @@ typedef struct {
 
     int lightCount;
     GameLight lights[64];
-} EditorState;
+} GameState;
