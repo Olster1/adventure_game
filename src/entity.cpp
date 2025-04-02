@@ -121,47 +121,87 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
 
     float2 cameraBlockP = getChunkPosForWorldP(gameState->cameraPos.xy);
     
-	for(int y_ = -renderDistance; y_ <= renderDistance; ++y_) {
+	for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
         for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
 
-            Chunk *c = gameState->terrain.getChunk(&gameState->animationState, x_ + cameraBlockP.x, y_ + cameraBlockP.y);
+            Chunk *c = gameState->terrain.getChunk(&gameState->animationState, x_ + cameraBlockP.x, y_ + cameraBlockP.y, 0);
             if(c) {
-                for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
-                    for(int tilex = 0; tilex <= CHUNK_DIM; ++tilex) {
-                        Tile *tile = c->getTile(tilex, tiley);
+                for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
+                    for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
+                        for(int tilex = 0; tilex <= CHUNK_DIM; ++tilex) {
+                            Tile *tile = c->getTile(tilex, tiley, tilez);
 
-                        if(tile) {
-                            Texture *sprite = 0;
-                            Texture *animationSprite = 0;
+                            if(tile) {
+                                Texture *sprite = 0;
+                                Texture *frontFace = 0;
+                                Texture *animationSprite = 0;
 
-                            if(tile->type == TILE_TYPE_BEACH) {
-                                sprite = getTileTexture(&gameState->sandTileSet, tile->coords);
-                            }
+                                if(tile->type == TILE_TYPE_BEACH) {
+                                    sprite = getTileTexture(&gameState->sandTileSet, tile->coords);
+                                } else if(tile->type == TILE_TYPE_ROCK) {
+                                    sprite = getTileTexture(&gameState->elevateTileSet, tile->coords);
 
-                            if(tile->animationController) {
-                                animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
-                            }
-                            if(sprite) {
-                                float waterScale = 3;
-                                float2 p = getTileWorldP(c, tilex, tiley);
-                                float pX = (p.x + 0.5f) - gameState->cameraPos.x;
-                                float pY = (p.y + 0.5f)  - gameState->cameraPos.y;
-                                if(animationSprite) {
-                                    RenderObject b = {};
-                                    b.sprite = animationSprite;
-                                    b.pos = make_float3(pX, pY, 10);
-                                    b.scale = make_float2(waterScale, waterScale);
-                                    pushArrayItem(&gameState->layers[0], b, RenderObject);
-                                    // pushTexture(renderer, animationSprite->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords);
+                                    if(tile->flags & TILE_FLAG_FRONT_FACE) {
+                                        TileMapCoords coord = tile->coords;
+                                        coord.y += 1;
+                                        frontFace = getTileTexture(&gameState->elevateTileSet, coord);
+                                    }
                                 }
 
-                                RenderObject b = {};
-                                b.sprite = sprite;
-                                b.pos = make_float3(pX, pY, 10);
-                                b.scale = make_float2(1, 1);
-                                pushArrayItem(&gameState->layers[1], b, RenderObject);
+                                if(tile->animationController) {
+                                    animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
+                                }
+                                if(sprite) {
+                                    float waterScale = 3;
+                                    float shadowScale = 3.1f;
+                                    float3 p = getTileWorldP(c, tilex, tiley, tilez);
+                                    float pX = (p.x + 0.5f) - gameState->cameraPos.x;
+                                    float pY = (p.y + 0.5f)  - gameState->cameraPos.y;
+                                    if(animationSprite) {
+                                        RenderObject b = {};
+                                        b.sprite = animationSprite;
+                                        b.pos = make_float3(pX, pY, 10);
+                                        b.scale = make_float2(waterScale, waterScale);
+                                        pushArrayItem(&gameState->layers[0], b, RenderObject);
+                                        // pushTexture(renderer, animationSprite->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords);
+                                    }
 
-                                // pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
+                                    if(tile->flags & TILE_FLAG_SHADOW) {
+                                        RenderObject b = {};
+                                        b.sprite = &gameState->shadowTexture;
+                                        b.pos = make_float3(pX, pY - 1, 10);
+                                        b.scale = make_float2(shadowScale, shadowScale);
+                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
+                                    }
+
+                                    if(frontFace){
+                                        RenderObject b = {};
+                                        b.sprite = frontFace;
+                                        b.pos = make_float3(pX, pY - 1, 10);
+                                        b.scale = make_float2(1, 1);
+                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
+                                        // pushTexture(renderer, frontFace->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), frontFace->uvCoords);
+                                    }
+
+                                    {
+                                        RenderObject b = {};
+                                        b.sprite = sprite;
+                                        b.pos = make_float3(pX, pY, 10);
+                                        b.scale = make_float2(1, 1);
+                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
+                                        // pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
+                                    }
+
+                                    if(tile->flags & TILE_FLAG_GRASSY_TOP) {
+                                        RenderObject b = {};
+                                        b.sprite = getTileTexture(&gameState->sandTileSet, tile->coordsSecondary);;
+                                        b.pos = make_float3(pX, pY, 10);
+                                        b.scale = make_float2(1, 1);
+                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
+                                    }
+
+                                    
+                                }
                             }
                         }
                     }

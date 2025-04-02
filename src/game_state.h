@@ -56,6 +56,7 @@ typedef struct {
 	Texture grassTexture;
 	Texture dirtTexture;
 	Texture waterTexture;
+	Texture shadowTexture;
 
 	int tileCount;
 	MapTile tiles[10000];
@@ -80,6 +81,7 @@ typedef struct {
 
 	GameDialogs dialogs;
 	TileSet sandTileSet;
+	TileSet elevateTileSet;
 
 	Terrain terrain;
 

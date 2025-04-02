@@ -68,6 +68,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
 		gameState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
 		gameState->waterTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/water.png");
+		gameState->shadowTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/shadow.png");
+		
 
 		gameState->gameMode = PLAY_MODE;
 
@@ -96,13 +98,20 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadImageStrip(&gameState->animationState.waterAnimation, backendRenderer, "../src/images/foam.png", 192);
 
 		/////////////
-
-		int tileCount = 0;
-		int countX = 0;
-		int countY = 0;
-		Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tileMapFlat.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
-
-		gameState->sandTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
+		{
+			int tileCount = 0;
+			int countX = 0;
+			int countY = 0;
+			Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tileMapFlat.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
+			gameState->sandTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
+		}
+		{
+			int tileCount = 0;
+			int countX = 0;
+			int countY = 0;
+			Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tileMapElevation.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
+			gameState->elevateTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
+		}
 
 		addPlayerEntity(gameState);
 

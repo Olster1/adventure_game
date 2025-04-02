@@ -16,7 +16,7 @@
 #include "tileMap.h"
 #include "editor_gui.h"
 #include "dialog.cpp"
-#include "terrain.h"
+#include "terrain.hpp"
 #include "game_state.h"
 #include "terrain.cpp"
 #include "assets.cpp"

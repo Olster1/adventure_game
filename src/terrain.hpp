@@ -7,11 +7,17 @@ float mapSimplexNoiseTo01(float value) {
 
     return value;
 }
+float mapSimplexNoiseTo11(float value) {
+    return value;
+}
 
 enum TileType {
     TILE_TYPE_NONE,
     TILE_TYPE_WATER,
-    TILE_TYPE_BEACH
+    TILE_TYPE_BEACH,
+    TILE_TYPE_ROCK,
+    TILE_TYPE_SOLID
+
 };
 
 struct TileMapCoords {
@@ -19,17 +25,28 @@ struct TileMapCoords {
     int y;
 };
 
+enum TileFlags {
+    TILE_FLAG_FRONT_FACE = 1 << 0, //NOTE: This is whether we should render the front face for 3d
+    TILE_FLAG_GRASSY_TOP = 1 << 1, //NOTE: Wether a block should have an additional grassy top - controlled by perlin noise if it is a rock type
+    TILE_FLAG_SHADOW = 1 << 2, //NOTE: Wether a block should have an additional grassy top - controlled by perlin noise if it is a rock type
+};
+
 struct Tile {
     TileType type = TILE_TYPE_NONE;
     EasyAnimation_Controller *animationController = 0;
     TileMapCoords coords;
+    TileMapCoords coordsSecondary;
+    u32 flags = 0;
 
     Tile() {
+
     }
 
-    Tile(TileType type, EasyAnimation_ListItem **freeList, Animation *animation, TileMapCoords coords) {
+    Tile(TileType type, EasyAnimation_ListItem **freeList, Animation *animation, TileMapCoords coords, TileMapCoords coordsSecondary, u32 flags) {
         this->type = type;
         this->coords = coords;
+        this->coordsSecondary = coordsSecondary;
+        this->flags = flags;
         if(type == TILE_TYPE_BEACH) {
             assert(animation);
             animationController = pushStruct(&global_long_term_arena, EasyAnimation_Controller);
@@ -55,20 +72,22 @@ enum ChunkGenerationState {
 struct Chunk {
     int x = 0;
     int y = 0;
+    int z = 0;
 
     volatile int64_t generateState = 0; //NOTE: Chunk might not be generated, so check first when you get one
 
-    //NOTE: 16 x 16
+    //NOTE: 16 x 16 x 16
     //NOTE: Z Y
-    Tile tiles[CHUNK_DIM*CHUNK_DIM];
+    Tile tiles[CHUNK_DIM*CHUNK_DIM*CHUNK_DIM];
 
     // Entity *entities;
     Chunk *next = 0;
 
-    Tile *getTile(int x, int y) {
+    Tile *getTile(int x, int y, int z) {
         Tile *t = 0;
-        if(x >= 0 && y >= 0 && x < CHUNK_DIM && y < CHUNK_DIM) {
-            t = &tiles[y*CHUNK_DIM + x];
+        if(x >= 0 && y >= 0 && z >= 0 && x < CHUNK_DIM && y < CHUNK_DIM && z < CHUNK_DIM) {
+            //TODO
+            t = &tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x];
         }
         return t;
     }
@@ -77,6 +96,7 @@ struct Chunk {
         generateState = CHUNK_NOT_GENERATED;
         x = 0;
         y = 0;
+        z = 0;
         next = 0;
     }
 
@@ -84,24 +104,26 @@ struct Chunk {
 
 #define CHUNK_LIST_SIZE 4096
 
-float2 getChunkWorldP(Chunk *c) {
-    float2 worldP = make_float2(c->x*CHUNK_DIM, c->y*CHUNK_DIM);
+float3 getChunkWorldP(Chunk *c) {
+    float3 worldP = make_float3(c->x*CHUNK_DIM, c->y*CHUNK_DIM, c->z*CHUNK_DIM);
     return worldP;
 }
 
-float2 getTileWorldP(Chunk *c, int x, int y) {
-    float2 worldP = make_float2(c->x*CHUNK_DIM + x, c->y*CHUNK_DIM + y);
+float3 getTileWorldP(Chunk *c, int x, int y, int z) {
+    int zComp = c->z*CHUNK_DIM + z;
+    float3 worldP = make_float3(c->x*CHUNK_DIM + x, c->y*CHUNK_DIM + y + zComp, 0);
     return worldP;
 }
 
 
-float2 convertRealWorldToBlockCoords(float2 p) {
+float3 convertRealWorldToBlockCoords(float3 p) {
     //NOTE: The origin is at the center of a block
     //NOTE: So 0.5 & 1.4 should both map to 1 - I think the +0.5
     //NOTE: So -0.5 & -1.4 should both map to -1 - I think the -0.5
     //NOTE: So -0.4 & 0.4 should both map to 0 - I think the -0.5
     p.x = round(p.x);
     p.y = round(p.y);
+    p.z = round(p.z);
 
     return p;
 }
@@ -121,8 +143,8 @@ float2 getChunkPosForWorldP(float2 p) {
 }
 
 
-uint32_t getHashForChunk(int x, int y) {
-    int values[2] = {x, y};
+uint32_t getHashForChunk(int x, int y, int z) {
+    int values[3] = {x, y, z};
     uint32_t hash = get_crc32((char *)values, arrayCount(values)*sizeof(int));
     hash = hash & (CHUNK_LIST_SIZE - 1);
     assert(hash < CHUNK_LIST_SIZE);
@@ -137,9 +159,9 @@ struct Terrain {
         memset(chunks, 0, arrayCount(chunks)*sizeof(Chunk *));
     }
 
-    Chunk *generateChunk(int x, int y, uint32_t hash);
+    Chunk *generateChunk(int x, int y, int z, uint32_t hash);
     void fillChunk(AnimationState *animationState, Chunk *chunk);
-    Chunk *getChunk(AnimationState *animationState, int x, int y, bool shouldGenerateChunk = true, bool shouldGenerateFully = true);
+    Chunk *getChunk(AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk = true, bool shouldGenerateFully = true);
        
 };
 

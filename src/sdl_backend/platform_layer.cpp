@@ -366,8 +366,9 @@ int main(int argc, char **argv) {
     Settings_To_Save settings_to_save = {};
     char *save_file_location_utf8 = 0;
 
-    int windowWidth = 960;
-    int windowHeight = 540;
+    float sizeFactor = 1.0f;
+    int windowWidth = sizeFactor*960;
+    int windowHeight = sizeFactor*540;
 
     // Open a window
     {	
