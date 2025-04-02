@@ -69,7 +69,7 @@ Texture ** loadTileSet(BackendRenderer *backendRenderer, char *filename_full_utf
 
     int bestCountX = 0;
 
-    int maxTileCount = 64;
+    int maxTileCount = 128;
     Texture **tileSet = pushArray(arena, maxTileCount, Texture *);
 
 	float widthTruncated = ((int)(texOnStack.width / widthPerImage))*widthPerImage;

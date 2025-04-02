@@ -30,8 +30,6 @@ typedef struct {
 
 	float shakeTimer;
 
-	TileSet swampTileSet;
-
 	float fontScale;
 
 	bool draw_debug_memory_stats;
@@ -40,7 +38,6 @@ typedef struct {
 
 	int entityCount;
 	Entity entities[256];
-
 
 	float3 cameraPos;
 
@@ -51,27 +48,14 @@ typedef struct {
 	Texture stoneTexture;
 	Texture grassTexture;
 	Texture dirtTexture;
+	Texture waterTexture;
 
-	Texture pipeTexture;
-
-	Texture pipeFlippedTexture;
-
-	Texture backgroundTexture;
-
-	Texture coinTexture;
-
-	float coinRotation; //NOTE: Between 0 and 1
-
-	int points;
-
-	//TODO: This should be a hash table
 	int tileCount;
 	MapTile tiles[10000];
 
-	//NOTE: Resizeable array for the coins - if id in list, means user got it. 
-	int *coinsGot;
-
 	DefaultEntityAnimations potPlantAnimations;
+
+	AnimationState animationState;
 
 	Animation playerIdleAnimation;
 	Animation playerRunForwardAnimation;
@@ -84,23 +68,11 @@ typedef struct {
 	Animation playerJumpAnimation;
 	Animation playerFallingAnimation;
 
-	GameDialogs dialogs;
-
 	Animation playerbackwardSidewardRun;
 	Animation playerforwardSidewardRun;
 
-	//NOTE: Skeleton animation
-	Animation skeletonIdleAnimation;
-	Animation skeletonRunAnimation;
-	Animation skeletonAttackAnimation;
-	Animation skeletonHurtAnimation;
-	Animation skeletonDieAnimation;
-	Animation skeletonShieldAnimation;
-
-
-	Animation fireballIdleAnimation;
-
-	EasyAnimation_ListItem *animationItemFreeListPtr;
+	GameDialogs dialogs;
+	TileSet sandTileSet;
 
 	Terrain terrain;
 

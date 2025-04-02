@@ -6,7 +6,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	pushShader(renderer, &pixelArtShader);
 	pushMatrix(renderer, fovMatrix);
 
-	renderTileMap(gameState, renderer);
+	renderTileMap(gameState, renderer, dt);
 
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(gameState, dt);

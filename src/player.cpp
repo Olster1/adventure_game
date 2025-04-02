@@ -50,8 +50,8 @@ void updatePlayerInput(GameState *gameState) {
 
 		//NOTE: Push the Run Animation
 		if(gameState->player->animationController.lastAnimationOn != &gameState->playerJumpAnimation && gameState->player->animationController.lastAnimationOn != animation)  {
-			easyAnimation_emptyAnimationContoller(&gameState->player->animationController, &gameState->animationItemFreeListPtr);
-			easyAnimation_addAnimationToController(&gameState->player->animationController, &gameState->animationItemFreeListPtr, animation, DEFAULT_PLAYER_ANIMATION_SPEED);	
+			easyAnimation_emptyAnimationContoller(&gameState->player->animationController, &gameState->animationState.animationItemFreeListPtr);
+			easyAnimation_addAnimationToController(&gameState->player->animationController, &gameState->animationState.animationItemFreeListPtr, animation, DEFAULT_PLAYER_ANIMATION_SPEED);	
 		}
 	}
 
@@ -62,8 +62,8 @@ void updatePlayerInput(GameState *gameState) {
 
 	//NOTE: IDLE ANIMATION
 	if(!playerMoved && gameState->player->animationController.lastAnimationOn != &gameState->playerJumpAnimation && gameState->player->animationController.lastAnimationOn != &gameState->playerIdleAnimation && gameState->player->animationController.lastAnimationOn != &gameState->playerAttackAnimation)  {
-		easyAnimation_emptyAnimationContoller(&gameState->player->animationController, &gameState->animationItemFreeListPtr);
-		easyAnimation_addAnimationToController(&gameState->player->animationController, &gameState->animationItemFreeListPtr, &gameState->playerIdleAnimation, 0.08f);	
+		easyAnimation_emptyAnimationContoller(&gameState->player->animationController, &gameState->animationState.animationItemFreeListPtr);
+		easyAnimation_addAnimationToController(&gameState->player->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->playerIdleAnimation, 0.08f);	
 	}
 	
 	

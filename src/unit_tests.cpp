@@ -1,6 +1,9 @@
 void DEBUG_runUnitTests(GameState *state) {
     EditorGui *gui = &state->editorGuiState;
 
+    assert(0b1 == 1);
+    assert(0b11 == 3);
+
     //NOTE: Make sure array is power of two
     assert((arrayCount(gui->undoRedoBlocks) & (arrayCount(gui->undoRedoBlocks) - 1)) == 0);
 

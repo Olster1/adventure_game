@@ -93,7 +93,7 @@ Entity *addPlayerEntity(GameState *state) {
     Entity *e = makeNewEntity(state);
     if(e) {
         easyAnimation_initController(&e->animationController);
-		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &state->playerIdleAnimation, 0.08f);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->playerIdleAnimation, 0.08f);
 		
     }
     return e;
@@ -108,14 +108,14 @@ Entity *addPotPlantEntity(GameState *state, DefaultEntityAnimations *animations)
         e->scale = make_float3(1, 2, 1);
 
         easyAnimation_initController(&e->animationController);
-		easyAnimation_addAnimationToController(&e->animationController, &state->animationItemFreeListPtr, &animations->idle, 5.0f);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &animations->idle, 5.0f);
         e->animations = animations;
 
     }
     return e;
 } 
 
-void renderTileMap(GameState *gameState, Renderer *renderer) {
+void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     //NOTE: Draw the tile map
     int renderDistance = 1;
 
@@ -124,7 +124,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer) {
 	for(int y_ = -renderDistance; y_ <= renderDistance; ++y_) {
         for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
 
-            Chunk *c = gameState->terrain.getChunk(x_ + cameraBlockP.x, y_ + cameraBlockP.y);
+            Chunk *c = gameState->terrain.getChunk(&gameState->animationState, x_ + cameraBlockP.x, y_ + cameraBlockP.y);
             if(c) {
                 for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
                     for(int tilex = 0; tilex <= CHUNK_DIM; ++tilex) {
@@ -132,20 +132,23 @@ void renderTileMap(GameState *gameState, Renderer *renderer) {
 
                         if(tile) {
                             Texture *sprite = 0;
+                            Texture *animationSprite = 0;
 
-                            if(tile->type == tileTypeDirt) {
-                                sprite = &gameState->dirtTexture;
-                            } else if(tile->type == tileTypeGrass) {
-                                sprite = &gameState->grassTexture;
-                            } else if(tile->type == tileTypeStone) {
-                                sprite = &gameState->stoneTexture;
+                            if(tile->type == TILE_TYPE_BEACH) {
+                                sprite = getTileTexture(&gameState->sandTileSet, tile->coords);
                             }
 
+                            if(tile->animationController) {
+                                animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
+                            }
                             if(sprite) {
+                                float waterScale = 3;
                                 float2 p = getTileWorldP(c, tilex, tiley);
-
                                 float pX = (p.x + 0.5f) - gameState->cameraPos.x;
                                 float pY = (p.y + 0.5f)  - gameState->cameraPos.y;
+                                if(animationSprite) {
+                                    pushTexture(renderer, animationSprite->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords);
+                                }
 
                                 pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
                             }
@@ -321,7 +324,7 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
 
     pushMatrix(renderer, modelToViewT);
 
-    Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &gameState->animationItemFreeListPtr, dt);
+    Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
     if(e->animationController.finishedAnimationLastUpdate) {
         //NOTE: Make not active anymore. Should Probably remove it from the list. 
         // e->flags &= ~ENTITY_ACTIVE;

@@ -58,3 +58,14 @@ TileSet buildTileSet(Texture **tiles, int count, TileSetType type, int countX, i
 
 	return result;
 }
+
+Texture *getTileTexture(TileSet *tileSet, TileMapCoords t) {
+	
+	int indexIntoArray = t.x + (tileSet->countX*t.y);
+	assert(indexIntoArray < tileSet->count);
+	assert(indexIntoArray >= 0);
+	Texture *sprite = tileSet->tiles[indexIntoArray];
+
+	return sprite;
+}
+

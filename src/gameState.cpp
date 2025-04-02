@@ -31,6 +31,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->initialized = true;
 
 		initRenderer(&gameState->renderer);
+		gameState->animationState.animationItemFreeListPtr = 0;
 
 		#if DEBUG_BUILD
 		gameState->font = initFont("../fonts/liberation-mono.ttf");
@@ -61,20 +62,17 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		// gameState->player.pos = make_float3(0, 0, 10);
 		// gameState->playerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\helicopter.png");
 
-		gameState->pipeTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/pipe.png");
-		gameState->pipeFlippedTexture =  backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/pipeRotated.png");
-		gameState->backgroundTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/background_layer_1.png");//backgroundCastles.png");
-		gameState->coinTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/coin.png");
 		gameState->stoneTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/stone.png");
 		gameState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
 		gameState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
+		gameState->waterTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/water.png");
 
 		gameState->gameMode = PLAY_MODE;
 
 		gameState->cameraFollowPlayer = true;
 		gameState->zoomLevel = 1;
 
-		gameState->potPlantAnimations = loadEntityAnimations(gameState, backendRenderer, "pot_plant", 16);
+		// gameState->potPlantAnimations = loadEntityAnimations(gameState, backendRenderer, "pot_plant", 16);
 
 		//NOTE: Init all animations for game
 
@@ -93,26 +91,20 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadImageStrip(&gameState->playerbackwardSidewardRun, backendRenderer, "../src/images/player/Man_back_sideways_4.png", 64);
 		loadImageStrip(&gameState->playerforwardSidewardRun, backendRenderer, "../src/images/player/Man_forward_sideways_4.png", 64);
 
+		loadImageStrip(&gameState->animationState.waterAnimation, backendRenderer, "../src/images/foam.png", 192);
 
 		/////////////
 
 		int tileCount = 0;
 		int countX = 0;
 		int countY = 0;
-		Texture ** tiles = loadTileSet(backendRenderer, "../src/images/Tileset.png", 32, 32, &global_long_term_arena, &tileCount, &countX, &countY);
+		Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tileMapFlat.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
 
-		gameState->swampTileSet = buildTileSet(tiles, tileCount, TILE_SET_SWAMP, countX, countY, 32, 32);
-
-		gameState->coinsGot = initResizeArray(int);
+		gameState->sandTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
 
 		addPlayerEntity(gameState);
 
 		gameState->gravityOn = false;
-
-		for(int i = 0; i < 10; ++i) {
-			Entity *e = addPotPlantEntity(gameState, &gameState->potPlantAnimations);
-			e->pos.x = i;
-		}
 
 	#if DEBUG_BUILD
 		DEBUG_runUnitTests(gameState);

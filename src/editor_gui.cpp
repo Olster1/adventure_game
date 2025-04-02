@@ -158,7 +158,7 @@ void drawAndUpdateEditorGui(GameState *state, Renderer *renderer, float x, float
 
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
-    TileSet *swampSet = &state->swampTileSet; 
+    TileSet *swampSet = &state->sandTileSet; 
 
     EditorGui *gui = &state->editorGuiState;
 
@@ -313,7 +313,7 @@ void drawAndUpdateEditorGui(GameState *state, Renderer *renderer, float x, float
                 worldY = floor(worldY);
             }
             
-            MapTile t = getDefaultMapTile(state, TILE_SET_SWAMP, worldX, worldY, xIndex, (swampSet->countY - 1) - yIndex, true);
+            MapTile t = getDefaultMapTile(state, TILE_SET_SAND, worldX, worldY, xIndex, (swampSet->countY - 1) - yIndex, true);
 
             UndoRedoBlock block = {};
             // block->lastMapTile;

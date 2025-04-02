@@ -254,3 +254,8 @@ inline static bool easyAnimation_getCurrentAnimation(EasyAnimation_Controller *c
     return (c->parent.next->animation == a);
 
 }
+
+struct AnimationState {
+    Animation waterAnimation;
+    EasyAnimation_ListItem *animationItemFreeListPtr;
+};

@@ -126,7 +126,7 @@ void clearEntities(GameState *state) {
     // releaseMemoryMark(&global_perFrameArenaMark);
 	// global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
 
-    state->animationItemFreeListPtr = 0;
+    state->animationState.animationItemFreeListPtr = 0;
 
     // for(int i = 0; i < state->entityCount; ++i) {
     //     Entity *e = &state->entities[i];
@@ -149,7 +149,7 @@ void loadSaveLevel_json(GameState *state, char *fileName_utf8) {
         Entity entity = {};
 
         float2 tileMapId = make_float2(0, 0);
-        TileSetType tileType = TILE_SET_SWAMP;
+        TileSetType tileType = TILE_SET_SAND;
 
         //NOTE: Delete all the entities
         clearEntities(state);

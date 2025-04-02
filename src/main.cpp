@@ -16,8 +16,9 @@
 #include "tileMap.h"
 #include "editor_gui.h"
 #include "dialog.cpp"
-#include "terrain.cpp"
+#include "terrain.h"
 #include "game_state.h"
+#include "terrain.cpp"
 #include "assets.cpp"
 #include "tileMap.cpp"
 // #include "easy_text_io.h"
@@ -57,7 +58,8 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 
 	pushViewport(renderer, make_float4(0, 0, 0, 0));
 	renderer_defaultScissors(renderer, windowWidth, windowHeight);
-	pushClearColor(renderer, make_float4(1, 0.9, 0.9, 1));
+	
+	pushClearColor(renderer, make_float4(0.278, 0.671, 0.663, 1.0));
 
 	float2 mouse_point_top_left_origin = make_float2(global_platformInput.mouseX, global_platformInput.mouseY);	
 	float2 mouse_point_top_left_origin_01 = make_float2(global_platformInput.mouseX / windowWidth, global_platformInput.mouseY / windowHeight);

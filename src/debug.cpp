@@ -103,7 +103,7 @@ void drawDebugAndEditorText(GameState *gameState, Renderer *renderer, float faux
 	}
 	
 	if(gameState->gameMode == TILE_MODE) {
-		drawAndUpdateEditorGui(gameState, renderer, 0, 0, windowWidth, windowHeight);
+		// drawAndUpdateEditorGui(gameState, renderer, 0, 0, windowWidth, windowHeight);
 	} else if(gameState->gameMode == A_STAR_MODE) {
 		pushShader(renderer, &textureShader);
 		pushMatrix(renderer, fovMatrix);
