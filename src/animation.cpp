@@ -120,7 +120,7 @@ static Animation *easyAnimation_findAnimation(Animation *Animations, int Animati
 }
 
 
-static void easyAnimation_addAnimationToController(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, Animation *animation, float period) {
+static EasyAnimation_ListItem *easyAnimation_addAnimationToController(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, Animation *animation, float period) {
     EasyAnimation_ListItem *AnimationItemFreeList = *AnimationItemFreeListPtr;
     EasyAnimation_ListItem *Item = 0;
     if(AnimationItemFreeList) {
@@ -147,6 +147,8 @@ static void easyAnimation_addAnimationToController(EasyAnimation_Controller *con
     
     AnimationListSentintel->prev->next = Item;
     AnimationListSentintel->prev = Item;
+
+    return Item;
     
 }
 
@@ -167,6 +169,13 @@ static void easyAnimation_emptyAnimationContoller(EasyAnimation_Controller *cont
 
     controller->currentLoopCount = 0;
     
+}
+
+static void easyAnimation_randomStart(EasyAnimation_ListItem *item) {
+    if(item) {
+        item->timerAt = random_between_float(0, item->timerPeriod);
+        item->frameIndex = random_between_int(0, item->animation->frameCount);
+    }
 }
 
 static char *easyAnimation_updateAnimation(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, float dt) {

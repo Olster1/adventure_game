@@ -27,17 +27,19 @@ DefaultEntityAnimations loadEntityAnimations(GameState *gameState, BackendRender
 	return result;
 }
 
+
+
 void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->initialized = true;
 
 		initRenderer(&gameState->renderer);
 		gameState->animationState.animationItemFreeListPtr = 0;
 
-		#if DEBUG_BUILD
 		gameState->font = initFont("../fonts/liberation-mono.ttf");
-		#else
-		gameState->font = initFont("./fonts/liberation-mono.ttf");
-		#endif
+
+		for(int i = 0; i < arrayCount(gameState->layers); ++i) {
+			gameState->layers[i] = initResizeArray(RenderObject);
+		}
 
 		gameState->fontScale = 0.6f;
 

@@ -147,10 +147,21 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                 float pX = (p.x + 0.5f) - gameState->cameraPos.x;
                                 float pY = (p.y + 0.5f)  - gameState->cameraPos.y;
                                 if(animationSprite) {
-                                    pushTexture(renderer, animationSprite->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords);
+                                    RenderObject b = {};
+                                    b.sprite = animationSprite;
+                                    b.pos = make_float3(pX, pY, 10);
+                                    b.scale = make_float2(waterScale, waterScale);
+                                    pushArrayItem(&gameState->layers[0], b, RenderObject);
+                                    // pushTexture(renderer, animationSprite->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords);
                                 }
 
-                                pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
+                                RenderObject b = {};
+                                b.sprite = sprite;
+                                b.pos = make_float3(pX, pY, 10);
+                                b.scale = make_float2(1, 1);
+                                pushArrayItem(&gameState->layers[1], b, RenderObject);
+
+                                // pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
                             }
                         }
                     }
@@ -158,6 +169,8 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
             }
         }
     }
+
+    
 }
 
 

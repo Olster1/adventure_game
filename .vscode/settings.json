@@ -4,6 +4,15 @@
         "cmath": "cpp",
         "__locale": "cpp",
         "typeinfo": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "array": "cpp",
+        "type_traits": "cpp",
+        "limits": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "variant": "cpp",
+        "bitset": "cpp"
     }
 }

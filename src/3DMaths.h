@@ -30,6 +30,15 @@ int MathMin(int a, int b) {
 
 }
 
+inline float random_between_float(float a, float b) {
+    // Generate a random float between a and b (exclusive)
+    return a + (rand() / (float)RAND_MAX) * (b - a);
+}
+
+int random_between_int(int a, int b) {
+    return a + rand() % (b - a);  // Generate an integer between a and b (exclusive)
+}
+
 inline float ATan2_0toTau(float Y, float X) {
     float Result = (float)atan2(Y, X);
     if(Result < 0) {

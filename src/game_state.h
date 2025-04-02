@@ -11,7 +11,11 @@ enum GameMode {
 	A_STAR_MODE
 };
 
-
+struct RenderObject {
+	Texture *sprite;
+	float3 pos;
+	float2 scale;
+};
 
 typedef struct {
 	bool initialized;
@@ -27,6 +31,9 @@ typedef struct {
 	Renderer renderer;
 
 	Font font;
+
+	//NOTE: Resize arrays
+	RenderObject * layers[3];
 
 	float shakeTimer;
 

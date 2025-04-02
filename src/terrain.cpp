@@ -28,6 +28,25 @@ TileType getLandscapeValue(int worldX, int worldY) {
     return type;
 }
 
+static TileMapCoords global_tileLookup[16] = {
+    {3, 3}, // 0000 - No beach tiles
+    {3, 2}, // 0001 - Top
+    {3, 0}, // 0010 - Bottom
+    {3, 1}, // 0011 - Top & Bottom
+    {0, 3}, // 0100 - Right
+    {0, 2}, // 0101 - Top & Right
+    {0, 0}, // 0110 - Bottom & Right
+    {0, 1}, // 0111 - Top, Bottom, Right
+    {2, 3}, // 1000 - Left
+    {2, 2}, // 1001 - Top & Left
+    {2, 0}, // 1010 - Bottom & Left
+    {2, 1}, // 1011 - Top, Bottom, Left
+    {1, 3}, // 1100 - Left & Right
+    {1, 2}, // 1101 - Top, Right, Left
+    {1, 0}, // 1110 - Bottom, Right, Left
+    {1, 1}  // 1111 - Surrounded by beach tiles
+};
+
 void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
     assert(chunk);
     assert(chunk->generateState & CHUNK_NOT_GENERATED);
@@ -50,25 +69,6 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
             if(type == TILE_TYPE_BEACH) {
                 animation = &animationState->waterAnimation;
 
-                TileMapCoords tileLookup[16] = {
-                    {3, 3}, // 0000 - No beach tiles
-                    {3, 2}, // 0001 - Top
-                    {3, 0}, // 0010 - Bottom
-                    {3, 1}, // 0011 - Top & Bottom
-                    {0, 3}, // 0100 - Right
-                    {0, 2}, // 0101 - Top & Right
-                    {0, 0}, // 0110 - Bottom & Right
-                    {0, 1}, // 0111 - Top, Bottom, Right
-                    {2, 3}, // 1000 - Left
-                    {2, 2}, // 1001 - Top & Left
-                    {2, 0}, // 1010 - Bottom & Left
-                    {2, 1}, // 1011 - Top, Bottom, Left
-                    {1, 3}, // 1100 - Left & Right
-                    {1, 2}, // 1101 - Top, Right, Left
-                    {1, 0}, // 1110 - Bottom, Right, Left
-                    {1, 1}  // 1111 - Surrounded by beach tiles
-                };
-                
                 u8 bits = 0;
                 if (getLandscapeValue(worldX, worldY + 1) == TILE_TYPE_BEACH) bits |= 1 << 0;
                 if (getLandscapeValue(worldX, worldY - 1) == TILE_TYPE_BEACH) bits |= 1 << 1;
@@ -76,9 +76,8 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                 if (getLandscapeValue(worldX - 1, worldY) == TILE_TYPE_BEACH) bits |= 1 << 3;
                 
                 // Fast lookup
-                tileCoords = tileLookup[bits];
+                tileCoords = global_tileLookup[bits];
                 tileCoords.x += 5;
-
 
             } 
 

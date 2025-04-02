@@ -2,21 +2,17 @@ struct ResizeArrayHeader {
     size_t sizeOfElement;
     int elementsCount;
     int maxCount;
-    int incrementCount;
 };
-
-#define DEFAULT_RESIZE_ARRAY_SIZE 64
 
 #define initResizeArray(type) (type *)initResizeArray_(sizeof(type))
 
-u8 *initResizeArray_(size_t sizeOfElement, int incrementCount = DEFAULT_RESIZE_ARRAY_SIZE) {
-    ResizeArrayHeader *header =(ResizeArrayHeader *)easyPlatform_allocateMemory(incrementCount*sizeOfElement + sizeof(ResizeArrayHeader), EASY_PLATFORM_MEMORY_ZERO);
+u8 *initResizeArray_(size_t sizeOfElement) {
+    ResizeArrayHeader *header =(ResizeArrayHeader *)easyPlatform_allocateMemory(sizeOfElement + sizeof(ResizeArrayHeader), EASY_PLATFORM_MEMORY_ZERO);
     u8 *array = ((u8 *)header) + sizeof(ResizeArrayHeader);
 
     header->sizeOfElement = sizeOfElement;
     header->elementsCount = 0;
-    header->maxCount = incrementCount;
-    header->incrementCount = incrementCount;
+    header->maxCount = 1;
 
     return array;
 }
@@ -26,28 +22,67 @@ ResizeArrayHeader *getResizeArrayHeader(u8 *array) {
     return header;
 }
 
+void freeResizeArray(void *array_) {
+    u8 *array = (u8 *)array_;
+    ResizeArrayHeader *header = getResizeArrayHeader(array);
+    easyPlatform_freeMemory(header);
+}
+
 u8 *getResizeArrayContents(ResizeArrayHeader *header) {
     u8 *array = ((u8 *)header) + sizeof(ResizeArrayHeader);
     return array;
 }
 
 int getArrayLength(void *array) {
+    if(!array) {
+        return 0;
+    }
     ResizeArrayHeader *header = getResizeArrayHeader((u8 *)array);
     assert(header->elementsCount <= header->maxCount);
     int result = header->elementsCount;
     return result;
 }
 
-size_t getArraySizeInBytes(void *array) {
+void clearResizeArray(void *array) {
+    if(!array) {
+        return;
+    }
     ResizeArrayHeader *header = getResizeArrayHeader((u8 *)array);
     assert(header->elementsCount <= header->maxCount);
-    size_t result = header->elementsCount*header->sizeOfElement;
-    return result;
+    header->elementsCount = 0;
 }
 
-#define pushArrayItem(array_, data, type)  (type *)pushArrayItem_(array_, &data)
-u8 *pushArrayItem_(void *array_, void *data) {
-    u8 *array = (u8 *)array_;
+bool removeArrayAtIndex(void *array, int index) {
+    bool found = false;
+    if(!array) {
+        found = false;
+    } else {
+        ResizeArrayHeader *header = getResizeArrayHeader((u8 *)array);
+        assert(header->elementsCount <= header->maxCount);
+        assert(index < header->elementsCount);
+
+        if(index < header->elementsCount) {
+            found = true;
+            //NOTE: Move everything down
+            u8 *a = (u8 *)array;
+            for(int i = index; i < (header->elementsCount - 1); ++i) {
+                u8 *to = a + (i * header->sizeOfElement);
+                u8 *from = a + ((i + 1) * header->sizeOfElement);
+
+                easyPlatform_copyMemory(to, from, header->sizeOfElement);
+            }
+
+            header->elementsCount--;
+        }
+    }
+
+    return found;
+    
+}
+
+#define pushArrayItem(array_, data, type)  (type *)pushArrayItem_((void **)array_, &data)
+void *pushArrayItem_(void **array_, void *data) {
+    u8 *array = *((u8 **)array_);
     u8 *newPos = 0;
     if(array) {
         ResizeArrayHeader *header = getResizeArrayHeader(array);
@@ -55,13 +90,12 @@ u8 *pushArrayItem_(void *array_, void *data) {
         if(header->elementsCount == header->maxCount) {
             //NOTE: Resize array
             size_t oldSize = header->maxCount*header->sizeOfElement + sizeof(ResizeArrayHeader);
-            size_t newSize = oldSize + header->incrementCount*header->sizeOfElement;
+            float resizeFactor = 1.5; //NOTE: Same as MSVC C++ Vector. x2 on GCC c++ Vector
+            header->maxCount = round(header->maxCount*resizeFactor); 
+            size_t newSize = header->maxCount*header->sizeOfElement + sizeof(ResizeArrayHeader);
             header = (ResizeArrayHeader *)easyPlatform_reallocMemory(header, oldSize, newSize);
 
             array = getResizeArrayContents(header);
-
-            header->maxCount += header->incrementCount;
-
         } 
 
         newPos = array + (header->elementsCount * header->sizeOfElement);
@@ -70,5 +104,31 @@ u8 *pushArrayItem_(void *array_, void *data) {
         easyPlatform_copyMemory(newPos, data, header->sizeOfElement);
     }
 
-    return array;
+    *array_ = array;
+
+    return newPos;
+}
+
+struct TestStruct {
+    int x;
+    int y; 
+    int z;
+};
+
+void DEBUG_ArrayTests() {
+    TestStruct *blocks = initResizeArray(TestStruct);
+    TestStruct b;
+    pushArrayItem(&blocks, b, TestStruct);
+    assert(getArrayLength(blocks) == 1);
+
+    pushArrayItem(&blocks, b, TestStruct);
+    assert(getArrayLength(blocks) == 2);        
+
+    b.y = 2;
+
+    TestStruct *t = pushArrayItem(&blocks, b, TestStruct);
+    assert(getArrayLength(blocks) == 3);
+    assert(t->y == 2);
+
+
 }

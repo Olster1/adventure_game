@@ -34,9 +34,9 @@ struct Tile {
             assert(animation);
             animationController = pushStruct(&global_long_term_arena, EasyAnimation_Controller);
             easyAnimation_initController(animationController);
-            easyAnimation_addAnimationToController(animationController, freeList, animation, 0.08f);
-
-
+            EasyAnimation_ListItem *anim = easyAnimation_addAnimationToController(animationController, freeList, animation, 0.08f);
+            // //NOTE: Randomise it so the water animations don't look so obvious
+            // easyAnimation_randomStart(anim);
         }
     }
 };

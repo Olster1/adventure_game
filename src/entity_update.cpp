@@ -3,13 +3,13 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
     	//NOTE: Push all lights for the renderer to use
 	pushAllEntityLights(gameState, dt);
 
-	pushShader(renderer, &pixelArtShader);
-	pushMatrix(renderer, fovMatrix);
-
 	renderTileMap(gameState, renderer, dt);
 
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(gameState, dt);
+
+	pushShader(renderer, &pixelArtShader);
+	pushMatrix(renderer, fovMatrix);
 
 	//NOTE: Gameplay code
 	for(int i = 0; i < gameState->entityCount; ++i) {
@@ -27,4 +27,18 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
+
+	pushShader(renderer, &pixelArtShader);
+	pushMatrix(renderer, fovMatrix);
+	for(int i = 0; i < arrayCount(gameState->layers); ++i) {
+		RenderObject *objs = gameState->layers[i];
+		for(int j = 0; j < getArrayLength(objs); ++j) {
+			RenderObject obj = objs[j];
+			pushTexture(renderer, obj.sprite->handle, obj.pos, obj.scale, make_float4(1, 1, 1, 1), obj.sprite->uvCoords);
+		}
+		clearResizeArray(objs);
+	}
+	
+
+	
 }
