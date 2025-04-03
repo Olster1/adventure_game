@@ -29,6 +29,8 @@ enum TileFlags {
     TILE_FLAG_FRONT_FACE = 1 << 0, //NOTE: This is whether we should render the front face for 3d
     TILE_FLAG_GRASSY_TOP = 1 << 1, //NOTE: Wether a block should have an additional grassy top - controlled by perlin noise if it is a rock type
     TILE_FLAG_SHADOW = 1 << 2, //NOTE: Wether a block should have an additional grassy top - controlled by perlin noise if it is a rock type
+    TILE_FLAG_FRONT_GRASS = 1 << 3, 
+    TILE_FLAG_FRONT_BEACH = 1 << 4, 
 };
 
 struct Tile {

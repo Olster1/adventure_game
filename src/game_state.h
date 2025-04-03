@@ -15,6 +15,16 @@ struct RenderObject {
 	Texture *sprite;
 	float3 pos;
 	float2 scale;
+
+	RenderObject() {}
+
+	RenderObject(Texture *sprite,
+		float3 pos,
+		float2 scale) {
+			this->sprite = sprite;
+			this->pos = pos;
+			this->scale = scale;
+	}
 };
 
 typedef struct {

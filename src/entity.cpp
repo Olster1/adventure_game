@@ -120,87 +120,83 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     int renderDistance = 1;
 
     float2 cameraBlockP = getChunkPosForWorldP(gameState->cameraPos.xy);
-    
-	for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
-        for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
+    int renderObjCount = 0;
+    RenderObject objs[5] = {};
+    for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
+        const int RENDER_PASS_COUNT = 2;
+        for(int pass = 0; pass <= RENDER_PASS_COUNT; ++pass) {
+            for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
+                for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
 
-            Chunk *c = gameState->terrain.getChunk(&gameState->animationState, x_ + cameraBlockP.x, y_ + cameraBlockP.y, 0);
-            if(c) {
-                for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
-                    for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
-                        for(int tilex = 0; tilex <= CHUNK_DIM; ++tilex) {
-                            Tile *tile = c->getTile(tilex, tiley, tilez);
+                    Chunk *c = gameState->terrain.getChunk(&gameState->animationState, x_ + cameraBlockP.x, y_ + cameraBlockP.y, 0);
+                    if(c) {
+                
+                        for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
+                            for(int tilex = 0; tilex <= CHUNK_DIM; ++tilex) {
+                                renderObjCount = 0; //NOTE: Clear the render queue
+                                Tile *tile = c->getTile(tilex, tiley, tilez);
 
-                            if(tile) {
-                                Texture *sprite = 0;
-                                Texture *frontFace = 0;
-                                Texture *animationSprite = 0;
-
-                                if(tile->type == TILE_TYPE_BEACH) {
-                                    sprite = getTileTexture(&gameState->sandTileSet, tile->coords);
-                                } else if(tile->type == TILE_TYPE_ROCK) {
-                                    sprite = getTileTexture(&gameState->elevateTileSet, tile->coords);
-
-                                    if(tile->flags & TILE_FLAG_FRONT_FACE) {
-                                        TileMapCoords coord = tile->coords;
-                                        coord.y += 1;
-                                        frontFace = getTileTexture(&gameState->elevateTileSet, coord);
-                                    }
-                                }
-
-                                if(tile->animationController) {
-                                    animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
-                                }
-                                if(sprite) {
+                                if(tile) {
                                     float waterScale = 3;
                                     float shadowScale = 3.1f;
                                     float3 p = getTileWorldP(c, tilex, tiley, tilez);
                                     float pX = (p.x + 0.5f) - gameState->cameraPos.x;
                                     float pY = (p.y + 0.5f)  - gameState->cameraPos.y;
-                                    if(animationSprite) {
-                                        RenderObject b = {};
-                                        b.sprite = animationSprite;
-                                        b.pos = make_float3(pX, pY, 10);
-                                        b.scale = make_float2(waterScale, waterScale);
-                                        pushArrayItem(&gameState->layers[0], b, RenderObject);
-                                        // pushTexture(renderer, animationSprite->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords);
+                                    float3 defaultP = make_float3(pX, pY, 10);
+
+                                    if(pass == 1) {
+                                        if(tile->type == TILE_TYPE_BEACH) {
+                                            assert(renderObjCount < arrayCount(objs));
+                                            objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, tile->coords), defaultP, make_float2(1, 1));
+                                        } else if(tile->type == TILE_TYPE_ROCK) {
+                                            assert(renderObjCount < arrayCount(objs));
+                                            objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->elevateTileSet, tile->coords), defaultP, make_float2(1, 1));
+
+                                            if(tile->flags & TILE_FLAG_FRONT_FACE) {
+                                                TileMapCoords coord = tile->coords;
+                                                coord.y += 1;
+                                                
+                                                assert(renderObjCount < arrayCount(objs));
+                                                objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->elevateTileSet, coord), make_float3(pX, pY - 1, 10), make_float2(1, 1));
+                                            }
+                                        }
+
+                                        if(tile->flags & TILE_FLAG_GRASSY_TOP) {
+                                            assert(renderObjCount < arrayCount(objs));
+                                            objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, tile->coordsSecondary), defaultP, make_float2(1, 1));
+                                        }
+
+                                        if((tile->flags & TILE_FLAG_FRONT_GRASS) || (tile->flags & TILE_FLAG_FRONT_BEACH)) {
+                                            TileMapCoords coord = {};
+                                            coord.x = 4;
+                                            coord.y = 0;
+
+                                            if(tile->flags & TILE_FLAG_FRONT_BEACH) {
+                                                coord.x += 5;
+                                            }
+
+                                            assert(renderObjCount < arrayCount(objs));
+                                            objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, coord), make_float3(pX, pY - 1, 10), make_float2(1, 1));
+                                        }
+                                    } else if(pass == 0) {
+                                        if(tile->animationController) {
+                                            Texture *animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
+                                            assert(renderObjCount < arrayCount(objs));
+                                            objs[renderObjCount++] = RenderObject(animationSprite, defaultP, make_float2(waterScale, waterScale));
+                                        }
+                                        if(tile->flags & TILE_FLAG_SHADOW) {
+                                            Texture *t = &gameState->shadowTexture;
+                                            assert(renderObjCount < arrayCount(objs));
+                                            objs[renderObjCount++] = RenderObject(t, make_float3(pX, pY - 1, 10), make_float2(shadowScale, shadowScale));
+                                        }
+                                        
                                     }
 
-                                    if(tile->flags & TILE_FLAG_SHADOW) {
-                                        RenderObject b = {};
-                                        b.sprite = &gameState->shadowTexture;
-                                        b.pos = make_float3(pX, pY - 1, 10);
-                                        b.scale = make_float2(shadowScale, shadowScale);
-                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
+                                    //NOTE: Render all the sprites now
+                                    for(int i = 0; i < renderObjCount; ++i) {
+                                        RenderObject b = objs[i];
+                                        pushTexture(renderer, b.sprite->handle, b.pos, b.scale, make_float4(1, 1, 1, 1), b.sprite->uvCoords);
                                     }
-
-                                    if(frontFace){
-                                        RenderObject b = {};
-                                        b.sprite = frontFace;
-                                        b.pos = make_float3(pX, pY - 1, 10);
-                                        b.scale = make_float2(1, 1);
-                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
-                                        // pushTexture(renderer, frontFace->handle, make_float3(pX, pY, 10), make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), frontFace->uvCoords);
-                                    }
-
-                                    {
-                                        RenderObject b = {};
-                                        b.sprite = sprite;
-                                        b.pos = make_float3(pX, pY, 10);
-                                        b.scale = make_float2(1, 1);
-                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
-                                        // pushTexture(renderer, sprite->handle, make_float3(pX, pY, 10), make_float2(1, 1), make_float4(1, 1, 1, 1), sprite->uvCoords);
-                                    }
-
-                                    if(tile->flags & TILE_FLAG_GRASSY_TOP) {
-                                        RenderObject b = {};
-                                        b.sprite = getTileTexture(&gameState->sandTileSet, tile->coordsSecondary);;
-                                        b.pos = make_float3(pX, pY, 10);
-                                        b.scale = make_float2(1, 1);
-                                        pushArrayItem(&gameState->layers[1], b, RenderObject);
-                                    }
-
-                                    
                                 }
                             }
                         }

@@ -89,11 +89,6 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                 int worldY = chunkWorldY + y;
                 int worldZ = chunkWorldZ + z;
 
-                if(worldX == -13 && worldY == 16 && worldZ == 0) {
-                    int h = 0;
-                }
-                
-
                 TileType type = getLandscapeValue(worldX, worldY, worldZ);
 
                 if(type == TILE_TYPE_SOLID) {
@@ -127,6 +122,15 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                         if(bits == 0b0101 || bits == 0b1101 || bits == 0b1001 || bits == 0b0001 || 
                             bits == 0b0000 || bits == 0b0100 || bits == 0b1000 || bits == 0b1100) {
                             flags |= TILE_FLAG_FRONT_FACE;
+
+                            //NOTE: Now check whether it should have dirt at the front 
+                            if(getLandscapeValue(worldX, worldY - 1, worldZ - 1) == TILE_TYPE_SOLID) {
+                                if((worldZ - 1) == 0) {
+                                    flags |= TILE_FLAG_FRONT_BEACH;
+                                } else if(hasGrassyTop(worldX, worldY - 1, worldZ - 1)) {
+                                    flags |= TILE_FLAG_FRONT_GRASS;
+                                }
+                            }
                             
                         }
 
