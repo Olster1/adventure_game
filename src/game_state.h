@@ -42,9 +42,6 @@ typedef struct {
 
 	Font font;
 
-	//NOTE: Resize arrays
-	RenderObject * layers[3];
-
 	float shakeTimer;
 
 	float fontScale;
@@ -53,13 +50,18 @@ typedef struct {
 
 	Entity *player;	
 
+	float scrollDp;
+
 	int entityCount;
 	Entity entities[256];
 
 	float3 cameraPos;
+	float cameraFOV;
 
 	float planeSizeX;
 	float planeSizeY;
+
+	GamePlay gamePlay;
 
 	Texture playerTexture;
 	Texture stoneTexture;
@@ -67,6 +69,7 @@ typedef struct {
 	Texture dirtTexture;
 	Texture waterTexture;
 	Texture shadowTexture;
+	
 
 	int tileCount;
 	MapTile tiles[10000];
@@ -100,6 +103,7 @@ typedef struct {
 	EditorGui editorGuiState;
 
 	bool cameraFollowPlayer;
+
 
 	float zoomLevel;
 

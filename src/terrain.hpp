@@ -16,7 +16,8 @@ enum TileType {
     TILE_TYPE_WATER,
     TILE_TYPE_BEACH,
     TILE_TYPE_ROCK,
-    TILE_TYPE_SOLID
+    TILE_TYPE_SOLID,
+    TILE_TYPE_WATER_ROCK
 
 };
 
@@ -39,23 +40,23 @@ struct Tile {
     TileMapCoords coords;
     TileMapCoords coordsSecondary;
     u32 flags = 0;
+    u8 lightingMask = 0; //NOTE: Minecraft like lighting data bottom 4 bits are top surface, next 4 bits are the front facing surface 
 
     Tile() {
 
     }
 
-    Tile(TileType type, EasyAnimation_ListItem **freeList, Animation *animation, TileMapCoords coords, TileMapCoords coordsSecondary, u32 flags) {
+    Tile(TileType type, EasyAnimation_ListItem **freeList, Animation *animation, TileMapCoords coords, TileMapCoords coordsSecondary, u32 flags, u8 lightingMask) {
         this->type = type;
         this->coords = coords;
         this->coordsSecondary = coordsSecondary;
         this->flags = flags;
-        if(type == TILE_TYPE_BEACH) {
+        this->lightingMask = lightingMask;
+        if(type == TILE_TYPE_BEACH || type == TILE_TYPE_WATER_ROCK) {
             assert(animation);
             animationController = pushStruct(&global_long_term_arena, EasyAnimation_Controller);
             easyAnimation_initController(animationController);
             EasyAnimation_ListItem *anim = easyAnimation_addAnimationToController(animationController, freeList, animation, 0.08f);
-            // //NOTE: Randomise it so the water animations don't look so obvious
-            // easyAnimation_randomStart(anim);
         }
     }
 };

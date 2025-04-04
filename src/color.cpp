@@ -1,15 +1,3 @@
-struct Editor_Color_Palette
-{
-	float4 background;
-	float4 standard;
-	float4 variable;
-	float4 bracket;
-	float4 function;
-	float4 keyword;
-	float4 comment;
-	float4 preprocessor;
-};
-
 //alpha is at 24 place
 static inline float4 color_hexARGBTo01(unsigned int color) {
     float4 result = {};

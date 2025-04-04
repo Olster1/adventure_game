@@ -1,3 +1,18 @@
+void updateZoom(GameState *gameState, float dt) {
+    gameState->scrollDp += global_platformInput.mouseScrollY*dt;
+
+    //NOTE: Drag
+    gameState->scrollDp *= 0.81f;
+
+    //NOTE: Zoom in & out
+    gameState->zoomLevel *= 1 + gameState->scrollDp;
+    
+    float min = 0.01f;
+    if(gameState->zoomLevel < min) {
+        gameState->zoomLevel = min;
+    }
+} 
+
 void updateCamera(GameState *gameState, float dt) {
 	float2 cameraOffset = make_float2(0, 0);
 

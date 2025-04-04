@@ -117,7 +117,7 @@ Entity *addPotPlantEntity(GameState *state, DefaultEntityAnimations *animations)
 
 void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     //NOTE: Draw the tile map
-    int renderDistance = 1;
+    int renderDistance = 3;
 
     float2 cameraBlockP = getChunkPosForWorldP(gameState->cameraPos.xy);
     int renderObjCount = 0;
@@ -144,10 +144,19 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                     float pY = (p.y + 0.5f)  - gameState->cameraPos.y;
                                     float3 defaultP = make_float3(pX, pY, 10);
 
+                                    u8 lightingMask = tile->lightingMask;
+
                                     if(pass == 1) {
                                         if(tile->type == TILE_TYPE_BEACH) {
                                             assert(renderObjCount < arrayCount(objs));
                                             objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, tile->coords), defaultP, make_float2(1, 1));
+                                        } else if(tile->type == TILE_TYPE_WATER_ROCK) {
+                                            waterScale = 2;
+                                            if(tile->animationController) {
+                                                Texture *animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
+                                                assert(renderObjCount < arrayCount(objs));
+                                                objs[renderObjCount++] = RenderObject(animationSprite, defaultP, make_float2(waterScale, waterScale));
+                                            }
                                         } else if(tile->type == TILE_TYPE_ROCK) {
                                             assert(renderObjCount < arrayCount(objs));
                                             objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->elevateTileSet, tile->coords), defaultP, make_float2(1, 1));
@@ -155,6 +164,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                             if(tile->flags & TILE_FLAG_FRONT_FACE) {
                                                 TileMapCoords coord = tile->coords;
                                                 coord.y += 1;
+                                                u8 lightingMask = tile->lightingMask >> 4; //NOTE: We want the top 4 bits so move them down
                                                 
                                                 assert(renderObjCount < arrayCount(objs));
                                                 objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->elevateTileSet, coord), make_float3(pX, pY - 1, 10), make_float2(1, 1));
@@ -178,17 +188,17 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                             assert(renderObjCount < arrayCount(objs));
                                             objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, coord), make_float3(pX, pY - 1, 10), make_float2(1, 1));
                                         }
-                                    } else if(pass == 0) {
+                                    } else if(pass == 0 && tile->type != TILE_TYPE_WATER_ROCK) {
                                         if(tile->animationController) {
                                             Texture *animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
                                             assert(renderObjCount < arrayCount(objs));
                                             objs[renderObjCount++] = RenderObject(animationSprite, defaultP, make_float2(waterScale, waterScale));
                                         }
-                                        if(tile->flags & TILE_FLAG_SHADOW) {
-                                            Texture *t = &gameState->shadowTexture;
-                                            assert(renderObjCount < arrayCount(objs));
-                                            objs[renderObjCount++] = RenderObject(t, make_float3(pX, pY - 1, 10), make_float2(shadowScale, shadowScale));
-                                        }
+                                        // if(tile->flags & TILE_FLAG_SHADOW) {
+                                        //     Texture *t = &gameState->shadowTexture;
+                                        //     assert(renderObjCount < arrayCount(objs));
+                                        //     objs[renderObjCount++] = RenderObject(t, make_float3(pX, pY - 1, 10), make_float2(shadowScale, shadowScale));
+                                        // }
                                         
                                     }
 

@@ -161,10 +161,13 @@ void updateKeyState(PlatformKeyType keyType, bool keyIsDown) {
 }
 
 void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight, bool *running) {
+    
       SDL_Event e;
       while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
             *running = false;
+          } else if (e.type == SDL_MOUSEWHEEL) {
+            global_platformInput.mouseScrollY = e.wheel.y;
           }
       }
 

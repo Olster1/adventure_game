@@ -266,5 +266,6 @@ inline static bool easyAnimation_getCurrentAnimation(EasyAnimation_Controller *c
 
 struct AnimationState {
     Animation waterAnimation;
+    Animation waterRocks[4];
     EasyAnimation_ListItem *animationItemFreeListPtr;
 };

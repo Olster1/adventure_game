@@ -54,7 +54,7 @@ typedef struct {
 	int size_in_bytes;
 } RenderCommand;
 
-#define MAX_TEXTURE_COUNT 16384
+#define MAX_TEXTURE_COUNT 16384*10
 #define MAX_GLYPH_COUNT 16384
 #define MAX_LINE_COUNT 16384
 #define MAX_RENDER_COMMAND_COUNT 16384

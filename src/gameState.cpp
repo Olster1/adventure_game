@@ -37,11 +37,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		gameState->font = initFont("../fonts/liberation-mono.ttf");
 
-		for(int i = 0; i < arrayCount(gameState->layers); ++i) {
-			gameState->layers[i] = initResizeArray(RenderObject);
-		}
-
 		gameState->fontScale = 0.6f;
+		gameState->scrollDp = 0;
 
 		gameState->terrain = Terrain();
 
@@ -60,16 +57,13 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->planeSizeY = 20;
 		gameState->planeSizeX = 20;
 
-		// gameState->player.velocity = make_float3(0, 0, 0);
-		// gameState->player.pos = make_float3(0, 0, 10);
-		// gameState->playerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "..\\src\\images\\helicopter.png");
+		gameState->gamePlay = init_gameplay();
 
 		gameState->stoneTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/stone.png");
 		gameState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
 		gameState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
 		gameState->waterTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/water.png");
 		gameState->shadowTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/shadow.png");
-		
 
 		gameState->gameMode = PLAY_MODE;
 
@@ -84,6 +78,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadImageStrip(&gameState->playerRunForwardAnimation, backendRenderer, "../src/images/player/Man_forward_4.png", 64);
 		loadImageStrip(&gameState->playerRunbackwardAnimation, backendRenderer, "../src/images/player/Man_back_4.png", 64);
 		loadImageStrip(&gameState->playerRunsidewardAnimation, backendRenderer, "../src/images/player/Man_left_walk_4.png", 64);
+
+		loadImageStrip(&gameState->animationState.waterRocks[0], backendRenderer, "../src/images/Rocks_03.png", 128);
 		
 		
 		loadImageStrip(&gameState->playerAttackAnimation, backendRenderer, "../src/images/player/Man_forward_attack_4.png", 64);

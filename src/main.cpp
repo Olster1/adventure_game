@@ -17,6 +17,7 @@
 #include "editor_gui.h"
 #include "dialog.cpp"
 #include "terrain.hpp"
+#include "gameplay.cpp"
 #include "game_state.h"
 #include "terrain.cpp"
 #include "assets.cpp"
@@ -52,6 +53,8 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	//NOTE: Clear the renderer out so we can start again
 	clearRenderer(renderer);
 	clearGameStatePerFrameValues(gameState);
+
+	updateZoom(gameState, dt);
 
 	//NOTE: Get pointer to player - always at slot zero
 	gameState->player = &gameState->entities[0];

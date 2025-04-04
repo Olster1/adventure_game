@@ -18,7 +18,7 @@ Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash) {
 
 TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
     float maxHeight = 3.0f;
-    int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, worldX, worldY, 0.05f)));
+    int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, worldX, worldY, 0.03f)));
 
     TileType type = TILE_TYPE_NONE;
     if(height >= 0 && worldZ <= height) {
@@ -31,6 +31,14 @@ TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
 bool hasGrassyTop(int worldX, int worldY, int worldZ) {
     float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 0.001f));
     bool result = perlin > 0.5f;
+    return result;
+}
+
+bool isWaterRock(int worldX, int worldY) {
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, worldX, worldY, 10.01f));
+    bool result = perlin > 0.8f;
+
+    
     return result;
 }
 
@@ -92,14 +100,11 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                 TileType type = getLandscapeValue(worldX, worldY, worldZ);
 
                 if(type == TILE_TYPE_SOLID) {
-                    if(worldZ > 0) {
-                        int h = 0;
-                    }
-
                     Animation *animation = 0;
                     TileMapCoords tileCoords = {};
                     TileMapCoords tileCoordsSecondary = {};
                     u32 flags = 0;
+                    u8 lightingMask = 0;
 
                     u8 bits = 0;
                     if (getLandscapeValue(worldX, worldY + 1, worldZ) == TILE_TYPE_SOLID) bits |= 1 << 0;
@@ -112,6 +117,11 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                         tileCoords = global_tileLookup[bits];
                         tileCoords.x += 5;
                         type = TILE_TYPE_BEACH;
+
+                        if(isWaterRock(worldX, worldY)) {
+                            type = TILE_TYPE_WATER_ROCK;
+                            animation = &animationState->waterRocks[0];
+                        }
 
                     } else if(worldZ > 0) {
                         // type = TILE_TYPE_NONE;
@@ -148,16 +158,11 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                             tileCoordsSecondary = global_tileLookup[bits2];
                         }
                     }
-
-                    
-                    if(type == TILE_TYPE_ROCK && getLandscapeValue(worldX, worldY, worldZ + 1) == TILE_TYPE_SOLID && getLandscapeValue(worldX, worldY - 1, worldZ) == TILE_TYPE_SOLID) {
-                        //NOTE: If hidden don't bother making this a tile
-                        // type = TILE_TYPE_NONE;
-                    }
+                    //TODO: Fill out the lighting mask
 
                     if(type != TILE_TYPE_NONE) {
                         // assert(z == 0);
-                        chunk->tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x] = Tile(type, &animationState->animationItemFreeListPtr, animation, tileCoords, tileCoordsSecondary, flags);
+                        chunk->tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x] = Tile(type, &animationState->animationItemFreeListPtr, animation, tileCoords, tileCoordsSecondary, flags, lightingMask);
                     }
                 }
             }
