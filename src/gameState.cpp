@@ -98,15 +98,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 			int tileCount = 0;
 			int countX = 0;
 			int countY = 0;
-			Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tileMapFlat.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
+			Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tilemap.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
 			gameState->sandTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
-		}
-		{
-			int tileCount = 0;
-			int countX = 0;
-			int countY = 0;
-			Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tileMapElevation.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
-			gameState->elevateTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
 		}
 
 		addPlayerEntity(gameState);

@@ -94,7 +94,6 @@ typedef struct {
 
 	GameDialogs dialogs;
 	TileSet sandTileSet;
-	TileSet elevateTileSet;
 
 	Terrain terrain;
 

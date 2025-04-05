@@ -29,7 +29,7 @@ TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
 }
 
 bool hasGrassyTop(int worldX, int worldY, int worldZ) {
-    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 0.001f));
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 0.1f));
     bool result = perlin > 0.5f;
     return result;
 }
@@ -126,6 +126,7 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                     } else if(worldZ > 0) {
                         // type = TILE_TYPE_NONE;
                         tileCoords = global_tileLookup_elevated[bits];
+                        tileCoords.x += 10;
                         tileCoordsSecondary = global_tileLookup[bits];
                         flags |= TILE_FLAG_SHADOW;
                         type = TILE_TYPE_ROCK;

@@ -122,13 +122,14 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     float2 cameraBlockP = getChunkPosForWorldP(gameState->cameraPos.xy);
     int renderObjCount = 0;
     RenderObject objs[5] = {};
+    float2 offset = make_float2(0, 0);
     for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
         const int RENDER_PASS_COUNT = 2;
         for(int pass = 0; pass <= RENDER_PASS_COUNT; ++pass) {
             for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
                 for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
 
-                    Chunk *c = gameState->terrain.getChunk(&gameState->animationState, x_ + cameraBlockP.x, y_ + cameraBlockP.y, 0);
+                    Chunk *c = gameState->terrain.getChunk(&gameState->animationState, x_ + offset.x, y_ + offset.y, 0);
                     if(c) {
                 
                         for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
@@ -159,7 +160,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                             }
                                         } else if(tile->type == TILE_TYPE_ROCK) {
                                             assert(renderObjCount < arrayCount(objs));
-                                            objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->elevateTileSet, tile->coords), defaultP, make_float2(1, 1));
+                                            objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, tile->coords), defaultP, make_float2(1, 1));
 
                                             if(tile->flags & TILE_FLAG_FRONT_FACE) {
                                                 TileMapCoords coord = tile->coords;
@@ -167,7 +168,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                                 u8 lightingMask = tile->lightingMask >> 4; //NOTE: We want the top 4 bits so move them down
                                                 
                                                 assert(renderObjCount < arrayCount(objs));
-                                                objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->elevateTileSet, coord), make_float3(pX, pY - 1, 10), make_float2(1, 1));
+                                                objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, coord), make_float3(pX, pY - 1, 10), make_float2(1, 1));
                                             }
                                         }
 
