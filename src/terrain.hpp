@@ -17,7 +17,7 @@ enum TileType {
     TILE_TYPE_BEACH,
     TILE_TYPE_ROCK,
     TILE_TYPE_SOLID,
-    TILE_TYPE_WATER_ROCK
+    TILE_TYPE_WATER_ROCK,
 
 };
 
@@ -32,6 +32,7 @@ enum TileFlags {
     TILE_FLAG_SHADOW = 1 << 2, //NOTE: Wether a block should have an additional grassy top - controlled by perlin noise if it is a rock type
     TILE_FLAG_FRONT_GRASS = 1 << 3, 
     TILE_FLAG_FRONT_BEACH = 1 << 4, 
+    TILE_FLAG_TREE = 1 << 5,  //NOTE: Wether this tile has a tree
 };
 
 struct Tile {
@@ -147,6 +148,7 @@ float2 getChunkPosForWorldP(float2 p) {
 
 
 uint32_t getHashForChunk(int x, int y, int z) {
+    DEBUG_TIME_BLOCK()
     int values[3] = {x, y, z};
     uint32_t hash = get_crc32((char *)values, arrayCount(values)*sizeof(int));
     hash = hash & (CHUNK_LIST_SIZE - 1);

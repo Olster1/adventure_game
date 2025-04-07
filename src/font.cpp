@@ -116,10 +116,6 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
             info->yoffset = yoffset;
             info->hasTexture = data;
 
-            // char string[256];
-            // sprintf(string, "%c: %d\n", codeIndex, info->hasTexture);
-            // OutputDebugStringA((char *)string);
-
             info->width = width;
             info->height = height;
             // info->aspectRatio_h_over_w = height / width;
@@ -282,39 +278,50 @@ static void draw_text(Renderer *renderer, Font *font, char *str, float startX, f
 
     while(*at) {
         char *at_ptr = ((char *)at);
-        u32 rune = easyUnicode_utf8_codepoint_To_Utf32_codepoint(&at_ptr, true);
-        at = at_ptr;
 
-        float factor = 1.0f;
-
-        GlyphInfo g = easyFont_getGlyph(font, rune);
-
-        assert(g.unicodePoint == rune);
-
-        if(rune == ' ') {
-            g.width = easyFont_getGlyph(font, 'y').width;
-        }
-
-        if(g.hasTexture) {
-
-
-            float4 color = font_color;//make_float4(0, 0, 0, 1);
+        if(*at_ptr == '\n') {
+            //NOTE: New line
+            GlyphInfo g = easyFont_getGlyph(font, 'y');
             float2 scale = make_float2(g.width*fontScale, g.height*fontScale);
+            xAt = startX;
+            yAt -= font->fontHeight;
+            at++;
+        } else {
 
-            if(newLine) {
-                xAt = 0.6f*scale.x + startX;
+            u32 rune = easyUnicode_utf8_codepoint_To_Utf32_codepoint(&at_ptr, true);
+            at = at_ptr;
+
+            float factor = 1.0f;
+
+            GlyphInfo g = easyFont_getGlyph(font, rune);
+
+            assert(g.unicodePoint == rune);
+
+            if(rune == ' ') {
+                g.width = easyFont_getGlyph(font, 'y').width;
             }
 
-            float offsetY = -0.5f*scale.y;
+            if(g.hasTexture) {
 
-            float3 pos = {};
-            pos.x = xAt + fontScale*g.xoffset;
-            pos.y = yAt + -fontScale*g.yoffset + offsetY;
-            pos.z = 1.0f;
-            pushGlyph(renderer, g.handle, pos, scale, font_color, g.uvCoords);
+
+                float4 color = font_color;//make_float4(0, 0, 0, 1);
+                float2 scale = make_float2(g.width*fontScale, g.height*fontScale);
+
+                if(newLine) {
+                    xAt = startX;
+                }
+
+                float offsetY = -0.5f*scale.y;
+
+                float3 pos = {};
+                pos.x = xAt + fontScale*g.xoffset;
+                pos.y = yAt + -fontScale*g.yoffset + offsetY;
+                pos.z = 1.0f;
+                pushGlyph(renderer, g.handle, pos, scale, font_color, g.uvCoords);
+            }
+
+            xAt += (g.width + g.xoffset)*fontScale*factor;
         }
-
-        xAt += (g.width + g.xoffset)*fontScale*factor;
 
         newLine = false;
     }

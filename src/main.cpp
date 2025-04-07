@@ -10,6 +10,7 @@
 #include "SimplexNoise.cpp"
 #include "animation.cpp"
 #include "resize_array.cpp"
+
 // #include "transform.cpp"
 #include "easy_ai.h"
 #include "entity.h"
@@ -34,13 +35,16 @@
 #include "unit_tests.cpp"
 #endif
 #include "gameState.cpp"
+#include "easy_profiler_draw.h"
 #include "debug.cpp"
 #include "player.cpp"
 #include "camera.cpp"
 
 static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
+	DEBUG_TIME_BLOCK();
 	GameState *gameState = (GameState *)global_platform.permanent_storage;
 	assert(sizeof(GameState) < global_platform.permanent_storage_size);
+	
 	if(!gameState->initialized) {
 		initGameState(gameState, backendRenderer);
 	} else {
@@ -54,7 +58,9 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	clearRenderer(renderer);
 	clearGameStatePerFrameValues(gameState);
 
-	updateZoom(gameState, dt);
+	if(gameState->drawState->openState == EASY_PROFILER_DRAW_CLOSED) {
+		updateZoom(gameState, dt);
+	}
 
 	//NOTE: Get pointer to player - always at slot zero
 	gameState->player = &gameState->entities[0];
@@ -83,6 +89,9 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 
 #if DEBUG_BUILD
 	drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
+	float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
+    float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
+	EasyProfile_DrawGraph(renderer, gameState, gameState->drawState, dt, windowHeight/windowWidth, mouseP_01);
 #endif
 
 	return gameState;

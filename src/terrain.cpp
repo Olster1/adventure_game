@@ -1,5 +1,6 @@
 
 Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash) {
+    DEBUG_TIME_BLOCK()
     Chunk *chunk = (Chunk *)pushStruct(&global_long_term_arena, Chunk);
     *chunk = Chunk();
     assert(chunk);
@@ -17,6 +18,7 @@ Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash) {
 }
 
 TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
+    DEBUG_TIME_BLOCK()
     float maxHeight = 3.0f;
     int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, worldX, worldY, 0.03f)));
 
@@ -29,12 +31,21 @@ TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
 }
 
 bool hasGrassyTop(int worldX, int worldY, int worldZ) {
+    DEBUG_TIME_BLOCK()
     float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 0.1f));
     bool result = perlin > 0.5f;
     return result;
 }
 
+bool hasTree(int worldX, int worldY, int worldZ) {
+    DEBUG_TIME_BLOCK()
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 10.f));
+    bool result = perlin > 0.65f;
+    return result;
+}
+
 bool isWaterRock(int worldX, int worldY) {
+    DEBUG_TIME_BLOCK()
     float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, worldX, worldY, 10.01f));
     bool result = perlin > 0.8f;
 
@@ -81,6 +92,7 @@ static TileMapCoords global_tileLookup_elevated[16] = {
 };
 
 void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
+    DEBUG_TIME_BLOCK()
     assert(chunk);
     assert(chunk->generateState & CHUNK_NOT_GENERATED);
     chunk->generateState = CHUNK_GENERATING;
@@ -157,7 +169,13 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                             if (hasGrassyTop(worldX - 1, worldY, worldZ) && (bits & (1 << 3))) bits2 |= 1 << 3;
         
                             tileCoordsSecondary = global_tileLookup[bits2];
+
+                            if(hasTree(worldX, worldY, worldZ)) {
+                                flags |= TILE_FLAG_TREE;
+                            } 
                         }
+
+                        
                     }
                     //TODO: Fill out the lighting mask
 
@@ -175,6 +193,7 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
 }
 
 Chunk *Terrain::getChunk(AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk, bool shouldGenerateFully) {
+    DEBUG_TIME_BLOCK()
     uint32_t hash = getHashForChunk(x, y, z);
 
     Chunk *chunk = chunks[hash];

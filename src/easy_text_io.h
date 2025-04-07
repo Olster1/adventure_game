@@ -7,7 +7,7 @@ typedef enum {
     VAR_FLOAT,
     VAR_V2,
     VAR_V3,
-    VAR_V4,
+    VAR_float4,
     VAR_BOOL,
     VAR_STRING,
 } VarType;
@@ -135,7 +135,7 @@ void addVar_(InfiniteAlloc *mem, void *val_, int count, char *varName, VarType t
                 }
                
             } break;
-            case VAR_V4: {
+            case VAR_float4: {
                 float *val = (float *)val_;
                 data = easy_createString_printf(&globalPerFrameArena, "%f %f %f %f", val[0], val[1], val[2], val[3]);
             } break;
@@ -273,7 +273,7 @@ static inline float easyText_getIntOrFloat(DataObject obj) {
     return a;
 }
 
-V2 buildV2FromDataObjects(EasyTokenizer *tokenizer) {
+float2 buildV2FromDataObjects(EasyTokenizer *tokenizer) {
     InfiniteAlloc *data = getDataObjects(tokenizer);
 
     DataObject *objs = (DataObject *)data->memory;
@@ -283,7 +283,7 @@ V2 buildV2FromDataObjects(EasyTokenizer *tokenizer) {
     float a = easyText_getIntOrFloat(objs[0]);
     float b = easyText_getIntOrFloat(objs[1]);
     
-    V2 result = v2(a, b);
+    float2 result = v2(a, b);
 
     data->count = 0; //release the memoy
 
@@ -318,7 +318,7 @@ V3 makeV3FromDataObjects_notClearObjects(EasyTokenizer *tokenizer, int offset) {
 
 
 
-V4 buildV4FromDataObjects(EasyTokenizer *tokenizer) {
+float4 buildfloat4FromDataObjects(EasyTokenizer *tokenizer) {
     InfiniteAlloc *data = getDataObjects(tokenizer);
     DataObject *objs = (DataObject *)data->memory;
     assert(objs[0].type == VAR_FLOAT);
@@ -326,7 +326,7 @@ V4 buildV4FromDataObjects(EasyTokenizer *tokenizer) {
     assert(objs[2].type == VAR_FLOAT);
     assert(objs[3].type == VAR_FLOAT);
     
-    V4 result = v4(objs[0].floatVal, objs[1].floatVal, objs[2].floatVal, objs[3].floatVal);
+    float4 result = v4(objs[0].floatVal, objs[1].floatVal, objs[2].floatVal, objs[3].floatVal);
 
     data->count = 0; //release the memoy
     return result;

@@ -26,6 +26,10 @@ static void *easyPlatform_allocateMemory(u32 sizeInBytes, EasyPlatform_MemoryFla
     if(flags & EASY_PLATFORM_MEMORY_ZERO) {
         memset(result, 0, sizeInBytes);
     }
+
+    #if DEBUG_BUILD
+        DEBUG_add_memory_block_size(&global_debug_stats, result, sizeInBytes);
+    #endif
     
     return result;
 }
@@ -35,6 +39,10 @@ static void easyPlatform_freeMemory(void *memory) {
     HeapFree(GetProcessHeap(), 0, memory);
 #else 
     free(memory);
+#endif
+
+#if DEBUG_BUILD
+    DEUBG_remove_memory_block_size(&global_debug_stats, memory);
 #endif
     
 }

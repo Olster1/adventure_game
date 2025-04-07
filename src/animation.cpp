@@ -248,7 +248,7 @@ inline static int easyAnimation_isControllerEmpty(EasyAnimation_Controller *c) {
 inline static float easyAnimation_getDirectionInRadians(float x, float y) {
     float DirectionValue = 0;
     if(x != 0 || y != 0) {
-        //V2 EntityVelocity = normalizeV2(dp);
+        //float2 EntityVelocity = normalizeV2(dp);
         DirectionValue = ATan2_0toTau(y, x);
     }
     return DirectionValue;

@@ -1,5 +1,6 @@
 
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
+	DEBUG_TIME_BLOCK();
     	//NOTE: Push all lights for the renderer to use
 	pushAllEntityLights(gameState, dt);
 

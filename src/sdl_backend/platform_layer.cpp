@@ -9,7 +9,6 @@
 
 #define EASY_STRING_IMPLEMENTATION 1
 #include "../easy_string_utf8.h"
-
 #include "../debug_stats.h"
 
 #include "../../libs/tinyfiledialogs.h"
@@ -131,6 +130,41 @@ static u8 *platform_realloc_memory(void *src, u32 bytesToMove, size_t sizeToAllo
     return result;
 }
 
+static u64 GlobalTimeFrequencyDatum;
+
+inline u64 EasyTime_GetTimeCount()
+{
+    u64 s = SDL_GetPerformanceCounter();
+    
+    return s;
+}
+
+inline u64 EasyTime_GetSecondsCount() {
+	return (EasyTime_GetTimeCount() / GlobalTimeFrequencyDatum);
+} 
+
+inline float EasyTime_GetSecondsElapsed(u64 CurrentCount, u64 LastCount)
+{
+    u64 Difference = CurrentCount - LastCount;
+    float Seconds = (float)Difference / (float)GlobalTimeFrequencyDatum;
+    
+    return Seconds;
+}
+
+inline float EasyTime_GetMillisecondsElapsed(u64 CurrentCount, u64 LastCount)
+{
+    u64 Difference = CurrentCount - LastCount;
+    assert(Difference >= 0); //user put them in the right order
+    double Seconds = (float)Difference / (float)GlobalTimeFrequencyDatum;
+	float millseconds = (float)(Seconds * 1000.0);     
+    return millseconds;
+    
+}
+
+static inline u64 EasyTime_getTimeStamp() {
+    return (u64)time(NULL);
+}
+
 void updateKeyState(PlatformKeyType keyType, bool keyIsDown) {
     MouseKeyState state = global_platformInput.keys[keyType];
     int wasPressed = 0;
@@ -178,6 +212,7 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     updateKeyState(PLATFORM_KEY_LEFT, currentKeyStates[SDL_SCANCODE_LEFT] == 1 || currentKeyStates[SDL_SCANCODE_A] == 1);
     updateKeyState(PLATFORM_KEY_RIGHT, currentKeyStates[SDL_SCANCODE_RIGHT] == 1 || currentKeyStates[SDL_SCANCODE_D] == 1);
     updateKeyState(PLATFORM_KEY_SPACE, currentKeyStates[SDL_SCANCODE_SPACE] == 1);
+    updateKeyState(PLATFORM_KEY_ESCAPE, currentKeyStates[SDL_SCANCODE_ESCAPE] == 1);
     updateKeyState(PLATFORM_KEY_SHIFT, currentKeyStates[SDL_SCANCODE_LSHIFT] == 1);
     updateKeyState(PLATFORM_KEY_CTRL, currentKeyStates[SDL_SCANCODE_LCTRL] == 1);
     updateKeyState(PLATFORM_KEY_Z, currentKeyStates[SDL_SCANCODE_Z] == 1);
@@ -328,7 +363,8 @@ static bool Platform_LoadEntireFile_utf8(char *filename_utf8, void **data, size_
     return succeed;
 
 }
-
+#include "../debug_variables.h"
+#include "../easy_profiler.hpp"
 #include "../3DMaths.h"
 #include "../render.c"
 #include "../render_backend/opengl_render.cpp"
@@ -372,6 +408,9 @@ int main(int argc, char **argv) {
     float sizeFactor = 1.0f;
     int windowWidth = sizeFactor*960;
     int windowHeight = sizeFactor*540;
+    
+    GlobalTimeFrequencyDatum = SDL_GetPerformanceFrequency();
+    DEBUG_TIME_BLOCK_FOR_FRAME_BEGIN(beginFrameProfiler, "Main: Intial setup");\
 
     // Open a window
     {	
@@ -410,6 +449,8 @@ int main(int argc, char **argv) {
         assert(global_wndHandle);
     }
 
+    
+    
     
     //TODO: Change to using memory arena? 
     BackendRenderer *backendRenderer = (BackendRenderer *)platform_alloc_memory(sizeof(BackendRenderer), true); 
@@ -484,14 +525,25 @@ int main(int argc, char **argv) {
             resized_window = true;
             global_windowDidResize = false;
         }
-
-        GameState *gameState = updateEditor(backendRenderer, dt, windowWidth, windowHeight, resized_window && !first_frame, save_file_location_utf8, settings_to_save);
+        GameState *gameState = 0;
+        {
+            DEBUG_TIME_BLOCK_NAMED("UPDATE GAME LOOP");
+            gameState = updateEditor(backendRenderer, dt, windowWidth, windowHeight, resized_window && !first_frame, save_file_location_utf8, settings_to_save);
+        }
 
         backendRender_processCommandBuffer(&gameState->renderer, backendRenderer);
 
-        backendRender_presentFrame(backendRenderer);
+        {
+            DEBUG_TIME_BLOCK_NAMED("Present Final Frame");
+            backendRender_presentFrame(backendRenderer);
+        }
         
         first_frame = false;
+
+
+        DEBUG_TIME_BLOCK_FOR_FRAME_END(beginFrameProfiler, global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0);
+        DEBUG_TIME_BLOCK_FOR_FRAME_START(beginFrameProfiler, "Per frame");
+
     }
     
     return 0;

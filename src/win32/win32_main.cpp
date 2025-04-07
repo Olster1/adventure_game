@@ -855,17 +855,17 @@ static float2 platform_get_window_xy_pos() {
     return result;
 }
 
-
 #include "../render.c"
 #include "../render_backend/d3d_render.cpp"
 #include "../main.cpp"
-
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 {
     Settings_To_Save settings_to_save = {};
     char *save_file_location_utf8 = 0;
 
+    GlobalTimeFrequencyDatum = SDL_GetPerformanceFrequency();
+    DEBUG_TIME_BLOCK_FOR_FRAME_BEGIN(beginFrameProfiler, "Main: Intial setup");\
 
     // Open a window
     HWND hwnd;
@@ -1041,34 +1041,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
             global_platformInput.mouseY = (float)(mouse.y);
         }
 
-        //NOTE: Find the smallest size we can add to the buffer without overflowing it
-        // int bytesToMoveAboveCursor = global_platformInput.textInput_bytesUsed;
-        // int spaceLeftInBuffer = (MAX_INPUT_BUFFER_SIZE - textBuffer_count - 1); //minus one to put a null terminating character in
-        // if(bytesToMoveAboveCursor > spaceLeftInBuffer) {
-        //     bytesToMoveAboveCursor = spaceLeftInBuffer;
-        // }
-
-        // //NOTE: Get all characters above cursor and save them in a buffer
-        // char tempBuffer[MAX_INPUT_BUFFER_SIZE] = {};
-        // int tempBufferCount = 0;
-        // for(int i = cursorAt; i < textBuffer_count; i++) {
-        //     tempBuffer[tempBufferCount++] = textBuffer[i];
-        // }
-
-        // //NOTE: Copy new string into the buffer
-        // for(int i = 0; i < bytesToMoveAboveCursor; ++i) {
-        //     textBuffer[cursorAt + i] = global_platformInput.textInput_utf8[i];
-        // }
-        
-        // //NOTE: Advance the cursor and the buffer count
-        // textBuffer_count += bytesToMoveAboveCursor;
-        // cursorAt += bytesToMoveAboveCursor;
-
-        // //NOTE: Replace characters above the cursor that we would have written over
-        // for(int i = 0; i < tempBufferCount; ++i) {
-        //     textBuffer[cursorAt + i] = tempBuffer[i]; 
-        // }
-
         bool resized_window = false;
         if(global_windowDidResize)
         {
@@ -1087,60 +1059,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
 
         GameState *gameState = updateEditor(backendRenderer, dt, (float)(winRect.right - winRect.left), (float)(winRect.bottom - winRect.top), resized_window && !first_frame, save_file_location_utf8, settings_to_save);
 
-
-        // //NOTE: Process our command buffer
-        // for(int i = 0; i < global_platformInput.keyInputCommand_count; ++i) {
-        //     PlatformKeyType command = global_platformInput.keyInputCommandBuffer[i];
-        //     if(command == PLATFORM_KEY_BACKSPACE) {
-                
-        //         //NOTE: can't backspace a character if cursor is in front of text
-        //         if(cursorAt > 0 && textBuffer_count > 0) {
-        //             //NOTE: Move all characters in front of cursor down
-        //             int charactersToMoveCount = textBuffer_count - cursorAt;
-        //             for(int i = 0; i < charactersToMoveCount; ++i) {
-        //                 int indexInFront = cursorAt + i;
-        //                 assert(indexInFront < textBuffer_count); //make sure not buffer overflow
-        //                 textBuffer[cursorAt + i - 1] = textBuffer[indexInFront]; //get the one in front 
-        //             }
-
-        //             cursorAt--;
-        //             textBuffer_count--;
-        //         }
-                
-        //     }
-
-        //     if(command == PLATFORM_KEY_LEFT) {
-        //         //NOTE: Move cursor left 
-        //         if(cursorAt > 0) {
-        //             cursorAt--;
-        //         }
-        //     }
-
-        //     if(command == PLATFORM_KEY_RIGHT) {
-        //         //NOTE: Move cursor right 
-        //         if(cursorAt < textBuffer_count) {
-        //             cursorAt++;
-        //         }
-        //     }       
-        // }  
-
-        // //NOTE: put in a null terminating character at the end
-        // assert(textBuffer_count < MAX_INPUT_BUFFER_SIZE);
-        // textBuffer[textBuffer_count] = '\0';  
-
-
-
-        // FLOAT backgroundColor[4] = { DEFINES_BACKGROUND_COLOR };
-        // d3d11DeviceContext->ClearRenderTargetView(default_d3d11FrameBufferView, backgroundColor);
-
-
-        
         backendRender_processCommandBuffer(&gameState->renderer, backendRenderer);
 
         backendRender_presentFrame(backendRenderer);
         
         first_frame = false;
 
+        DEBUG_TIME_BLOCK_FOR_FRAME_END(beginFrameProfiler, global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0);
+        DEBUG_TIME_BLOCK_FOR_FRAME_START(beginFrameProfiler, "Per frame");
 
     }
     

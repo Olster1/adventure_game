@@ -59,11 +59,18 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		gameState->gamePlay = init_gameplay();
 
+		gameState->drawState = EasyProfiler_initProfilerDrawState();
+		
+
 		gameState->stoneTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/stone.png");
 		gameState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
 		gameState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
 		gameState->waterTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/water.png");
 		gameState->shadowTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/shadow.png");
+		gameState->treeTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/tree.png");
+
+		gameState->trees = initResizeArray(RenderObject);
+		
 
 		gameState->gameMode = PLAY_MODE;
 

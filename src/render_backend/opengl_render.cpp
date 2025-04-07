@@ -666,6 +666,7 @@ void drawModels(BackendRenderer *r, ModelBuffer *model, uint32_t textureId, int 
 
 
 static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *backend_r) {
+    DEBUG_TIME_BLOCK();
 #if DEBUG_BUILD
 	global_debug_stats.draw_call_count = 0;
     global_debug_stats.render_command_count = r->commandCount;

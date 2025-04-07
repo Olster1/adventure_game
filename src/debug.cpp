@@ -81,9 +81,7 @@ void drawDebugAndEditorText(GameState *gameState, Renderer *renderer, float faux
 		} else {
 			gameState->gameMode = A_STAR_MODE;
 		}
-	} else if(global_platformInput.keyStates[PLATFORM_KEY_6].pressedCount > 0) {
-		gameState->gravityOn = !gameState->gravityOn;
-	}
+	} 
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_MINUS].pressedCount > 0) {
 		gameState->zoomLevel += 0.1f;
@@ -124,7 +122,9 @@ void drawDebugAndEditorText(GameState *gameState, Renderer *renderer, float faux
 			name_str = "A* MODE";
 		}
 
-		draw_text(renderer, &gameState->font, name_str, 50, fauxDimensionY - 50, 1, make_float4(0, 0, 0, 1)); 
+		if(gameState->drawState->openState == EASY_PROFILER_DRAW_CLOSED) {
+			draw_text(renderer, &gameState->font, name_str, 50, fauxDimensionY - 50, 1, make_float4(0, 0, 0, 1)); 
+		}
 	}
 
 	if(gameState->draw_debug_memory_stats) {

@@ -115,7 +115,14 @@ Entity *addPotPlantEntity(GameState *state, DefaultEntityAnimations *animations)
     return e;
 } 
 
+int compare_by_height(const void *a, const void *b) {
+    const RenderObject *pa = (const RenderObject *)a;
+    const RenderObject *pb = (const RenderObject *)b;
+    return (pb->pos.y - pa->pos.y);
+}
+
 void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
+    DEBUG_TIME_BLOCK();
     //NOTE: Draw the tile map
     int renderDistance = 3;
 
@@ -123,7 +130,9 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     int renderObjCount = 0;
     RenderObject objs[5] = {};
     float2 offset = make_float2(0, 0);
+    clearResizeArray(gameState->trees);
     for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
+        
         const int RENDER_PASS_COUNT = 2;
         for(int pass = 0; pass <= RENDER_PASS_COUNT; ++pass) {
             for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
@@ -170,6 +179,10 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                                 assert(renderObjCount < arrayCount(objs));
                                                 objs[renderObjCount++] = RenderObject(getTileTexture(&gameState->sandTileSet, coord), make_float3(pX, pY - 1, 10), make_float2(1, 1));
                                             }
+                                            if(tile->flags & TILE_FLAG_TREE) {
+                                                RenderObject r = RenderObject(&gameState->treeTexture, make_float3(pX, pY + 1, 10), make_float2(3, 3));
+                                                pushArrayItem(&gameState->trees, r, RenderObject);
+                                            }
                                         }
 
                                         if(tile->flags & TILE_FLAG_GRASSY_TOP) {
@@ -215,6 +228,12 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                 }
             }
         }
+    }
+    //NOTE: First sort
+    qsort(gameState->trees, getArrayLength(gameState->trees), sizeof(RenderObject), compare_by_height);
+    for(int i = 0; i < getArrayLength(gameState->trees); ++i) {
+        RenderObject b = gameState->trees[i];
+        pushTexture(renderer, b.sprite->handle, b.pos, b.scale, make_float4(1, 1, 1, 1), b.sprite->uvCoords);
     }
 
     
@@ -354,6 +373,7 @@ Animation *getBestWalkAnimation(Entity *e) {
 }
 
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float16 fovMatrix) {
+    DEBUG_TIME_BLOCK();
         {
         float16 modelToViewT = getModelToViewTransform(e, gameState->cameraPos);
         

@@ -4,6 +4,58 @@ struct GameLight {
 
 };
 
+typedef enum {
+	EASY_PROFILER_DRAW_OVERVIEW,
+	EASY_PROFILER_DRAW_ACCUMALTED,
+} EasyProfile_DrawType;
+
+typedef enum {
+	EASY_PROFILER_DRAW_OPEN,
+	EASY_PROFILER_DRAW_CLOSED,
+} EasyDrawProfile_OpenState;
+
+typedef struct {
+	int hotIndex;
+
+	EasyProfile_DrawType drawType;
+
+	//For navigating the samples in a frame
+	float zoomLevel;
+	float xOffset; //for the scroll bar
+	bool holdingScrollBar;
+	float scrollPercent;
+	float grabOffset;
+
+	float2 lastMouseP;
+	bool firstFrame;
+
+	EasyDrawProfile_OpenState openState;
+	float openTimer;
+
+	int level;
+} EasyProfile_ProfilerDrawState;
+
+static EasyProfile_ProfilerDrawState *EasyProfiler_initProfilerDrawState() {
+	EasyProfile_ProfilerDrawState *result = pushStruct(&global_long_term_arena, EasyProfile_ProfilerDrawState);
+		
+	result->hotIndex = -1;
+	result->level = 0;
+	result->drawType = EASY_PROFILER_DRAW_OVERVIEW;
+
+	result->zoomLevel = 1;
+	result->holdingScrollBar = false;
+	result->xOffset = 0;
+	result->lastMouseP =  make_float2(0, 0);
+	result->firstFrame = true;
+	result->grabOffset = 0;
+
+	result->openTimer = -1;
+	result->openState = EASY_PROFILER_DRAW_CLOSED;
+
+	return result;
+
+}
+
 enum GameMode {
 	PLAY_MODE,
 	TILE_MODE,
@@ -48,6 +100,9 @@ typedef struct {
 
 	bool draw_debug_memory_stats;
 
+	EasyProfile_ProfilerDrawState *drawState;
+
+
 	Entity *player;	
 
 	float scrollDp;
@@ -69,7 +124,9 @@ typedef struct {
 	Texture dirtTexture;
 	Texture waterTexture;
 	Texture shadowTexture;
+	Texture treeTexture;
 	
+	RenderObject *trees;
 
 	int tileCount;
 	MapTile tiles[10000];

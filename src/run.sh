@@ -1,2 +1,2 @@
 ./build.sh
-../bin/Brisbane_2025
+../bin/main
