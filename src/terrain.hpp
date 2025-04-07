@@ -11,6 +11,14 @@ float mapSimplexNoiseTo11(float value) {
     return value;
 }
 
+struct AOOffset {
+    float3 offsets[3];
+};
+
+struct LightingOffsets {
+    AOOffset aoOffsets[8];
+};
+
 enum TileType {
     TILE_TYPE_NONE,
     TILE_TYPE_WATER,
@@ -41,13 +49,13 @@ struct Tile {
     TileMapCoords coords;
     TileMapCoords coordsSecondary;
     u32 flags = 0;
-    u8 lightingMask = 0; //NOTE: Minecraft like lighting data bottom 4 bits are top surface, next 4 bits are the front facing surface 
+    u32 lightingMask = 0; //NOTE: Minecraft like lighting data bottom 8 bits are top surface, next 8 bits are the front facing surface 
 
     Tile() {
 
     }
 
-    Tile(TileType type, EasyAnimation_ListItem **freeList, Animation *animation, TileMapCoords coords, TileMapCoords coordsSecondary, u32 flags, u8 lightingMask) {
+    Tile(TileType type, EasyAnimation_ListItem **freeList, Animation *animation, TileMapCoords coords, TileMapCoords coordsSecondary, u32 flags, u32 lightingMask) {
         this->type = type;
         this->coords = coords;
         this->coordsSecondary = coordsSecondary;
@@ -165,8 +173,8 @@ struct Terrain {
     }
 
     Chunk *generateChunk(int x, int y, int z, uint32_t hash);
-    void fillChunk(AnimationState *animationState, Chunk *chunk);
-    Chunk *getChunk(AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk = true, bool shouldGenerateFully = true);
+    void fillChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, Chunk *chunk);
+    Chunk *getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk = true, bool shouldGenerateFully = true);
        
 };
 

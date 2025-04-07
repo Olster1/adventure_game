@@ -10,6 +10,7 @@ static char *quadVertexShader =
 "in vec4 color;"
 "in vec2 scale;"
 "in float samplerIndex;"
+"in uint aoMask;"
 
 //uniform variables
 "uniform mat4 projection;"
@@ -33,6 +34,70 @@ static char *quadVertexShader =
 
     "uv_frag = vec2(mix(uvAtlas.x, uvAtlas.z, texUV.x), mix(uvAtlas.y, uvAtlas.w, texUV.y));"
 "}";
+
+static char *quadAoMaskVertexShader = 
+"#version 330\n"
+//per vertex variables
+"in vec3 vertex;"
+"in vec2 texUV;	"
+
+//per instanced variables
+"in vec3 pos;"
+"in vec4 uvAtlas;"
+"in vec4 color;"
+"in vec2 scale;"
+"in float samplerIndex;"
+"in uint aoMask;"
+
+//uniform variables
+"uniform mat4 projection;"
+
+//outgoing variables
+"out vec4 color_frag;"
+"out vec2 uv_frag;"
+"out float texture_array_index;"
+"out float AOValue;"
+
+"float aoFactors[4] = float[4](1, 0.6, 0.5, 0.3);"
+
+"void main() {"
+    "vec3 p = vertex;"
+
+    "p.x *= scale.x;"
+    "p.y *= scale.y;"
+
+    "p += pos;"
+
+    "gl_Position = projection * vec4(p, 1.0f);"
+    "color_frag = color;"
+    "texture_array_index = samplerIndex;"
+
+    "uint aoIndex = uint(3);"
+    "uint mask = aoMask >> uint(gl_VertexID*2);"
+    "AOValue = aoFactors[mask & aoIndex];"
+
+    "uv_frag = vec2(mix(uvAtlas.x, uvAtlas.z, texUV.x), mix(uvAtlas.y, uvAtlas.w, texUV.y));"
+"}";
+
+static char *pixelArtAoMaskFragShader = 
+"#version 330\n"
+"in vec4 color_frag;" 
+"in vec2 uv_frag; "
+"in float AOValue;"
+"uniform sampler2D diffuse;"
+"out vec4 color;"
+"void main() {"
+    "vec2 size = textureSize(diffuse, 0);"
+    "vec2 uv = uv_frag * size;"
+    "vec2 duv = fwidth(uv);"
+    "uv = floor(uv) + 0.5 + clamp(((fract(uv) - 0.5 + duv)/duv), 0.0, 1.0);"
+    "uv /= size;"
+    "vec4 sample = texture(diffuse, uv);"
+    "sample = vec4(AOValue*sample.xyz, sample.w);"
+   
+    "color = sample*color_frag;"
+"}";
+
 
 static char *rectOutlineVertexShader = 
 "#version 330\n"

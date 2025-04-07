@@ -4,7 +4,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
     	//NOTE: Push all lights for the renderer to use
 	pushAllEntityLights(gameState, dt);
 
-	pushShader(renderer, &pixelArtShader);
+	pushShader(renderer, &terrainLightingShader);
 	pushMatrix(renderer, fovMatrix);
 
 	renderTileMap(gameState, renderer, dt);
@@ -12,9 +12,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(gameState, dt);
 
-	// pushShader(renderer, &pixelArtShader);
-	// pushMatrix(renderer, fovMatrix);
-
+	pushShader(renderer, &pixelArtShader);
 	//NOTE: Gameplay code
 	for(int i = 0; i < gameState->entityCount; ++i) {
 		Entity *e = &gameState->entities[i];

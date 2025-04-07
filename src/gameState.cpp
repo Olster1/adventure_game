@@ -27,6 +27,32 @@ DefaultEntityAnimations loadEntityAnimations(GameState *gameState, BackendRender
 	return result;
 }
 
+void createAOOffsets(GameState *gameState) {
+    for(int i = 0; i < arrayCount(global_cubeData); ++i) {
+        assert(i < arrayCount(gameState->lightingOffsets.aoOffsets));
+
+        CubeVertex v = global_cubeData[i];
+        float3 normal = v.normal;
+        float3 sizedOffset = scale_float3(2, v.pos);
+
+        float3 masks[2] = {};
+        int maskCount = 0;
+
+        for(int k = 0; k < 3; k++) {
+            if(normal.E[k] == 0) {
+                assert(maskCount < arrayCount(masks));
+                float3 m = make_float3(0, 0, 0);
+                m.E[k] = -sizedOffset.E[k];
+
+                masks[maskCount++] = m;
+            }
+        }
+
+        gameState->lightingOffsets.aoOffsets[i].offsets[0] = plus_float3(sizedOffset, masks[0]);
+        gameState->lightingOffsets.aoOffsets[i].offsets[1] = sizedOffset; 
+        gameState->lightingOffsets.aoOffsets[i].offsets[2] = plus_float3(sizedOffset, masks[1]);
+    }
+}
 
 
 void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
@@ -70,8 +96,9 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->treeTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/tree.png");
 
 		gameState->trees = initResizeArray(RenderObject);
-		
 
+		createAOOffsets(gameState);
+		
 		gameState->gameMode = PLAY_MODE;
 
 		gameState->cameraFollowPlayer = true;

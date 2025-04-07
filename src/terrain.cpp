@@ -17,10 +17,51 @@ Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash) {
     return chunk;
 }
 
-TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
-    DEBUG_TIME_BLOCK()
+struct CubeVertex {
+    float3 pos;
+    float3 normal;
+};
+
+CubeVertex make_cube_vertex(float3 pos, float3 normal) {
+    CubeVertex result = {};
+
+    result.pos = pos;
+    result.normal = normal;
+
+    return result;
+}
+
+
+// static Vertex global_quadData[] = {
+//     makeVertex(make_float3(0.5f, -0.5f, 0), make_float2(1, 1)),
+//     makeVertex(make_float3(-0.5f, -0.5f, 0), make_float2(0, 1)),
+//     makeVertex(make_float3(-0.5f,  0.5f, 0), make_float2(0, 0)),
+//     makeVertex(make_float3(0.5f, 0.5f, 0), make_float2(1, 0)),
+// };
+
+static CubeVertex global_cubeData[] = {
+    // Top face (z = 1.0f)
+    make_cube_vertex(make_float3(0.5f, -0.5f, 0.5f), make_float3(0, 0, 1)),
+    make_cube_vertex(make_float3(-0.5f, -0.5f, 0.5f), make_float3(0, 0, 1)),
+    make_cube_vertex(make_float3(-0.5f, 0.5f,  0.5f), make_float3(0, 0, 1)),
+    make_cube_vertex(make_float3(0.5f, 0.5f,  0.5f), make_float3(0, 0, 1)),
+    // Back face (y = -1.0f)
+    make_cube_vertex(make_float3(0.5f, -0.5f, -0.5f), make_float3(0, -1, 0)),
+    make_cube_vertex(make_float3(-0.5f, -0.5f, -0.5f), make_float3(0, -1, 0)),
+    make_cube_vertex(make_float3(-0.5f, -0.5f, 0.5f), make_float3(0, -1, 0)),
+    make_cube_vertex(make_float3(0.5f, -0.5f, 0.5f), make_float3(0, -1, 0)),
+};
+
+int getMapHeight(int worldX, int worldY) {
     float maxHeight = 3.0f;
     int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, worldX, worldY, 0.03f)));
+    return height;
+}
+
+TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
+    DEBUG_TIME_BLOCK()
+    
+    int height = getMapHeight(worldX, worldY);
 
     TileType type = TILE_TYPE_NONE;
     if(height >= 0 && worldZ <= height) {
@@ -29,6 +70,62 @@ TileType getLandscapeValue(int worldX, int worldY, int worldZ) {
 
     return type;
 }
+
+u32 calculateLightingMask(int worldX, int worldY, int worldZ, LightingOffsets *offsets) {
+    DEBUG_TIME_BLOCK()
+    u32 result = 0;
+
+    float3 worldP = make_float3(worldX, worldY, worldZ);
+
+    for(int i = 0; i < arrayCount(global_cubeData); ++i) {
+        CubeVertex v = global_cubeData[i];
+
+        bool blockValues[3] = {false, false, false};
+        
+        for(int j = 0; j < arrayCount(blockValues); j++) {
+            float3 p = plus_float3(worldP, offsets->aoOffsets[i].offsets[j]);
+            if(getLandscapeValue(p.x, p.y, p.z) == TILE_TYPE_SOLID) {
+                blockValues[j] = true; 
+            }
+        }
+
+        //NOTE: Get the ambient occulusion level
+        uint64_t value = 0;
+        //SPEED: Somehow make this not into if statments
+        if(blockValues[0] && blockValues[2])  {
+            value = 3;
+        } else if((blockValues[0] && blockValues[1])) {
+            assert(!blockValues[2]);
+            value = 2;
+        } else if((blockValues[1] && blockValues[2])) {
+            assert(!blockValues[0]);
+            value = 2;
+        } else if(blockValues[0]) {
+            assert(!blockValues[1]);
+            assert(!blockValues[2]);
+            value = 1;
+        } else if(blockValues[1]) {
+            assert(!blockValues[0]);
+            assert(!blockValues[2]);
+            value = 1;
+        } else if(blockValues[2]) {
+            assert(!blockValues[0]);
+            assert(!blockValues[1]);
+            value = 1;
+        } 
+        
+        //NOTE: Times 2 because each value need 2 bits to write 0 - 3. 
+        result |= (value << (uint64_t)(i*2)); //NOTE: Add the mask value
+        // assert(((i + 1)*2) < AO_BIT_NOT_VISIBLE); //NOTE: +1 to account for the top bit
+    }
+
+
+    result = (uint64_t)result;
+
+
+    return result;
+}
+
 
 bool hasGrassyTop(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
@@ -46,10 +143,11 @@ bool hasTree(int worldX, int worldY, int worldZ) {
 
 bool isWaterRock(int worldX, int worldY) {
     DEBUG_TIME_BLOCK()
-    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, worldX, worldY, 10.01f));
-    bool result = perlin > 0.8f;
-
-    
+    bool result = false;
+    if(getMapHeight(worldX, worldY) == 1) {
+        float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, worldX, worldY, 10.01f));
+        result = perlin > 0.8f;
+    }
     return result;
 }
 
@@ -91,7 +189,7 @@ static TileMapCoords global_tileLookup_elevated[16] = {
     {1, 1}  // 1111 - Surrounded by beach tiles
 };
 
-void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
+void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, Chunk *chunk) {
     DEBUG_TIME_BLOCK()
     assert(chunk);
     assert(chunk->generateState & CHUNK_NOT_GENERATED);
@@ -116,7 +214,7 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
                     TileMapCoords tileCoords = {};
                     TileMapCoords tileCoordsSecondary = {};
                     u32 flags = 0;
-                    u8 lightingMask = 0;
+                    u32 lightingMask = calculateLightingMask(worldX, worldY, worldZ, lightingOffsets);
 
                     u8 bits = 0;
                     if (getLandscapeValue(worldX, worldY + 1, worldZ) == TILE_TYPE_SOLID) bits |= 1 << 0;
@@ -192,7 +290,7 @@ void Terrain::fillChunk(AnimationState *animationState, Chunk *chunk) {
 
 }
 
-Chunk *Terrain::getChunk(AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk, bool shouldGenerateFully) {
+Chunk *Terrain::getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk, bool shouldGenerateFully) {
     DEBUG_TIME_BLOCK()
     uint32_t hash = getHashForChunk(x, y, z);
 
@@ -214,7 +312,7 @@ Chunk *Terrain::getChunk(AnimationState *animationState, int x, int y, int z, bo
 
     if(chunk && shouldGenerateFully && (chunk->generateState & CHUNK_NOT_GENERATED)) {
         //NOTE: Launches multi-thread work
-        fillChunk(animationState, chunk);
+        fillChunk(lightingOffsets, animationState, chunk);
     } 
 
     return chunk;

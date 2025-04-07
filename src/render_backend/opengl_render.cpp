@@ -10,6 +10,7 @@
 #define COLOR_ATTRIB_LOCATION 5
 #define SCALE_ATTRIB_LOCATION 6
 #define SAMPLER_INDEX_ATTRIB_LOCATION 8
+#define LIGHTING_MASK_ATTRIB_LOCATION 9
 
 //INSTANCING LOCATIONS for line
 #define POS1_ATTRIB_LOCATION 3
@@ -19,20 +20,6 @@
 enum AttribInstancingType {
     ATTRIB_INSTANCE_TYPE_DEFAULT,
     ATTRIB_INSTANCE_TYPE_LINE,
-};
-
-struct InstanceData {
-    float3 pos;
-    float2 scale;
-    float4 color;
-    float4 uv;
-    float textureIndex;
-};
-
-struct InstanceDataLine {
-    float3 pos1;
-    float3 pos2;
-    float4 color;
 };
 
 struct Shader {
@@ -97,6 +84,7 @@ Shader textureShader;
 Shader rectOutlineShader;
 Shader lineShader;
 Shader pixelArtShader;
+Shader terrainLightingShader;
 
 struct BackendRenderer {
     SDL_GLContext renderContext;
@@ -225,6 +213,8 @@ Shader loadShader(char *vertexShader, char *fragShader, AttribInstancingType att
         renderCheckError();
         glBindAttribLocation(result.handle, SAMPLER_INDEX_ATTRIB_LOCATION, "samplerIndex");
         renderCheckError();
+        glBindAttribLocation(result.handle, LIGHTING_MASK_ATTRIB_LOCATION, "aoMask");
+        renderCheckError();
     } else if(attribType == ATTRIB_INSTANCE_TYPE_LINE) {
         glBindAttribLocation(result.handle, POS1_ATTRIB_LOCATION, "pos1");
         renderCheckError();
@@ -235,8 +225,6 @@ Shader loadShader(char *vertexShader, char *fragShader, AttribInstancingType att
     } else {
         assert(false);
     }
-
-    // assert(MODEL_TRANSFORM_ATTRIB_LOCATION < (max_attribs - 1));
 
     glLinkProgram(result.handle);
     renderCheckError();
@@ -273,7 +261,6 @@ Shader loadShader(char *vertexShader, char *fragShader, AttribInstancingType att
 
     return result;
 }
-
 
 static void backendRender_release_and_resize_default_frame_buffer(BackendRenderer *r) {
     //NOTE: The default framebuffer contains a number of images, based on how it was created. All default framebuffer images are automatically resized to the size of the output window, as it is resized.
@@ -343,6 +330,10 @@ void addInstancingAttribsForShader(AttribInstancingType type) {
 
         unsigned int samplerIndexOffset = (intptr_t)(&(((InstanceData *)0)->textureIndex));
         addInstancingAttrib(SAMPLER_INDEX_ATTRIB_LOCATION, 1, offsetForStruct, samplerIndexOffset);
+        renderCheckError();
+        
+        unsigned int aoMaskOffset = (intptr_t)(&(((InstanceData *)0)->aoMask));
+        addInstancingAttrib_int32(LIGHTING_MASK_ATTRIB_LOCATION, 1, offsetForStruct, aoMaskOffset);
         renderCheckError();
     } else if(type == ATTRIB_INSTANCE_TYPE_LINE) {
          size_t offsetForStruct = sizeof(InstanceDataLine); 
@@ -477,7 +468,7 @@ static uint backendRender_init(BackendRenderer *r, SDL_Window *hwnd) {
     rectOutlineShader = loadShader(rectOutlineVertexShader, rectOutlineFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
     pixelArtShader = loadShader(quadVertexShader, pixelArtFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
     lineShader = loadShader(lineVertexShader, lineFragShader, ATTRIB_INSTANCE_TYPE_LINE);
-    
+    terrainLightingShader = loadShader(quadAoMaskVertexShader, pixelArtAoMaskFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
     r->quadModel = generateVertexBuffer(global_quadData, 4, global_quadIndices, 6, ATTRIB_INSTANCE_TYPE_DEFAULT);
     r->lineModel = generateVertexBuffer(global_lineData, 2, global_lineIndices, 2, ATTRIB_INSTANCE_TYPE_LINE);
 

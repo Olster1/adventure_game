@@ -7,6 +7,21 @@ struct TextureHandle {
 	void *handle;
 #endif 
 };
+struct InstanceData {
+    float3 pos;
+    float2 scale;
+    float4 color;
+    float4 uv;
+    float textureIndex;
+    u32 aoMask;
+};
+
+struct InstanceDataLine {
+    float3 pos1;
+    float3 pos2;
+    float4 color;
+};
+
 
 struct Texture {
 	TextureHandle *handle;
@@ -59,13 +74,13 @@ typedef struct {
 #define MAX_LINE_COUNT 16384
 #define MAX_RENDER_COMMAND_COUNT 16384
 
-#define SIZE_OF_GLYPH_INSTANCE_IN_BYTES (sizeof(float)*14)
+#define SIZE_OF_GLYPH_INSTANCE_IN_BYTES (sizeof(InstanceData))
 #define GLYPH_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES MAX_GLYPH_COUNT*SIZE_OF_GLYPH_INSTANCE_IN_BYTES
 
-#define SIZE_OF_TEXTURE_INSTANCE_IN_BYTES (sizeof(float)*14)
+#define SIZE_OF_TEXTURE_INSTANCE_IN_BYTES (sizeof(InstanceData))
 #define TEXTURE_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES MAX_TEXTURE_COUNT*SIZE_OF_TEXTURE_INSTANCE_IN_BYTES
 
-#define SIZE_OF_LINE_INSTANCE_IN_BYTES (sizeof(float)*10)
+#define SIZE_OF_LINE_INSTANCE_IN_BYTES (sizeof(InstanceDataLine))
 #define LINE_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES MAX_LINE_COUNT*SIZE_OF_LINE_INSTANCE_IN_BYTES
 
 typedef struct {
@@ -77,7 +92,6 @@ typedef struct {
 	//NOTE: Instance data
 	int glyphCount;
 	u8  glyphInstanceData[GLYPH_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES]; //NOTE: This would be x, y, z, r, g, b, a, u, v, s, t, index
-
 
 	int textureCount;
 	u8  textureInstanceData[TEXTURE_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES]; //NOTE: This would be x, y, z, r, g, b, a, u, v, s, t, index
@@ -260,9 +274,11 @@ static void pushGlyph(Renderer *r, void *textureHandle, float3 pos, float2 size,
 }
 
 
-static void pushTexture(Renderer *r, void *textureHandle, float3 pos, float2 size, float4 color, float4 uv) {
+static void pushTexture(Renderer *r, void *textureHandle, float3 pos, float2 size, float4 color, float4 uv, u32 lightingMask = 0) {
 	RenderCommand *c = getRenderCommand(r, RENDER_TEXTURE);
 	int textureIndex = render_getTextureIndex(c, textureHandle);
+
+	// lightingMask = 0;
 
 	if(textureIndex < 0) {
 		render_endCommand(r);
@@ -273,29 +289,16 @@ static void pushTexture(Renderer *r, void *textureHandle, float3 pos, float2 siz
 	}
 
 	assert(c->type == RENDER_TEXTURE);
-	
 
 	if(r->textureCount < MAX_TEXTURE_COUNT) {
-		float *data = (float *)(r->textureInstanceData + r->textureCount*SIZE_OF_TEXTURE_INSTANCE_IN_BYTES);
+		InstanceData *data = (InstanceData *)(r->textureInstanceData + r->textureCount*SIZE_OF_TEXTURE_INSTANCE_IN_BYTES);
 
-		data[0] = pos.x;
-		data[1] = pos.y;
-		data[2] = pos.z;
-
-		data[3] = size.x;
-		data[4] = size.y;
-		
-		data[5] = color.x;
-		data[6] = color.y;
-		data[7] = color.z;
-		data[8] = color.w;
-
-		data[9] = uv.x;
-		data[10] = uv.y;
-		data[11] = uv.z;
-		data[12] = uv.w;
-
-		data[13] = textureIndex;
+		data->pos = pos;
+		data->scale = size;
+		data->color = color;
+		data->uv = uv;
+		data->textureIndex = textureIndex;
+		data->aoMask = lightingMask;
 
 		r->textureCount++;
 		c->instanceCount++;
@@ -342,7 +345,7 @@ static void renderer_defaultScissors(Renderer *r, float windowWidth, float windo
 }
 
 static void pushRect(Renderer *r, float3 pos, float2 size, float4 color) {
-	pushTexture(r, global_white_texture, pos, size, color, make_float4(0, 0, 1, 1));
+	pushTexture(r, global_white_texture, pos, size, color, make_float4(0, 0, 1, 1), 0);
 }
 
 static void pushRectOutlineWorldSpace(Renderer *r, float4 color) {

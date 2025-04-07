@@ -67,15 +67,17 @@ struct RenderObject {
 	Texture *sprite;
 	float3 pos;
 	float2 scale;
+	u32 lightingMask;
 
 	RenderObject() {}
 
 	RenderObject(Texture *sprite,
 		float3 pos,
-		float2 scale) {
+		float2 scale, u32 lightingMask) {
 			this->sprite = sprite;
 			this->pos = pos;
 			this->scale = scale;
+			this->lightingMask = lightingMask;
 	}
 };
 
@@ -102,6 +104,7 @@ typedef struct {
 
 	EasyProfile_ProfilerDrawState *drawState;
 
+	LightingOffsets lightingOffsets;
 
 	Entity *player;	
 
