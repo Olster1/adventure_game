@@ -141,12 +141,13 @@ bool hasTree(int worldX, int worldY, int worldZ) {
     return result;
 }
 
-bool isWaterRock(int worldX, int worldY) {
+bool isWaterRock(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
     bool result = false;
-    if(getMapHeight(worldX, worldY) == 1) {
-        float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, worldX, worldY, 10.01f));
-        result = perlin > 0.8f;
+    int height = getMapHeight(worldX, worldY);
+    if(height == -1 && worldZ == 0) {
+        float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, worldX, worldY, 100.01f));
+        result = perlin > 0.75f;
     }
     return result;
 }
@@ -228,10 +229,7 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
                         tileCoords.x += 5;
                         type = TILE_TYPE_BEACH;
 
-                        if(isWaterRock(worldX, worldY)) {
-                            type = TILE_TYPE_WATER_ROCK;
-                            animation = &animationState->waterRocks[0];
-                        }
+                     
 
                     } else if(worldZ > 0) {
                         // type = TILE_TYPE_NONE;
@@ -272,14 +270,18 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
                                 flags |= TILE_FLAG_TREE;
                             } 
                         }
-
-                        
                     }
-                    //TODO: Fill out the lighting mask
-
                     if(type != TILE_TYPE_NONE) {
                         // assert(z == 0);
                         chunk->tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x] = Tile(type, &animationState->animationItemFreeListPtr, animation, tileCoords, tileCoordsSecondary, flags, lightingMask);
+                    }
+                } else {
+                    bool waterRock = false;//isWaterRock(worldX, worldY, worldZ);
+
+                    if(waterRock) {
+                        TileMapCoords tileCoords = {};
+                        TileMapCoords tileCoordsSecondary = {};
+                        chunk->tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x] = Tile(TILE_TYPE_WATER_ROCK, &animationState->animationItemFreeListPtr, &animationState->waterRocks[0], tileCoords, tileCoordsSecondary, 0, 0);
                     }
                 }
             }

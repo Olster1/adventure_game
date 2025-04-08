@@ -113,7 +113,7 @@ static Texture d3d_loadFromFileToGPU(ID3D11Device1 *d3d11Device, char *image_to_
 	TextureHandle *handle = (TextureHandle *)platform_alloc_memory(sizeof(TextureHandle), true);
     handle->handle = textureView;
 
-	result.aspectRatio_h_over_w = texHeight / texWidth;
+	result.aspectRatio_h_over_w = (float)texHeight / (float)texWidth;
 
 	result.uvCoords = make_float4(0, 0, 1, 1);
 

@@ -68,16 +68,18 @@ struct RenderObject {
 	float3 pos;
 	float2 scale;
 	u32 lightingMask;
+	int sortIndex;
 
 	RenderObject() {}
 
 	RenderObject(Texture *sprite,
 		float3 pos,
-		float2 scale, u32 lightingMask) {
+		float2 scale, u32 lightingMask, int sortIndex = 0) {
 			this->sprite = sprite;
 			this->pos = pos;
 			this->scale = scale;
 			this->lightingMask = lightingMask;
+			this->sortIndex = sortIndex;
 	}
 };
 
@@ -95,6 +97,7 @@ typedef struct {
 	Renderer renderer;
 
 	Font font;
+	Font pixelFont;
 
 	float shakeTimer;
 
@@ -128,8 +131,16 @@ typedef struct {
 	Texture waterTexture;
 	Texture shadowTexture;
 	Texture treeTexture;
+	Texture bannerTexture;
+	Texture selectTexture;
+	Texture shadowUiTexture;
+	Texture kLogoText;
+	Texture gLogoText;
+	Texture blueText;
+	Texture redText;
 	
 	RenderObject *trees;
+	RenderObject *waterAnimations;
 
 	int tileCount;
 	MapTile tiles[10000];

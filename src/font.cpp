@@ -267,8 +267,11 @@ static inline GlyphInfo easyFont_getGlyph(Font *font, u32 unicodePoint) {
 }
 
 
-static void draw_text(Renderer *renderer, Font *font, char *str, float startX, float yAt_, float fontScale, float4 font_color) {
-    float yAt = -0.5f*font->fontHeight*fontScale + yAt_;
+static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX, float yAt_, float fontScale, float4 font_color, bool getBounds = false) {
+    Rect2f result = make_rect2f(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    //TODO: The 0.8 is just to get it centered but need to revist it.
+    float yAt = -0.8f*font->fontHeight*fontScale + yAt_;
 
     bool newLine = true;
 
@@ -282,10 +285,16 @@ static void draw_text(Renderer *renderer, Font *font, char *str, float startX, f
         if(*at_ptr == '\n') {
             //NOTE: New line
             GlyphInfo g = easyFont_getGlyph(font, 'y');
+            if(at_ptr[1] != '\0') {
+                char *next = (at_ptr + 1);
+                g = easyFont_getGlyph(font, easyUnicode_utf8_codepoint_To_Utf32_codepoint(&next, false));
+            }
+            
             float2 scale = make_float2(g.width*fontScale, g.height*fontScale);
-            xAt = startX;
+            xAt = startX - fontScale*g.xoffset + 0.5f*scale.x;
             yAt -= font->fontHeight;
             at++;
+            newLine = true;
         } else {
 
             u32 rune = easyUnicode_utf8_codepoint_To_Utf32_codepoint(&at_ptr, true);
@@ -306,18 +315,20 @@ static void draw_text(Renderer *renderer, Font *font, char *str, float startX, f
 
                 float4 color = font_color;//make_float4(0, 0, 0, 1);
                 float2 scale = make_float2(g.width*fontScale, g.height*fontScale);
+                float offsetY = -0.5f*scale.y;
 
                 if(newLine) {
-                    xAt = startX;
+                    xAt = startX - fontScale*g.xoffset + 0.5f*scale.x;
                 }
-
-                float offsetY = -0.5f*scale.y;
 
                 float3 pos = {};
                 pos.x = xAt + fontScale*g.xoffset;
-                pos.y = yAt + -fontScale*g.yoffset + offsetY;
+                assert(pos.x >= startX);
+                pos.y = yAt -fontScale*g.yoffset + offsetY;
                 pos.z = 1.0f;
                 pushGlyph(renderer, g.handle, pos, scale, font_color, g.uvCoords);
+
+                result = rect2f_union(make_rect2f_center_dim(make_float2(pos.x, pos.y), scale), result);
             }
 
             xAt += (g.width + g.xoffset)*fontScale*factor;
@@ -325,4 +336,13 @@ static void draw_text(Renderer *renderer, Font *font, char *str, float startX, f
 
         newLine = false;
     }
+    return result;
+}
+
+static void draw_text(Renderer *renderer, Font *font, char *str, float startX, float yAt_, float fontScale, float4 font_color) {
+    draw_text_(renderer, font, str, startX, yAt_, fontScale, font_color);
+}
+
+static Rect2f getTextBounds(Renderer *renderer, Font *font, char *str, float startX, float yAt_, float fontScale) {
+    return draw_text_(renderer, font, str, startX, yAt_, fontScale, make_float4(1, 1, 1, 0), true);
 }

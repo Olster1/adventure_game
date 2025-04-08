@@ -35,6 +35,7 @@
 #include "unit_tests.cpp"
 #endif
 #include "gameState.cpp"
+#include "ui_game.cpp"
 #include "easy_profiler_draw.h"
 #include "debug.cpp"
 #include "player.cpp"
@@ -76,19 +77,17 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	float fauxDimensionY = 1000;
 	float fauxDimensionX = fauxDimensionY * (windowWidth/windowHeight);
 
-	updatePlayerInput(gameState);
+	// updatePlayerInput(gameState);
 	updateCamera(gameState, dt);
 
 	gameState->planeSizeY = (windowHeight / windowWidth) * gameState->planeSizeX;
 	float16 fovMatrix = make_ortho_matrix_origin_center(gameState->planeSizeX*gameState->zoomLevel, gameState->planeSizeY*gameState->zoomLevel, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
-	// float16 fovMatrix = make_perspective_matrix_origin_center(60.0f, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE, windowWidth / windowHeight);
-
-	pushMatrix(renderer, fovMatrix);
-	drawGrid(gameState);
+	
 	updateAndRenderEntities(gameState, renderer, dt, fovMatrix, windowWidth, windowHeight);
+	drawGameUi(gameState, renderer, dt, windowWidth, windowHeight);
 
 #if DEBUG_BUILD
-	drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
+	// drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
 	float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
     float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
 	EasyProfile_DrawGraph(renderer, gameState, gameState->drawState, dt, windowHeight/windowWidth, mouseP_01);

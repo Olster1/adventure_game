@@ -62,7 +62,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->animationState.animationItemFreeListPtr = 0;
 
 		gameState->font = initFont("../fonts/liberation-mono.ttf");
-
+		gameState->pixelFont = initFont("../fonts/Pixelify.ttf");
+		
 		gameState->fontScale = 0.6f;
 		gameState->scrollDp = 0;
 
@@ -94,8 +95,17 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->waterTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/water.png");
 		gameState->shadowTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/shadow.png");
 		gameState->treeTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/tree.png");
+		gameState->bannerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/banner.png");
+		gameState->selectTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/select.png");
+		gameState->shadowUiTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/shadow.png");
+		gameState->kLogoText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/kLogo.png");
+		gameState->gLogoText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/gLogo.png");
+		gameState->blueText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/b.png");
+		gameState->redText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/r.png");
+		
 
 		gameState->trees = initResizeArray(RenderObject);
+		gameState->waterAnimations = initResizeArray(RenderObject);
 
 		createAOOffsets(gameState);
 		
@@ -136,7 +146,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 			gameState->sandTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
 		}
 
-		addPlayerEntity(gameState);
+		// addPlayerEntity(gameState);
 
 		gameState->gravityOn = false;
 

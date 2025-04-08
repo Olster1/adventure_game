@@ -64,6 +64,14 @@ static float lerp(float a, float b, LerpTValue t) {
 	return (b - a)*t.value + a;
 }
 
+static float math3d_maxfloat(float a, float b) {
+	if(a > b) {
+		return a;
+	} else {
+		return b;
+	}
+}
+
 
 struct float2
 {

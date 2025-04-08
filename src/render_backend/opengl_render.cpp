@@ -153,7 +153,7 @@ static Texture platform_loadFromFileToGPU(char *image_to_load_utf8) {
 	result.width = texWidth;
 	result.height = texHeight;
 
-	result.aspectRatio_h_over_w = texHeight / texWidth;
+	result.aspectRatio_h_over_w = (float)texHeight / (float)texWidth;
 
 	result.uvCoords = make_float4(0, 0, 1, 1);
 
