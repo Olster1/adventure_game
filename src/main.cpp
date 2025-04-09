@@ -19,6 +19,7 @@
 #include "dialog.cpp"
 #include "terrain.hpp"
 #include "gameplay.cpp"
+#include "texture_atlas.cpp"
 #include "game_state.h"
 #include "terrain.cpp"
 #include "assets.cpp"
@@ -31,6 +32,7 @@
 #include "collision.cpp"
 #include "entity_update.cpp"
 #include "grid.cpp"
+
 #if DEBUG_BUILD
 #include "unit_tests.cpp"
 #endif

@@ -30,6 +30,15 @@ int MathMin(int a, int b) {
 
 }
 
+inline float safeDivide(float a, float b) {
+	float result = 0;
+
+	if(b != 0) {
+		result = a / b;
+	}
+	return result;
+}
+
 inline float random_between_float(float a, float b) {
     // Generate a random float between a and b (exclusive)
     return a + (rand() / (float)RAND_MAX) * (b - a);

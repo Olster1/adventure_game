@@ -124,13 +124,6 @@ typedef struct {
 
 	GamePlay gamePlay;
 
-	Texture playerTexture;
-	Texture stoneTexture;
-	Texture grassTexture;
-	Texture dirtTexture;
-	Texture waterTexture;
-	Texture shadowTexture;
-	Texture treeTexture;
 	Texture bannerTexture;
 	Texture selectTexture;
 	Texture shadowUiTexture;
@@ -138,7 +131,9 @@ typedef struct {
 	Texture gLogoText;
 	Texture blueText;
 	Texture redText;
-	Texture cloudText[3];
+	AtlasAsset *cloudText[3];
+	AtlasAsset *treeTexture;
+	TextureAtlas textureAtlas;
 
 	bool draggingCanvas;
 	float2 startDragP;

@@ -89,12 +89,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->drawState = EasyProfiler_initProfilerDrawState();
 		
 
-		gameState->stoneTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/stone.png");
-		gameState->grassTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/grass.png");
-		gameState->dirtTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/dirt.png");
-		gameState->waterTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/water.png");
-		gameState->shadowTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/shadow.png");
-		gameState->treeTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/tree.png");
+		gameState->textureAtlas = readTextureAtlas("../src/images/texture_atlas.json", "../src/images/texture_atlas.png");
 		gameState->bannerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/banner.png");
 		gameState->selectTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/select.png");
 		gameState->shadowUiTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/shadow.png");
@@ -102,9 +97,10 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->gLogoText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/gLogo.png");
 		gameState->blueText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/b.png");
 		gameState->redText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/r.png");
-		gameState->cloudText[0] = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/cloud.png");
-		gameState->cloudText[1] = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/cloud2.png");
-		gameState->cloudText[2] = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/cloud3.png");
+		gameState->cloudText[0] = textureAtlas_getItem(&gameState->textureAtlas, "cloud.png");
+		gameState->cloudText[1] = textureAtlas_getItem(&gameState->textureAtlas, "cloud2.png");
+		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
+		gameState->treeTexture = textureAtlas_getItem(&gameState->textureAtlas, "tree.png");
 
 		gameState->trees = initResizeArray(RenderObject);
 		gameState->waterAnimations = initResizeArray(RenderObject);

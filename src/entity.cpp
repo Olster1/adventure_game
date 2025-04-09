@@ -163,7 +163,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                         }
                                         if(tile->flags & TILE_FLAG_TREE) {
                                             int sortingIndex = tiley;
-                                            RenderObject r = RenderObject(&gameState->treeTexture, make_float3(pX, pY + 1, 10), make_float2(3, 3), lightingMask, sortingIndex);
+                                            RenderObject r = RenderObject(0, make_float3(pX, pY + 1, 10), make_float2(3, 3), lightingMask, sortingIndex);
                                             pushArrayItem(&gameState->trees, r, RenderObject);
                                         }
                                     }
@@ -216,11 +216,15 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
         }
     }
 
-    //NOTE: First sort
-    qsort(gameState->trees, getArrayLength(gameState->trees), sizeof(RenderObject), compare_by_height);
-    for(int i = 0; i < getArrayLength(gameState->trees); ++i) {
-        RenderObject b = gameState->trees[i];
-        pushTexture(renderer, b.sprite->handle, b.pos, b.scale, make_float4(1, 1, 1, 1), b.sprite->uvCoords);
+    TextureHandle *atlasHandle = gameState->textureAtlas.texture.handle;
+    {
+        AtlasAsset *t = gameState->treeTexture;
+        //NOTE: First sort
+        qsort(gameState->trees, getArrayLength(gameState->trees), sizeof(RenderObject), compare_by_height);
+        for(int i = 0; i < getArrayLength(gameState->trees); ++i) {
+            RenderObject b = gameState->trees[i];
+            pushTexture(renderer, atlasHandle, b.pos, b.scale, make_float4(1, 1, 1, 1), t->uv);
+        }
     }
 
     {
@@ -240,14 +244,15 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                 assert(c->cloudCount < arrayCount(c->clouds));
                                 CloudData *d = &c->clouds[c->cloudCount++];
                                 d->pos = p;
-                                d->cloudIndex = random_between_int(0, 1);
+                                d->cloudIndex = random_between_int(0, 3);
                                 d->scale = random_between_float(4, 10);
                                 assert(d->cloudIndex < 3);
 
                             }
                         }
-                    }
+                    }   
 
+                    
                     for(int i = 0; i < c->cloudCount; ++i) {
                         CloudData *cloud = &c->clouds[i];
                         float3 worldP = make_float3(x*CHUNK_DIM, y*CHUNK_DIM, 10);
@@ -257,9 +262,10 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                         worldP.y += cloud->pos.y;
                         float s = cloud->scale;
                         
-                        Texture *t = &gameState->cloudText[cloud->cloudIndex];
+                        AtlasAsset *t = gameState->cloudText[cloud->cloudIndex];
+                        
                         float2 scale = make_float2(s, s*t->aspectRatio_h_over_w);
-                        pushTexture(renderer, t->handle, worldP, scale, make_float4(1, 1, 1, 0.4f), t->uvCoords);
+                        pushTexture(renderer, atlasHandle, worldP, scale, make_float4(1, 1, 1, 0.4f), t->uv);
                     }
                 }
             }
