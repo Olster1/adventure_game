@@ -118,7 +118,7 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
     {
         Texture *l = 0;
         Texture *b = 0;
-        if(play->turnOn != GAME_TURN_PLAYER_KNIGHT) {
+        if(play->turnOn == GAME_TURN_PLAYER_KNIGHT) {
             l = &gameState->kLogoText;
             b = &gameState->blueText;
         } else {
@@ -137,8 +137,37 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         pushTexture(renderer, b->handle, p, s, make_float4(1, 1, 1, 1), b->uvCoords);
         pushTexture(renderer, l->handle, p1, s1, make_float4(1, 1, 1, 1), l->uvCoords);
 
-        // pushShader(renderer, &sdfFontShader);
-        // draw_text(renderer, &gameState->pixelFont, text, 0.5f, pos.y + bScale.y*0.5f, 0.1, make_float4(0, 0, 0, 1)); 
     }
+    {
+        char *text = "";
+        switch (play->phase) {
+            case GAME_TURN_PHASE_COMMAND: {
+                text = "COMMAND";
+            } break;
+            case GAME_TURN_PHASE_MOVE: {
+                text = "MOVE";
+            } break;
+            case GAME_TURN_PHASE_SHOOT: {
+                text = "SHOOT";
+            } break;
+            case GAME_TURN_PHASE_CHARGE: {
+                text = "CHARGE";
+            } break;
+            case GAME_TURN_PHASE_FIGHT: {
+                text = "FIGHT";
+            } break;
+            case GAME_TURN_PHASE_BATTLESHOCK: {
+                text = "BATTLESHOCK";
+            } break;
+            default: {
+
+            } break;
+        }
+
+        drawScrollText(text, gameState, renderer, make_float2(0, 1), UI_ANCHOR_CENTER_BOTTOM, resolution);
+    }
+    
+
+    
     
 }

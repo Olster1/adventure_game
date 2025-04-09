@@ -531,7 +531,7 @@ int main(int argc, char **argv) {
             gameState = updateEditor(backendRenderer, dt, windowWidth, windowHeight, resized_window && !first_frame, save_file_location_utf8, settings_to_save);
         }
 
-        backendRender_processCommandBuffer(&gameState->renderer, backendRenderer);
+        backendRender_processCommandBuffer(&gameState->renderer, backendRenderer, dt);
 
         {
             DEBUG_TIME_BLOCK_NAMED("Present Final Frame");

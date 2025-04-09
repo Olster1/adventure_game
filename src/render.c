@@ -99,6 +99,7 @@ typedef struct {
 	int lineCount;
 	u8  lineInstanceData[LINE_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES]; //NOTE: This would be x, y, z, x, y, z, r, g, b, a
 
+	float totalTime;
 
 } Renderer;
 
@@ -108,7 +109,7 @@ static void initRenderer(Renderer *r) {
 	r->glyphCount = 0;
 	r->textureCount = 0;
 	r->lineCount = 0;
-
+	r->totalTime = 0;
 }
 
 static void clearRenderer(Renderer *r) {

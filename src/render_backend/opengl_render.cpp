@@ -85,6 +85,8 @@ Shader rectOutlineShader;
 Shader lineShader;
 Shader pixelArtShader;
 Shader terrainLightingShader;
+Shader cloudShader;
+
 
 struct BackendRenderer {
     SDL_GLContext renderContext;
@@ -469,6 +471,8 @@ static uint backendRender_init(BackendRenderer *r, SDL_Window *hwnd) {
     pixelArtShader = loadShader(quadVertexShader, pixelArtFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
     lineShader = loadShader(lineVertexShader, lineFragShader, ATTRIB_INSTANCE_TYPE_LINE);
     terrainLightingShader = loadShader(quadAoMaskVertexShader, pixelArtAoMaskFragShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
+    cloudShader = loadShader(quadVertexShader, fragCloudShader, ATTRIB_INSTANCE_TYPE_DEFAULT);
+    
     r->quadModel = generateVertexBuffer(global_quadData, 4, global_quadIndices, 6, ATTRIB_INSTANCE_TYPE_DEFAULT);
     r->lineModel = generateVertexBuffer(global_lineData, 2, global_lineIndices, 2, ATTRIB_INSTANCE_TYPE_LINE);
 
@@ -633,7 +637,7 @@ void bindTextureArray(char *uniformName, GLint textureId, Shader *shader, uint32
 
 }
 
-void drawModels(BackendRenderer *r, ModelBuffer *model, uint32_t textureId, int instanceCount, GLenum toplogyType) {
+void drawModels(Renderer *r_, BackendRenderer *r, ModelBuffer *model, uint32_t textureId, int instanceCount, GLenum toplogyType) {
     // printf("%d\n", model->indexCount);
     Shader *shader = r->currentShader;
     assert(shader);
@@ -643,6 +647,9 @@ void drawModels(BackendRenderer *r, ModelBuffer *model, uint32_t textureId, int 
     renderCheckError();
 
     glUniformMatrix4fv(glGetUniformLocation(shader->handle, "projection"), 1, GL_FALSE, r->orthoMatrix.E);
+    renderCheckError();
+
+    glUniform1f(glGetUniformLocation(shader->handle, "totalTime"), r_->totalTime);
     renderCheckError();
 
     bindTexture("diffuse", 1, textureId, shader);
@@ -656,7 +663,8 @@ void drawModels(BackendRenderer *r, ModelBuffer *model, uint32_t textureId, int 
 }
 
 
-static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *backend_r) {
+static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *backend_r, float dt) {
+    r->totalTime += dt;
     DEBUG_TIME_BLOCK();
 #if DEBUG_BUILD
 	global_debug_stats.draw_call_count = 0;
@@ -705,7 +713,7 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
                 assert(data);
 
                 updateInstanceData(backend_r->lineModel.instanceBufferhandle, data, sizeInBytes);
-				drawModels(backend_r, &backend_r->lineModel, 0, c->instanceCount, GL_LINES);
+				drawModels(r, backend_r, &backend_r->lineModel, 0, c->instanceCount, GL_LINES);
 
 				#if DEBUG_BUILD
 				    global_debug_stats.draw_call_count++;
@@ -737,7 +745,7 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
 
                 updateInstanceData(backend_r->quadModel.instanceBufferhandle, data, sizeInBytes);
 
-				drawModels(backend_r, &backend_r->quadModel, textureHandle->handle, c->instanceCount, GL_TRIANGLES);
+				drawModels(r, backend_r, &backend_r->quadModel, textureHandle->handle, c->instanceCount, GL_TRIANGLES);
 
 				#if DEBUG_BUILD
 				    global_debug_stats.draw_call_count++;

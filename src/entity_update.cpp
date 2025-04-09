@@ -4,7 +4,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
     	//NOTE: Push all lights for the renderer to use
 	pushAllEntityLights(gameState, dt);
 
-	pushShader(renderer, &terrainLightingShader);
+	
 	pushMatrix(renderer, fovMatrix);
 
 	renderTileMap(gameState, renderer, dt);

@@ -138,6 +138,11 @@ typedef struct {
 	Texture gLogoText;
 	Texture blueText;
 	Texture redText;
+	Texture cloudText[3];
+
+	bool draggingCanvas;
+	float2 startDragP;
+	float2 canvasMoveDp;
 	
 	RenderObject *trees;
 	RenderObject *waterAnimations;

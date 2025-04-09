@@ -28,6 +28,7 @@ d3d_shader_program pixelArtShader;
 
 typedef struct {
     float16 orthoMatrix;
+	float totalTime;
 } d3d_Constants;
 
 
@@ -628,7 +629,9 @@ static void d3d_setGlobalConstantBuffer(BackendRenderer *r) {
 
 }
 
-static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *backend_r) {
+static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *backend_r, float dt) {
+	r->totalTime += dt;
+	backend_r->contants.totalTime = r->totalTime;
 
 	ID3D11DeviceContext *d3d11DeviceContext = backend_r->d3d11DeviceContext;
 

@@ -4,9 +4,13 @@ enum EntityFlags {
 };
 
 #define MY_ENTITY_TYPE(FUNC) \
-FUNC(ENTITY_PLAYER)\
-FUNC(ENTITY_OBJECT)\
-FUNC(ENTITY_TILE_MAP)\
+FUNC(ENTITY_DECOR)\
+FUNC(ENTITY_KNIGHT)\
+FUNC(ENTITY_ARCHER)\
+FUNC(ENTITY_PEASANT)\
+FUNC(ENTITY_GOBLIN)\
+FUNC(ENTITY_GOBLIN_TNT)\
+FUNC(ENTITY_GOBLIN_BARREL)\
 
 typedef enum {
     MY_ENTITY_TYPE(ENUM)
@@ -20,6 +24,12 @@ enum ColliderIndex {
     HIT_COLLIDER_INDEX = 2,
     INTERACT_COLLIDER_INDEX = 3,
     ENTITY_COLLIDER_INDEX_COUNT
+};
+
+struct CloudData {
+    float2 pos;
+    float scale;
+    int cloudIndex;
 };
 
 enum ColliderFlag {

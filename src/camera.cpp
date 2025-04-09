@@ -1,16 +1,42 @@
-void updateZoom(GameState *gameState, float dt) {
-    gameState->scrollDp += global_platformInput.mouseScrollY*dt;
+void updateZoomAndPan(GameState *gameState, float dt, float2 mouseP_01) {
+	{
+		gameState->scrollDp += global_platformInput.mouseScrollY*dt;
 
-    //NOTE: Drag
-    gameState->scrollDp *= 0.81f;
+		//NOTE: Drag
+		gameState->scrollDp *= 0.81f;
 
-    //NOTE: Zoom in & out
-    gameState->zoomLevel *= 1 + gameState->scrollDp;
-    
-    float min = 0.01f;
-    if(gameState->zoomLevel < min) {
-        gameState->zoomLevel = min;
-    }
+		//NOTE: Zoom in & out
+		gameState->zoomLevel *= 1 + gameState->scrollDp;
+		
+		float min = 0.01f;
+		if(gameState->zoomLevel < min) {
+			gameState->zoomLevel = min;
+		}
+	} 
+
+	{
+		//NOTE: Update Pan
+		if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {
+			//NOTE: Move the canvas
+			gameState->draggingCanvas = true;
+			gameState->startDragP = mouseP_01;
+			gameState->canvasMoveDp = make_float2(0, 0);
+		} else if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown && gameState->draggingCanvas) {
+			float panPower = 500*gameState->zoomLevel; //NOTE: Scale with how far out we're looking
+			float2 diff = scale_float2(panPower*dt, minus_float2(gameState->startDragP, mouseP_01));
+			gameState->canvasMoveDp = diff;
+		} else {
+			gameState->draggingCanvas = false;
+		}
+		
+		if(!gameState->draggingCanvas) {
+			gameState->canvasMoveDp.x *= 0.9f;
+			gameState->canvasMoveDp.y *= 0.9f;
+		}
+	
+		gameState->cameraPos.xy = plus_float2(gameState->cameraPos.xy, gameState->canvasMoveDp);
+		gameState->startDragP = mouseP_01;
+	}
 } 
 
 void updateCamera(GameState *gameState, float dt) {
@@ -31,8 +57,8 @@ void updateCamera(GameState *gameState, float dt) {
 	}
 
 	if(gameState->cameraFollowPlayer) {
-		gameState->cameraPos.x = lerp(gameState->cameraPos.x, gameState->player->pos.x + cameraOffset.x, make_lerpTValue(0.4f));
-		gameState->cameraPos.y = lerp(gameState->cameraPos.y, gameState->player->pos.y + cameraOffset.y, make_lerpTValue(0.4f));
+		// gameState->cameraPos.x = lerp(gameState->cameraPos.x, gameState->player->pos.x + cameraOffset.x, make_lerpTValue(0.4f));
+		// gameState->cameraPos.y = lerp(gameState->cameraPos.y, gameState->player->pos.y + cameraOffset.y, make_lerpTValue(0.4f));
 	} else {
 		float speed = 10*dt;
 		if(global_platformInput.keyStates[PLATFORM_KEY_UP].isDown) {

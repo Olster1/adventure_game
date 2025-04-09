@@ -92,6 +92,9 @@ struct Chunk {
     //NOTE: Z Y
     Tile tiles[CHUNK_DIM*CHUNK_DIM*CHUNK_DIM];
 
+    int cloudCount = 0;
+	CloudData clouds[400];
+
     // Entity *entities;
     Chunk *next = 0;
 
@@ -110,6 +113,7 @@ struct Chunk {
         y = 0;
         z = 0;
         next = 0;
+        cloudCount = 0;
     }
 
 };

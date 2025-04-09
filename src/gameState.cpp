@@ -102,17 +102,21 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->gLogoText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/gLogo.png");
 		gameState->blueText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/b.png");
 		gameState->redText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/r.png");
-		
+		gameState->cloudText[0] = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/cloud.png");
+		gameState->cloudText[1] = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/cloud2.png");
+		gameState->cloudText[2] = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/cloud3.png");
 
 		gameState->trees = initResizeArray(RenderObject);
 		gameState->waterAnimations = initResizeArray(RenderObject);
+		
 
 		createAOOffsets(gameState);
 		
 		gameState->gameMode = PLAY_MODE;
 
 		gameState->cameraFollowPlayer = true;
-		gameState->zoomLevel = 1;
+		//TODO: Probably save this each time we leave the app
+		gameState->zoomLevel = 2.25;
 
 		// gameState->potPlantAnimations = loadEntityAnimations(gameState, backendRenderer, "pot_plant", 16);
 

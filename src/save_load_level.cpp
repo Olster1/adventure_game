@@ -216,20 +216,20 @@ void loadSaveLevel_json(GameState *state, char *fileName_utf8) {
                     
                 } break;
                 case TOKEN_CLOSE_BRACKET: {
-                    if(entity.type == ENTITY_PLAYER) {
-                        Entity *e = addPlayerEntity(state);
+                    // if(entity.type == ENTITY_PLAYER) {
+                    //     Entity *e = addPlayerEntity(state);
 
-                        e->id = entity.id;
-                        e->idHash = entity.idHash;
-                        e->pos = entity.pos;
+                    //     e->id = entity.id;
+                    //     e->idHash = entity.idHash;
+                    //     e->pos = entity.pos;
 
-                        state->player = e;
-                        assert(state->entityCount == 1);
-                    } else if(entity.type == ENTITY_TILE_MAP) {
-                        assert(state->tileCount < arrayCount(state->tiles));
-	                    MapTile *tile = state->tiles + state->tileCount++;
-                        *tile = getDefaultMapTile(state, (TileSetType)tileType, entity.pos.x, entity.pos.y, tileMapId.x, tileMapId.y, true);
-                    }
+                    //     state->player = e;
+                    //     assert(state->entityCount == 1);
+                    // } else if(entity.type == ENTITY_TILE_MAP) {
+                    //     assert(state->tileCount < arrayCount(state->tiles));
+	                //     MapTile *tile = state->tiles + state->tileCount++;
+                    //     *tile = getDefaultMapTile(state, (TileSetType)tileType, entity.pos.x, entity.pos.y, tileMapId.x, tileMapId.y, true);
+                    // }
                     
                 } break;
                 case TOKEN_NEWLINE: {

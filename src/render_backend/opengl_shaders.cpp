@@ -19,6 +19,7 @@ static char *quadVertexShader =
 "out vec4 color_frag;"
 "out vec2 uv_frag;"
 "out float texture_array_index;"
+"out vec2 worldP;"
 
 "void main() {"
     "vec3 p = vertex;"
@@ -28,11 +29,78 @@ static char *quadVertexShader =
 
     "p += pos;"
 
+    "worldP = pos.xy;"
+
     "gl_Position = projection * vec4(p, 1.0f);"
     "color_frag = color;"
     "texture_array_index = samplerIndex;"
 
     "uv_frag = vec2(mix(uvAtlas.x, uvAtlas.z, texUV.x), mix(uvAtlas.y, uvAtlas.w, texUV.y));"
+"}";
+
+static char* fragCloudShader = 
+"#version 330\n"
+"in vec4 color_frag;" 
+"in vec2 uv_frag; "
+"in float AOValue;"
+"in vec2 worldP;"
+"uniform sampler2D diffuse;"
+"uniform float totalTime;"
+"out vec4 color;"
+
+"vec2 fade(vec2 t) {"
+    "return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);"
+"}"
+
+"float hash(vec2 p) {"
+    "return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);"
+"}"
+
+"float grad(vec2 p, vec2 offset) {"
+    "return hash(p + offset);"
+"}"
+
+"float perlin(vec2 p) {"
+    "vec2 i = floor(p);"
+    "vec2 f = fract(p);"
+
+    "vec2 u = fade(f);"
+
+    "float a = hash(i + vec2(0.0, 0.0));"
+    "float b = hash(i + vec2(1.0, 0.0));"
+    "float c = hash(i + vec2(0.0, 1.0));"
+    "float d = hash(i + vec2(1.0, 1.0));"
+
+    "float res = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);"
+    "return res;"
+"}"
+//
+// Main Cloud Shader
+//
+"void main() {"
+    // Scale and move the noise field
+    "vec2 pos = uv_frag * 3.0 + vec2(10*totalTime * 0.05, 10*totalTime * 0.01) + worldP;"
+
+    // Stack multiple layers of Perlin noise for more richness
+    "float noise = 0.0;"
+    "float amplitude = 0.5;"
+    "float frequency = 1.0;"
+    "for (int i = 0; i < 5; i++) {"
+        "noise += perlin(pos * frequency) * amplitude;"
+        "frequency *= 2.0;"
+        "amplitude *= 0.5;"
+    "}"
+
+    // Cloud threshold
+    "float cloud = smoothstep(0.4, 0.7, noise);"
+
+    // Color the clouds
+    "vec3 skyColor = vec3(0.6, 0.8, 1.0);"
+    "vec3 cloudColor = vec3(1.0);"
+
+    "vec3 finalColor = mix(skyColor, cloudColor, cloud);"
+
+    "color = color_frag*vec4(finalColor, 1.0);"
 "}";
 
 static char *quadAoMaskVertexShader = 

@@ -78,8 +78,6 @@ Entity *makeNewEntity(GameState *state) {
         e->id = makeEntityId(state);
         e->idHash = get_crc32_for_string(e->id);
 
-        e->type = ENTITY_PLAYER;
-
         e->velocity = make_float3(0, 0, 0);
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
@@ -100,21 +98,6 @@ Entity *addPlayerEntity(GameState *state) {
 } 
 
 
-
-Entity *addPotPlantEntity(GameState *state, DefaultEntityAnimations *animations) {
-    Entity *e = makeNewEntity(state);
-    if(e) {
-        e->type = ENTITY_OBJECT;
-        e->scale = make_float3(1, 2, 1);
-
-        easyAnimation_initController(&e->animationController);
-		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &animations->idle, 5.0f);
-        e->animations = animations;
-
-    }
-    return e;
-} 
-
 int compare_by_height(const void *a, const void *b) {
     const RenderObject *pa = (const RenderObject *)a;
     const RenderObject *pb = (const RenderObject *)b;
@@ -125,9 +108,10 @@ int compare_by_height(const void *a, const void *b) {
 
 void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     DEBUG_TIME_BLOCK();
+
+    pushShader(renderer, &terrainLightingShader);
     //NOTE: Draw the tile map
     int renderDistance = 3;
-
     float2 cameraBlockP = getChunkPosForWorldP(gameState->cameraPos.xy);
     int renderObjCount = 0;
     RenderObject objs[5] = {};
@@ -231,11 +215,55 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
             }
         }
     }
+
     //NOTE: First sort
     qsort(gameState->trees, getArrayLength(gameState->trees), sizeof(RenderObject), compare_by_height);
     for(int i = 0; i < getArrayLength(gameState->trees); ++i) {
         RenderObject b = gameState->trees[i];
         pushTexture(renderer, b.sprite->handle, b.pos, b.scale, make_float4(1, 1, 1, 1), b.sprite->uvCoords);
+    }
+
+    {
+        // pushShader(renderer, &cloudShader);
+        int cloudDistance = 10;
+        for(int y = cloudDistance; y >= -cloudDistance; --y) {
+            for(int x = -cloudDistance; x <= cloudDistance; ++x) {
+                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x, y, 0, true, false);
+                if(c && c->generateState == CHUNK_NOT_GENERATED) {
+                    if(c->cloudCount == 0) {
+                        int clouds = 10;
+                        for(int i = 0; i < clouds; i++) {
+                            for(int j = 0; j < clouds; j++) {
+                                float2 p = {};
+                                p.x += random_between_float(-1, CHUNK_DIM + 1);
+                                p.y += random_between_float(-1, CHUNK_DIM + 1);
+                                assert(c->cloudCount < arrayCount(c->clouds));
+                                CloudData *d = &c->clouds[c->cloudCount++];
+                                d->pos = p;
+                                d->cloudIndex = random_between_int(0, 1);
+                                d->scale = random_between_float(4, 10);
+                                assert(d->cloudIndex < 3);
+
+                            }
+                        }
+                    }
+
+                    for(int i = 0; i < c->cloudCount; ++i) {
+                        CloudData *cloud = &c->clouds[i];
+                        float3 worldP = make_float3(x*CHUNK_DIM, y*CHUNK_DIM, 10);
+                        worldP.x -= gameState->cameraPos.x;
+                        worldP.y -= gameState->cameraPos.y;
+                        worldP.x += cloud->pos.x;
+                        worldP.y += cloud->pos.y;
+                        float s = cloud->scale;
+                        
+                        Texture *t = &gameState->cloudText[cloud->cloudIndex];
+                        float2 scale = make_float2(s, s*t->aspectRatio_h_over_w);
+                        pushTexture(renderer, t->handle, worldP, scale, make_float4(1, 1, 1, 0.4f), t->uvCoords);
+                    }
+                }
+            }
+        }
     }
     
 }
@@ -387,9 +415,8 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
     }
 
     updateAStarEntity(gameState, e, dt);
+
     
-    if(e->type == ENTITY_PLAYER) {
-    }
 }
 
 void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {

@@ -290,7 +290,7 @@ void drawAndUpdateEditorGui(GameState *state, Renderer *renderer, float x, float
                     selectColor = make_float4(0.3f, 0.3f, 0, 1);
                 }
             }
-
+        
             pushTexture(renderer, global_white_texture, make_float3(tileP.x, tileP.y, 1.0f), tileScaleP, selectColor, make_float4(0, 0, 1, 1));
         }
 
