@@ -116,11 +116,33 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		// //NOTE: For the TNT barrel & Peasant
 		// Animation scared;
 
-		loadImageStripXY(&gameState->knightAnimations.idle, backendRenderer, "../src/images/knight.png", 192, 192, 6, 0, 0);
-		loadImageStripXY(&gameState->knightAnimations.run, backendRenderer, "../src/images/knight.png", 192, 192, 6, 1, 0);
-		loadImageStripXY(&gameState->knightAnimations.attackSide, backendRenderer, "../src/images/knight.png", 192, 192, 12, 2, 0);
-		loadImageStripXY(&gameState->knightAnimations.attackDown, backendRenderer, "../src/images/knight.png", 192, 192, 12, 4, 0);
-		loadImageStripXY(&gameState->knightAnimations.attackUp, backendRenderer, "../src/images/knight.png", 192, 192, 12, 6, 0);
+		loadImageStripXY(&gameState->knightAnimations.idle, backendRenderer, "../src/images/factions/knight.png", 192, 192, 6, 0, 0);
+		loadImageStripXY(&gameState->knightAnimations.run, backendRenderer, "../src/images/factions/knight.png", 192, 192, 6, 1, 0);
+		loadImageStripXY(&gameState->knightAnimations.attackSide, backendRenderer, "../src/images/factions/knight.png", 192, 192, 12, 2, 0);
+		loadImageStripXY(&gameState->knightAnimations.attackDown, backendRenderer, "../src/images/factions/knight.png", 192, 192, 12, 4, 0);
+		loadImageStripXY(&gameState->knightAnimations.attackUp, backendRenderer, "../src/images/factions/knight.png", 192, 192, 12, 6, 0);
+
+		loadImageStripXY(&gameState->peasantAnimations.idle, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 0, 0);
+		loadImageStripXY(&gameState->peasantAnimations.run, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 1, 0);
+		loadImageStripXY(&gameState->peasantAnimations.work, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 2, 0);
+		loadImageStripXY(&gameState->peasantAnimations.attackSide, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 3, 0);
+		loadImageStripXY(&gameState->peasantAnimations.scared, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 4, 0);
+
+		loadImageStripXY(&gameState->archerAnimations.idle, backendRenderer, "../src/images/factions/archer.png", 192, 192, 6, 0, 0);
+		loadImageStripXY(&gameState->archerAnimations.run, backendRenderer, "../src/images/factions/archer.png", 192, 192, 6, 1, 0);
+		loadImageStripXY(&gameState->archerAnimations.attackUp, backendRenderer, "../src/images/factions/archer.png", 192, 192, 8, 2, 0);
+
+		loadImageStripXY(&gameState->goblinAnimations.idle, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 7, 0, 0);
+		loadImageStripXY(&gameState->goblinAnimations.run, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 6, 1, 0);
+		loadImageStripXY(&gameState->goblinAnimations.attackSide, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 6, 2, 0);
+		loadImageStripXY(&gameState->goblinAnimations.attackDown, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 6, 3, 0);
+		loadImageStripXY(&gameState->goblinAnimations.attackUp, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 6, 4, 0);
+
+		loadImageStripXY(&gameState->tntAnimations.idle, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 6, 0, 0);
+		loadImageStripXY(&gameState->tntAnimations.run, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 6, 1, 0);
+		loadImageStripXY(&gameState->tntAnimations.attackSide, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 7, 2, 0);
+		
+	// DefaultEntityAnimations barrellAnimations;
 
 		/////////////
 		{

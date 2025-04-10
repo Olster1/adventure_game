@@ -149,6 +149,10 @@ typedef struct {
 	DefaultEntityAnimations peasantAnimations;
 	DefaultEntityAnimations archerAnimations;
 
+	DefaultEntityAnimations goblinAnimations;
+	DefaultEntityAnimations tntAnimations;
+	DefaultEntityAnimations barrellAnimations;
+
 	AnimationState animationState;
 
 	GameDialogs dialogs;

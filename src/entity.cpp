@@ -68,7 +68,7 @@ float16 getModelToViewTransform(Entity *e_, float3 cameraPos) {
 
 }
 
-Entity *makeNewEntity(GameState *state) {
+Entity *makeNewEntity(GameState *state, float2 worldP) {
     Entity *e = 0;
     if(state->entityCount < arrayCount(state->entities)) {
         e = &state->entities[state->entityCount++];
@@ -80,7 +80,7 @@ Entity *makeNewEntity(GameState *state) {
 
         e->velocity = make_float3(0, 0, 0);
         e->offsetP = make_float3(0, 0, 0);
-        e->pos = make_float3(0, 0, 10);
+        e->pos = make_float3(worldP.x, worldP.y, 10);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(4, 4, 1);
         e->speed = 3.0f;
@@ -89,17 +89,71 @@ Entity *makeNewEntity(GameState *state) {
 }
 
 Entity *addKnightEntity(GameState *state, float2 worldP) {
-    Entity *e = makeNewEntity(state);
+    Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_KNIGHT;
-        e->pos.xy = worldP;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->knightAnimations.idle, 0.08f);
-		
     }
     return e;
 } 
+
+Entity *addPeasantEntity(GameState *state, float2 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_PEASANT;
+        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->peasantAnimations.idle, 0.08f);
+    }
+    return e;
+} 
+
+Entity *addArcherEntity(GameState *state, float2 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_ARCHER;
+        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->archerAnimations.idle, 0.08f);
+    }
+    return e;
+} 
+
+Entity *addGoblinEntity(GameState *state, float2 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_GOBLIN;
+        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinAnimations.idle, 0.08f);
+    }
+    return e;
+} 
+
+Entity *addGoblinBarrelEntity(GameState *state, float2 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_GOBLIN_BARREL;
+        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->barrellAnimations.idle, 0.08f);
+    }
+    return e;
+} 
+
+Entity *addGoblinTntEntity(GameState *state, float2 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_GOBLIN_TNT;
+        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->tntAnimations.idle, 0.08f);
+    }
+    return e;
+} 
+
 
 
 int compare_by_height(const void *a, const void *b) {
@@ -193,7 +247,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
         for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
             for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
-                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x_ + offset.x, y_ + offset.y, 0, true, true);
+                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x_ + offset.x, y_ + offset.y, 0, true, false);
                 if(c) {
             
                     for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
