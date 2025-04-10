@@ -15,6 +15,9 @@
         "variant": "cpp",
         "bitset": "cpp",
         "render.c": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "vector": "cpp"
     }
 }
