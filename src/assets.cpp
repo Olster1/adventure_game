@@ -26,11 +26,11 @@ static void loadImageStrip(Animation *animation, BackendRenderer *backendRendere
     }
 }
 
-static void loadImageStripXY(Animation *animation, BackendRenderer *backendRenderer, char *filename_full_utf8, int widthPerImage, int heightPerImage, int startRow, int numberOfSprites) {
+static void loadImageStripXY(Animation *animation, BackendRenderer *backendRenderer, char *filename_full_utf8, int widthPerImage, int heightPerImage, int numberOfSprites, int offsetX, int offsetY) {
 	Texture texOnStack = backendRenderer_loadFromFileToGPU(backendRenderer, filename_full_utf8);
 	int count = 0;
-	float xAt = 0;
-    float yAt = heightPerImage*startRow;
+	float xAt = offsetX*widthPerImage;
+    float yAt = heightPerImage*offsetY;
 
 	float widthTruncated = ((int)(texOnStack.width / widthPerImage))*widthPerImage;
 

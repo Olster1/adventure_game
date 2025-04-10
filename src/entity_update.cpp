@@ -1,10 +1,10 @@
 
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
 	DEBUG_TIME_BLOCK();
-    	//NOTE: Push all lights for the renderer to use
+
+    //NOTE: Push all lights for the renderer to use
 	pushAllEntityLights(gameState, dt);
 
-	
 	pushMatrix(renderer, fovMatrix);
 
 	renderTileMap(gameState, renderer, dt);
@@ -19,7 +19,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 		// e->pos.xy = plus_float2(scale_float2(dt, e->velocity.xy),  e->pos.xy);
 		// e->rotation = lerp(e->rotation, e->targetRotation, make_lerpTValue(rotationPower*0.05f)); 
-		
 
 		if(e->flags & ENTITY_ACTIVE) {
 			#if DEBUG_BUILD
@@ -30,16 +29,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 		}
 	}
 
-	
-	// for(int i = 0; i < arrayCount(gameState->layers); ++i) {
-	// 	RenderObject *objs = gameState->layers[i];
-	// 	for(int j = 0; j < getArrayLength(objs); ++j) {
-	// 		RenderObject obj = objs[j];
-	// 		pushTexture(renderer, obj.sprite->handle, obj.pos, obj.scale, make_float4(1, 1, 1, 1), obj.sprite->uvCoords);
-	// 	}
-	// 	clearResizeArray(objs);
-	// }
-	
-
+	drawClouds(gameState, renderer, dt);
 	
 }

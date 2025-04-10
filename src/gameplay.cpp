@@ -19,6 +19,7 @@ struct GamePlay {
     int turnCount;
     int maxTurnCount;
     GameTurnPhase phase;
+    bool boardInited;
 };
 
 GamePlay init_gameplay() {
@@ -26,6 +27,7 @@ GamePlay init_gameplay() {
 
     gamePlay.turnOn = GAME_TURN_PLAYER_KNIGHT;
     gamePlay.phase = GAME_TURN_PHASE_COMMAND;
+    gamePlay.boardInited = false;
 
     gamePlay.turnTime = 0;
     gamePlay.maxTurnTime = 60*5; //NOTE: 5 mintues

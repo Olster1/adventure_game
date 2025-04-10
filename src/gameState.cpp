@@ -3,30 +3,6 @@ void clearGameStatePerFrameValues(GameState *state) {
 }
 
 
-DefaultEntityAnimations loadEntityAnimations(GameState *gameState, BackendRenderer *backendRenderer, char *folder, int sizePerWidth) {
-	DefaultEntityAnimations result = {};
-
-	char *formatStr = "../src/images/%s/%s.png";
-
-	#define DEFINE_loadImageForEntity(animPtr, name) loadImageStrip(animPtr, backendRenderer,  easy_createString_printf(&globalPerFrameArena, formatStr, folder, name), sizePerWidth);
-
-	DEFINE_loadImageForEntity(&result.idle, "idle");
-	DEFINE_loadImageForEntity(&result.runForward, "run_forward");
-	DEFINE_loadImageForEntity(&result.runBack, "run_back");
-	DEFINE_loadImageForEntity(&result.runSideward, "run_sideways");
-	DEFINE_loadImageForEntity(&result.runSidewardBack, "run_sideways_back");
-	DEFINE_loadImageForEntity(&result.attack, "attack");
-	DEFINE_loadImageForEntity(&result.hurt, "hurt");
-	DEFINE_loadImageForEntity(&result.suprised, "suprised");
-	DEFINE_loadImageForEntity(&result.die, "die");
-	DEFINE_loadImageForEntity(&result.attackBack, "attack_back");
-	
-
-	#undef DEFINE_loadImageForEntity
-
-	return result;
-}
-
 void createAOOffsets(GameState *gameState) {
     for(int i = 0; i < arrayCount(global_cubeData); ++i) {
         assert(i < arrayCount(gameState->lightingOffsets.aoOffsets));
@@ -87,7 +63,6 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->gamePlay = init_gameplay();
 
 		gameState->drawState = EasyProfiler_initProfilerDrawState();
-		
 
 		gameState->textureAtlas = readTextureAtlas("../src/images/texture_atlas.json", "../src/images/texture_atlas.png");
 		gameState->bannerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/banner.png");
@@ -102,6 +77,10 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
 		gameState->treeTexture = textureAtlas_getItem(&gameState->textureAtlas, "tree.png");
 
+		DefaultEntityAnimations knightAnimations;
+		DefaultEntityAnimations peasantAnimations;
+		DefaultEntityAnimations archerAnimations;
+
 		gameState->trees = initResizeArray(RenderObject);
 		gameState->waterAnimations = initResizeArray(RenderObject);
 		
@@ -112,30 +91,36 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		gameState->cameraFollowPlayer = true;
 		//TODO: Probably save this each time we leave the app
-		gameState->zoomLevel = 2.25;
+		gameState->zoomLevel = 1.8f;
 
 		// gameState->potPlantAnimations = loadEntityAnimations(gameState, backendRenderer, "pot_plant", 16);
 
 		//NOTE: Init all animations for game
 
-		loadImageStrip(&gameState->playerIdleAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&gameState->playerRunForwardAnimation, backendRenderer, "../src/images/player/Man_forward_4.png", 64);
-		loadImageStrip(&gameState->playerRunbackwardAnimation, backendRenderer, "../src/images/player/Man_back_4.png", 64);
-		loadImageStrip(&gameState->playerRunsidewardAnimation, backendRenderer, "../src/images/player/Man_left_walk_4.png", 64);
-
 		loadImageStrip(&gameState->animationState.waterRocks[0], backendRenderer, "../src/images/Rocks_03.png", 128);
-		
-		
-		loadImageStrip(&gameState->playerAttackAnimation, backendRenderer, "../src/images/player/Man_forward_attack_4.png", 64);
-		loadImageStrip(&gameState->playerJumpAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&gameState->playerHurtAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&gameState->playerDieAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-		loadImageStrip(&gameState->playerFallingAnimation, backendRenderer, "../src/images/player/Man_forward_idle_6.png", 64);
-
-		loadImageStrip(&gameState->playerbackwardSidewardRun, backendRenderer, "../src/images/player/Man_back_sideways_4.png", 64);
-		loadImageStrip(&gameState->playerforwardSidewardRun, backendRenderer, "../src/images/player/Man_forward_sideways_4.png", 64);
-
 		loadImageStrip(&gameState->animationState.waterAnimation, backendRenderer, "../src/images/foam.png", 192);
+
+	 	// peasantAnimations;
+		// archerAnimations
+
+		// Animation run;
+		
+		// //NOTE: ATTACK
+		// Animation attackUp;
+		// Animation attackDown;
+		// Animation attackSide;
+	
+		// //NOTE: For the peasant
+		// Animation work;
+	
+		// //NOTE: For the TNT barrel & Peasant
+		// Animation scared;
+
+		loadImageStripXY(&gameState->knightAnimations.idle, backendRenderer, "../src/images/knight.png", 192, 192, 6, 0, 0);
+		loadImageStripXY(&gameState->knightAnimations.run, backendRenderer, "../src/images/knight.png", 192, 192, 6, 1, 0);
+		loadImageStripXY(&gameState->knightAnimations.attackSide, backendRenderer, "../src/images/knight.png", 192, 192, 12, 2, 0);
+		loadImageStripXY(&gameState->knightAnimations.attackDown, backendRenderer, "../src/images/knight.png", 192, 192, 12, 4, 0);
+		loadImageStripXY(&gameState->knightAnimations.attackUp, backendRenderer, "../src/images/knight.png", 192, 192, 12, 6, 0);
 
 		/////////////
 		{
@@ -145,10 +130,6 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 			Texture ** tiles = loadTileSet(backendRenderer, "../src/images/tilemap.png", 64, 64, &global_long_term_arena, &tileCount, &countX, &countY);
 			gameState->sandTileSet = buildTileSet(tiles, tileCount, TILE_SET_SAND, countX, countY, 64, 64);
 		}
-
-		// addPlayerEntity(gameState);
-
-		gameState->gravityOn = false;
 
 	#if DEBUG_BUILD
 		DEBUG_runUnitTests(gameState);

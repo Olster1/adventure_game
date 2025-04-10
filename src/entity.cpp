@@ -79,19 +79,23 @@ Entity *makeNewEntity(GameState *state) {
         e->idHash = get_crc32_for_string(e->id);
 
         e->velocity = make_float3(0, 0, 0);
+        e->offsetP = make_float3(0, 0, 0);
         e->pos = make_float3(0, 0, 10);
         e->flags |= ENTITY_ACTIVE;
-        e->scale = make_float3(2, 2, 1);
+        e->scale = make_float3(4, 4, 1);
         e->speed = 3.0f;
     }
     return e;
 }
 
-Entity *addPlayerEntity(GameState *state) {
+Entity *addKnightEntity(GameState *state, float2 worldP) {
     Entity *e = makeNewEntity(state);
     if(e) {
+        e->type = ENTITY_KNIGHT;
+        e->pos.xy = worldP;
+        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
-		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->playerIdleAnimation, 0.08f);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->knightAnimations.idle, 0.08f);
 		
     }
     return e;
@@ -105,6 +109,75 @@ int compare_by_height(const void *a, const void *b) {
     
     return result;
 }
+
+void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
+    DEBUG_TIME_BLOCK();
+
+    TextureHandle *atlasHandle = gameState->textureAtlas.texture.handle;
+    int cloudDistance = 10;
+    for(int y = cloudDistance; y >= -cloudDistance; --y) {
+        for(int x = -cloudDistance; x <= cloudDistance; ++x) {
+            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x, y, 0, true, false);
+            if(c && (c->generateState == CHUNK_NOT_GENERATED || c->cloudFadeTimer >= 0)) {
+                float maxTime = 1.5f;
+
+                if(c->cloudCount == 0) {
+                    int clouds = 10;
+                    for(int i = 0; i < clouds; i++) {
+                        for(int j = 0; j < clouds; j++) {
+                            float2 p = {};
+                            p.x += random_between_float(-1, CHUNK_DIM + 1);
+                            p.y += random_between_float(-1, CHUNK_DIM + 1);
+                            assert(c->cloudCount < arrayCount(c->clouds));
+                            CloudData *d = &c->clouds[c->cloudCount++];
+                            d->pos = p;
+                            d->cloudIndex = random_between_int(0, 3);
+                            d->fadePeriod = random_between_float(0.4f, maxTime);
+                            d->scale = random_between_float(4, 10);
+                            d->darkness = random_between_float(0.95f, 1.0f);
+                            assert(d->cloudIndex < 3);
+
+                        }
+                    }
+                }   
+                
+                for(int i = 0; i < c->cloudCount; ++i) {
+                    CloudData *cloud = &c->clouds[i];
+                    float3 worldP = make_float3(x*CHUNK_DIM, y*CHUNK_DIM, 10);
+                    worldP.x += cloud->pos.x;
+                    worldP.y += cloud->pos.y;
+                    worldP.x -= gameState->cameraPos.x;
+                    worldP.y -= gameState->cameraPos.y;
+                    
+                    float s = cloud->scale;
+
+                    float tVal = c->cloudFadeTimer;
+                    if(tVal < 0) {
+                        tVal = 0;
+                    }
+                    float alpha = lerp(0.4f, 0, make_lerpTValue(tVal / cloud->fadePeriod));
+                    
+                    AtlasAsset *t = gameState->cloudText[cloud->cloudIndex];
+                    
+                    float2 scale = make_float2(s, s*t->aspectRatio_h_over_w);
+                    float darkness = cloud->darkness;
+                    pushTexture(renderer, atlasHandle, worldP, scale, make_float4(cloud->darkness, cloud->darkness, cloud->darkness, alpha), t->uv);
+                }
+
+                if(c->cloudFadeTimer >= 0) {
+                    c->cloudFadeTimer += dt;
+
+                    if(c->cloudFadeTimer >= maxTime) {
+                        //NOTE: Turn fade timer off
+                        c->cloudFadeTimer = -1;
+                    }
+                }
+                
+            }
+        }
+    }
+}
+
 
 void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     DEBUG_TIME_BLOCK();
@@ -120,7 +193,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
         for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
             for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
-                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x_ + offset.x, y_ + offset.y, 0);
+                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x_ + offset.x, y_ + offset.y, 0, true, true);
                 if(c) {
             
                     for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
@@ -227,50 +300,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
         }
     }
 
-    {
-        // pushShader(renderer, &cloudShader);
-        int cloudDistance = 10;
-        for(int y = cloudDistance; y >= -cloudDistance; --y) {
-            for(int x = -cloudDistance; x <= cloudDistance; ++x) {
-                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x, y, 0, true, false);
-                if(c && c->generateState == CHUNK_NOT_GENERATED) {
-                    if(c->cloudCount == 0) {
-                        int clouds = 10;
-                        for(int i = 0; i < clouds; i++) {
-                            for(int j = 0; j < clouds; j++) {
-                                float2 p = {};
-                                p.x += random_between_float(-1, CHUNK_DIM + 1);
-                                p.y += random_between_float(-1, CHUNK_DIM + 1);
-                                assert(c->cloudCount < arrayCount(c->clouds));
-                                CloudData *d = &c->clouds[c->cloudCount++];
-                                d->pos = p;
-                                d->cloudIndex = random_between_int(0, 3);
-                                d->scale = random_between_float(4, 10);
-                                assert(d->cloudIndex < 3);
-
-                            }
-                        }
-                    }   
-
-                    
-                    for(int i = 0; i < c->cloudCount; ++i) {
-                        CloudData *cloud = &c->clouds[i];
-                        float3 worldP = make_float3(x*CHUNK_DIM, y*CHUNK_DIM, 10);
-                        worldP.x -= gameState->cameraPos.x;
-                        worldP.y -= gameState->cameraPos.y;
-                        worldP.x += cloud->pos.x;
-                        worldP.y += cloud->pos.y;
-                        float s = cloud->scale;
-                        
-                        AtlasAsset *t = gameState->cloudText[cloud->cloudIndex];
-                        
-                        float2 scale = make_float2(s, s*t->aspectRatio_h_over_w);
-                        pushTexture(renderer, atlasHandle, worldP, scale, make_float4(1, 1, 1, 0.4f), t->uv);
-                    }
-                }
-            }
-        }
-    }
+  
     
 }
 
@@ -293,34 +323,36 @@ static float3 roundToGridBoard(float3 in, float tileSize) {
 }
 
 void updateAStarEntity(GameState *gameState, Entity *e, float dt) {
-    float3 entP_inWorld_ = getWorldPosition(e);
-
-    float3 playerInWorldP_ = getWorldPosition(gameState->player);
-
-    float3 playerInWorldP = roundToGridBoard(playerInWorldP_, 1);
-	float3 entP_inWorld = roundToGridBoard(entP_inWorld_, 1);
-    entP_inWorld.z = 0;
-    playerInWorldP.z = 0;
-    entP_inWorld_.z = 0;
-    playerInWorldP_.z = 0;
-
     if(e->aStarController) {
+        EasyAiController *controller = e->aStarController;
+        
+        float3 entP_inWorld_ = getWorldPosition(e);
+
+        float3 playerInWorldP_ = getWorldPosition(gameState->player);
+
+        float3 playerInWorldP = roundToGridBoard(playerInWorldP_, 1);
+        float3 entP_inWorld = roundToGridBoard(entP_inWorld_, 1);
+        entP_inWorld.z = 0;
+        playerInWorldP.z = 0;
+        entP_inWorld_.z = 0;
+        playerInWorldP_.z = 0;
+        
         float distance = float3_magnitude(minus_float3(playerInWorldP, entP_inWorld));
         //NOTE: See if we are far enough away from the player
         // if(distance > 0.5f) 
         {
             if(e->aStarController->searchBouysCount > 0) {
-                playerInWorldP = playerInWorldP_ = e->aStarController->searchBouys[e->aStarController->bouyIndexAt];
+                playerInWorldP = playerInWorldP_ = controller->searchBouys[controller->bouyIndexAt];
 
                 //NOTE: See if we have reached the bouy position
                 float searchDist = 1.0f;
                 if(float3_magnitude_sqr(minus_float3(playerInWorldP, entP_inWorld)) < (searchDist*searchDist)) {
 
                     // e->velocity.xy = make_float2(0, 0);
-                    e->aStarController->bouyIndexAt++;
+                    controller->bouyIndexAt++;
 
-                    if(e->aStarController->bouyIndexAt >= e->aStarController->searchBouysCount) {
-                        e->aStarController->bouyIndexAt = 0;
+                    if(controller->bouyIndexAt >= controller->searchBouysCount) {
+                        controller->bouyIndexAt = 0;
                     }
                 }
             }
@@ -328,19 +360,19 @@ void updateAStarEntity(GameState *gameState, Entity *e, float dt) {
         
         {
             //NOTE: Update the A Start controller
-            EasyAi_A_Star_Result aiResult = easyAi_update_A_star(e->aStarController, entP_inWorld,  playerInWorldP);
+            EasyAi_A_Star_Result aiResult = easyAi_update_A_star(controller, entP_inWorld,  playerInWorldP);
 
             //NOTE: Is in attacking animation
             // bool attack = easyAnimation_getCurrentAnimation(&entity->animationController, getAnimationForEnemy(gameState, ENTITY_ANIMATION_ATTACK, entity->enemyType));
 
             if(aiResult.found) {
-                e->lastSetPos = aiResult.nextPos;
+                controller->lastSetPos = aiResult.nextPos;
 
-                if(float3_equal(e->lastSetPos, playerInWorldP)) {
-                    e->lastSetPos = playerInWorldP_; //get floating point version
+                if(float3_equal(controller->lastSetPos, playerInWorldP)) {
+                    controller->lastSetPos = playerInWorldP_; //get floating point version
                 }
 
-                float3 diff = minus_float3(e->lastSetPos, e->pos);
+                float3 diff = minus_float3(controller->lastSetPos, e->pos);
 
                 float2 dir = normalize_float2(diff.xy);
 
@@ -373,35 +405,35 @@ void updateEntityVeclocity(Entity *e, float speed, float2 dir) {
 Animation *getBestWalkAnimation(Entity *e) {
     Animation *animation = &e->animations->idle;
     float margin = 0.3f;
-    e->spriteFlipped = false;
+    removeEntityFlag(e, ENTITY_SPRITE_FLIPPED);
 
     float2 impluse = e->velocity.xy;
 
     if((impluse.x > margin  && impluse.y < -margin) || (impluse.x < -margin && impluse.y > margin) || ((impluse.x > margin && impluse.y < margin && impluse.y > -margin))) { //NOTE: The extra check is becuase the front & back sideways animation aren't matching - should flip one in the aesprite
-        e->spriteFlipped = true;
+        addEntityFlag(e, ENTITY_SPRITE_FLIPPED);
     }
 
     if(impluse.y > margin) {
         if(impluse.x < -margin || impluse.x > margin) {
-            animation = &e->animations->runSidewardBack;	
+            animation = &e->animations->run;	
         } else {
-            animation = &e->animations->runBack;
+            animation = &e->animations->run;
         }
     } else if(impluse.y < -margin) {
         if(impluse.x < -margin || impluse.x > margin) {
-            animation = &e->animations->runSideward;	
+            animation = &e->animations->run;	
 
             //TODO: Remove this when the animations are coorect
             if((impluse.x > margin  && impluse.y < -margin) || (impluse.x < -margin && impluse.y > margin) || ((impluse.x > margin && impluse.y < margin && impluse.y > -margin))) { //NOTE: The extra check is becuase the front & back sideways animation aren't matching - should flip one in the aesprite
-                e->spriteFlipped = false;
+                removeEntityFlag(e, ENTITY_SPRITE_FLIPPED);
             } else {
-                e->spriteFlipped = true;
+                addEntityFlag(e, ENTITY_SPRITE_FLIPPED);
             }
         } else {
-            animation = &e->animations->runForward;
+            animation = &e->animations->run;
         }
     } else if(impluse.x < -margin || impluse.x > margin) {
-        animation = &e->animations->runSideward;
+        animation = &e->animations->run;
     }
 
     return animation;
@@ -410,11 +442,11 @@ Animation *getBestWalkAnimation(Entity *e) {
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float16 fovMatrix) {
     DEBUG_TIME_BLOCK();
         {
-        float16 modelToViewT = getModelToViewTransform(e, gameState->cameraPos);
+        // float16 modelToViewT = getModelToViewTransform(e, gameState->cameraPos);
         
-        modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
+        // modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
 
-        pushMatrix(renderer, modelToViewT);
+        // pushMatrix(renderer, modelToViewT);
 
         //NOTEL Draw the attack box
         // pushRect(renderer, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 0, 0, 1));
@@ -428,28 +460,33 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {
     float16 modelToViewT = getModelToViewTransform(e, gameState->cameraPos);
 
-    if(e->spriteFlipped) {
+    if(hasEntityFlag(e, ENTITY_SPRITE_FLIPPED)) {
         modelToViewT.E[0] *= -1;
         modelToViewT.E[1] *= -1;
         modelToViewT.E[2] *= -1;
     }
     
-    modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
-
-    pushMatrix(renderer, modelToViewT);
+    // modelToViewT = float16_multiply(fovMatrix, modelToViewT); 
 
     Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
     if(e->animationController.finishedAnimationLastUpdate) {
         //NOTE: Make not active anymore. Should Probably remove it from the list. 
         // e->flags &= ~ENTITY_ACTIVE;
 
-        if(e->animationController.lastAnimationOn == &gameState->playerAttackAnimation) {
-            //NOTE: Turn off attack collider when attack finishes
-            // e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~COLLIDER_ACTIVE; 
-	    }
+        // if(e->animationController.lastAnimationOn == &gameState->playerAttackAnimation) {
+        //     //NOTE: Turn off attack collider when attack finishes
+        //     // e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~COLLIDER_ACTIVE; 
+	    // }
     }
 
-    pushTexture(renderer, t->handle, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords);
+    float3 worldP = e->pos;
+    worldP.x += e->offsetP.x * e->scale.x;
+    worldP.y += e->offsetP.y * e->scale.y;
+    
+    worldP.x -= gameState->cameraPos.x;
+    worldP.y -= gameState->cameraPos.y;
+
+    pushTexture(renderer, t->handle, worldP, e->scale.xy, make_float4(1, 1, 1, 1), t->uvCoords);
     // pushRect(renderer, make_float3(0, 0, 0), make_float2(1, 1), make_float4(1, 1, 1, 1));
 }
 
@@ -458,23 +495,19 @@ void pushAllEntityLights(GameState *gameState, float dt) {
 	for(int i = 0; i < gameState->entityCount; ++i) {
 		Entity *e = &gameState->entities[i];
 
-		if(e->flags & ENTITY_ACTIVE) {
+		if(hasEntityFlag(e, ENTITY_ACTIVE) && hasEntityFlag(e, LIGHT_COMPONENT)) {
+            float3 worldPos = getWorldPosition(e);
+            //NOTE: Update the flicker
+            e->perlinNoiseLight += dt;
 
-			float3 worldPos = getWorldPosition(e);
+            if(e->perlinNoiseLight > 1.0f) {
+                e->perlinNoiseLight = 0.0f;
+            }
 
-			if(e->flags & LIGHT_COMPONENT) {
-				//NOTE: Update the flicker
-				e->perlinNoiseLight += dt;
+            float value = SimplexNoise_fractal_1d(40, e->perlinNoiseLight, 3);
 
-				if(e->perlinNoiseLight > 1.0f) {
-					e->perlinNoiseLight = 0.0f;
-				}
-
-				float value = SimplexNoise_fractal_1d(40, e->perlinNoiseLight, 3);
-
-				//NOTE: Push light
-				pushGameLight(gameState, worldPos, make_float4(1, 0.5f, 0, 1), value);
-			}
+            //NOTE: Push light
+            pushGameLight(gameState, worldPos, make_float4(1, 0.5f, 0, 1), value);
 		}
 	}
 }

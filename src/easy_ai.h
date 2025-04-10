@@ -55,6 +55,8 @@ typedef struct {
 
 	EasyAi_Mode aiMode;
 	float waitTimer;
+
+    float3 lastSetPos;
 	
 	float3 searchBouys[8]; 
 	int searchBouysCount;

@@ -40,7 +40,7 @@
 #include "ui_game.cpp"
 #include "easy_profiler_draw.h"
 #include "debug.cpp"
-#include "player.cpp"
+#include "init_board.cpp"
 #include "camera.cpp"
 
 static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {
@@ -53,6 +53,11 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	} else {
 		releaseMemoryMark(&global_perFrameArenaMark);
 		global_perFrameArenaMark = takeMemoryMark(&globalPerFrameArena);
+	}
+
+	if(!gameState->gamePlay.boardInited) {
+		initPlayerBoard(gameState);
+		gameState->gamePlay.boardInited = true;
 	}
 
 	Renderer *renderer = &gameState->renderer;

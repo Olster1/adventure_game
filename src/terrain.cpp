@@ -4,7 +4,7 @@ Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash) {
     Chunk *chunk = (Chunk *)pushStruct(&global_long_term_arena, Chunk);
     *chunk = Chunk();
     assert(chunk);
-    memset(chunk, 0, sizeof(Chunk));
+    // memset(chunk, 0, sizeof(Chunk));
 
     chunk->x = x;
     chunk->y = y;
@@ -54,7 +54,7 @@ static CubeVertex global_cubeData[] = {
 
 int getMapHeight(int worldX, int worldY) {
     float maxHeight = 3.0f;
-    int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, worldX, worldY, 0.03f)));
+    int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, 0.4*worldX, 0.4*worldY, 0.03f)));
     return height;
 }
 
@@ -136,8 +136,9 @@ bool hasGrassyTop(int worldX, int worldY, int worldZ) {
 
 bool hasTree(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
-    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 10.f));
-    bool result = perlin > 0.65f;
+    float scaleFactor = 1.0f;
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, scaleFactor*worldX, scaleFactor*worldY, scaleFactor*worldZ, 10.f));
+    bool result = perlin > 0.7f;
     return result;
 }
 
@@ -195,6 +196,8 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
     assert(chunk);
     assert(chunk->generateState & CHUNK_NOT_GENERATED);
     chunk->generateState = CHUNK_GENERATING;
+
+    chunk->cloudFadeTimer = 0; //NOTE: for fading out the fog of war
 
     float3 chunkP = getChunkWorldP(chunk);
     int chunkWorldX = roundChunkCoord(chunkP.x);

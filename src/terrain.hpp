@@ -92,6 +92,7 @@ struct Chunk {
     //NOTE: Z Y
     Tile tiles[CHUNK_DIM*CHUNK_DIM*CHUNK_DIM];
 
+    float cloudFadeTimer = -1; //NOTE: Timer for fading out the clouds
     int cloudCount = 0;
 	CloudData clouds[400];
 
@@ -114,6 +115,7 @@ struct Chunk {
         z = 0;
         next = 0;
         cloudCount = 0;
+        cloudFadeTimer = -1;
     }
 
 };
@@ -140,6 +142,15 @@ float3 convertRealWorldToBlockCoords(float3 p) {
     p.x = round(p.x);
     p.y = round(p.y);
     p.z = round(p.z);
+
+    return p;
+}
+
+float3 convertRealWorldToBlockCenterWorld(float3 p) {
+    //NOTE: The origin is at the center of a block
+    p.x = round(p.x) + 0.5f;
+    p.y = round(p.y) + 0.5f;
+    p.z = round(p.z) + 0.5f;
 
     return p;
 }

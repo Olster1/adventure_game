@@ -26,10 +26,10 @@ void updatePlayerInput(GameState *gameState) {
 	if(playerMoved) {
 		Animation *animation = 0;
 		float margin = 0.1f;
-		gameState->player->spriteFlipped = false;
+		removeEntityFlag(gameState->player, ENTITY_SPRITE_FLIPPED);
 
 		if((impluse.x > margin  && impluse.y < -margin) || (impluse.x < -margin && impluse.y > margin) || ((impluse.x > margin && impluse.y < margin && impluse.y > -margin))) { //NOTE: The extra check is becuase the front & back sideways animation aren't matching - should flip one in the aesprite
-			gameState->player->spriteFlipped = true;
+			addEntityFlag(gameState->player, ENTITY_SPRITE_FLIPPED);
 		}
 
 		if(impluse.y > margin) {

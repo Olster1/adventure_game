@@ -145,35 +145,20 @@ typedef struct {
 	int tileCount;
 	MapTile tiles[10000];
 
-	DefaultEntityAnimations potPlantAnimations;
+	DefaultEntityAnimations knightAnimations;
+	DefaultEntityAnimations peasantAnimations;
+	DefaultEntityAnimations archerAnimations;
 
 	AnimationState animationState;
-
-	Animation playerIdleAnimation;
-	Animation playerRunForwardAnimation;
-	Animation playerRunbackwardAnimation;
-	Animation playerRunsidewardAnimation;
-	
-	Animation playerAttackAnimation;
-	Animation playerHurtAnimation;
-	Animation playerDieAnimation;
-	Animation playerJumpAnimation;
-	Animation playerFallingAnimation;
-
-	Animation playerbackwardSidewardRun;
-	Animation playerforwardSidewardRun;
 
 	GameDialogs dialogs;
 	TileSet sandTileSet;
 
 	Terrain terrain;
 
-	bool gravityOn;
-
 	EditorGui editorGuiState;
 
 	bool cameraFollowPlayer;
-
 
 	float zoomLevel;
 

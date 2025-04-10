@@ -1,13 +1,14 @@
-enum EntityFlags {
-    ENTITY_ACTIVE = 1 << 0,
-    LIGHT_COMPONENT = 1 << 2,
+enum EntityFlag {
+    ENTITY_ACTIVE = 1 << 0, 
+    LIGHT_COMPONENT = 1 << 1,
+    ENTITY_SPRITE_FLIPPED = 1 << 3,
 };
 
+
 #define MY_ENTITY_TYPE(FUNC) \
-FUNC(ENTITY_DECOR)\
-FUNC(ENTITY_KNIGHT)\
-FUNC(ENTITY_ARCHER)\
 FUNC(ENTITY_PEASANT)\
+FUNC(ENTITY_ARCHER)\
+FUNC(ENTITY_KNIGHT)\
 FUNC(ENTITY_GOBLIN)\
 FUNC(ENTITY_GOBLIN_TNT)\
 FUNC(ENTITY_GOBLIN_BARREL)\
@@ -30,6 +31,8 @@ struct CloudData {
     float2 pos;
     float scale;
     int cloudIndex;
+    float fadePeriod;
+    float darkness;
 };
 
 enum ColliderFlag {
@@ -82,51 +85,56 @@ Collider make_collider(float3 offset, float3 scale, u32 flags) {
 
 struct DefaultEntityAnimations {
     Animation idle;
-	Animation runForward;
-	Animation runBack;
-	Animation runSideward;
-    Animation runSidewardBack;
+	Animation run;
 	
-	Animation attack;
-    Animation attackBack;
-	Animation hurt;
-    Animation suprised;
-	Animation die;
+    //NOTE: ATTACK
+	Animation attackUp;
+    Animation attackDown;
+    Animation attackSide;
+
+    //NOTE: For the peasant
+    Animation work;
+
+    //NOTE: For the TNT barrel & Peasant
+    Animation scared;
 };
 
-typedef struct Entity Entity; 
-
 struct Entity {
-    Entity *parent; 
-    char *id;
-    int idHash;
+    Entity *parent; //TODO: Not sure if we need this
+    char *id; //TODO: Not sure if we need this
+    int idHash; //TODO: Not sure if we need this
+
     EntityType type;
+    u64 flags;
 
-    //NOTES: Could be flags
-    bool spriteFlipped;
-
+    //NOTE: TRANSFORM component
     float3 pos;
-    float deltaTLeft;
-    float3 deltaPos; //NOTE: Used in collision loop
-
-    float perlinNoiseLight; //NOTE: Used for the lights
-
+    float3 offsetP;
     float speed; //NOTE: How fast the entity moves - used to scale direction vectors
     float3 scale;
     float3 velocity;
     float rotation;
     float targetRotation;
-    u64 flags;
 
-    //NOTE: Used by a star
-    float3 lastSetPos;
+    float perlinNoiseLight; //NOTE: Used for the lights
 
-    ///////////////////////
-    //NOTE: For fireball
-    float respawnTimer;
+    float deltaTLeft;
+    float3 deltaPos; //NOTE: Used in collision loop
 
     DefaultEntityAnimations *animations; //NOTE: Points to animations saved in the gameState
-
     EasyAnimation_Controller animationController;
     EasyAiController *aStarController;
 };
+
+
+bool hasEntityFlag(Entity *e, EntityFlag flag) {
+    return (e->flags & (u64)flag);
+}
+
+void removeEntityFlag(Entity *e, EntityFlag flag) {
+    e->flags &= ~((u64)flag);
+}
+
+void addEntityFlag(Entity *e, EntityFlag flag) {
+    e->flags |= ((u64)flag);
+}
