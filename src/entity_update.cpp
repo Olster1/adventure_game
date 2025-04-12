@@ -12,8 +12,6 @@ float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
 	float3 tileP = convertRealWorldToBlockCoords(make_float3(worldX, worldY, 0));
 	float worldZ = getMapHeight(tileP.x, tileP.y);
 
-	
-
 	bool wasStandAlone = true;
 
 	float3 oneIn = convertRealWorldToBlockCoords(make_float3(worldX, worldY - 1, 0));
@@ -49,6 +47,11 @@ float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
 			}
 		}
 		worldY -= (worldZ - 1);
+	}
+
+	if(worldZ < 0) {
+		//NOTE: Nothign is below 0 and we don't want to render the selectable offset
+		worldZ = 0;
 	}
 
 	return make_float3(worldX, worldY, worldZ);

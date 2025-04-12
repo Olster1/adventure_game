@@ -41,6 +41,7 @@ enum TileFlags {
     TILE_FLAG_FRONT_GRASS = 1 << 3, 
     TILE_FLAG_FRONT_BEACH = 1 << 4, 
     TILE_FLAG_TREE = 1 << 5,  //NOTE: Wether this tile has a tree
+    TILE_FLAG_WALKABLE = 1 << 6,  //NOTE: Wether we can walk on this tile
 };
 
 struct Tile {
@@ -158,6 +159,21 @@ float2 getChunkPosForWorldP(float2 p) {
     p.y = roundChunkCoord((float)p.y / (float)CHUNK_DIM);
 
     return p;
+}
+
+float3 getChunkLocalPos(int x, int y, int z)  {
+    x = round(x);
+    y = round(y);
+    z = round(z);
+
+    //NOTE: CHUNK DIM Must be power of 2
+    assert((CHUNK_DIM & (CHUNK_DIM - 1)) == 0);
+
+    x &= (CHUNK_DIM - 1);
+    y &= (CHUNK_DIM - 1);
+    z &= (CHUNK_DIM - 1);
+
+    return make_float3(x, y, z);
 }
 
 

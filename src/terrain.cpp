@@ -274,10 +274,16 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
                             } 
                         }
                     }
+
                     if(type != TILE_TYPE_NONE) {
+                        if(!(flags & TILE_FLAG_TREE) && !(flags & TILE_FLAG_FRONT_FACE)) {
+                            //NOTE: Can walk on this tile
+                            flags |= TILE_FLAG_WALKABLE;
+                        }
                         // assert(z == 0);
                         chunk->tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x] = Tile(type, &animationState->animationItemFreeListPtr, animation, tileCoords, tileCoordsSecondary, flags, lightingMask);
                     }
+                    
                 } else {
                     bool waterRock = false;//isWaterRock(worldX, worldY, worldZ);
 

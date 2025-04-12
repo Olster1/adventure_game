@@ -8,24 +8,32 @@ struct FloodFillEvent {
 
 #define MAX_ASTAR_ARRAY_LENGTH MAX_MOVE_DISTANCE*MAX_MOVE_DISTANCE*MAX_HEIGHT_LEVEL
 
-void pushOnFloodFillQueue(FloodFillEvent *queue, bool *visited, int x, int y, int z, float3 origin) {
+void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *visited, int x, int y, int z, float3 origin) {
 	int index = MAX_MOVE_DISTANCE*MAX_MOVE_DISTANCE*z + MAX_MOVE_DISTANCE*(y - origin.y) + (x - origin.x);
-	
-	if(index < MAX_ASTAR_ARRAY_LENGTH && !visited[index]) { //TODO
-		FloodFillEvent *node = pushStruct(&globalPerFrameArena, FloodFillEvent);
-		node->x = x;
-        node->y = y;
-		node->z = z;
-
-		queue->next->prev = node;
-		node->next = queue->next;
-
-		queue->next = node;
-		node->prev = queue;
-
-		//push node to say you visited it
 		
-        visited[index] = true;
+	if(index >= 0 && index < MAX_ASTAR_ARRAY_LENGTH && !visited[index]) { 
+		//NOTE: Now check if it's a valid square to stand on i.e. not water or tree or house etc.
+		float2 chunkP = getChunkPosForWorldP(make_float2(x, y));
+        Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, chunkP.x, chunkP.y, 0, false, false);
+		if(c) {
+			float3 tileP = getChunkLocalPos(x, y, z);
+			Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
+			if(tile && (tile->flags & TILE_FLAG_WALKABLE)) {
+				FloodFillEvent *node = pushStruct(&globalPerFrameArena, FloodFillEvent);
+				node->x = x;
+				node->y = y;
+				node->z = z;
+
+				queue->next->prev = node;
+				node->next = queue->next;
+
+				queue->next = node;
+				node->prev = queue;
+			}
+		}
+
+		//say you visited it
+		visited[index] = true;
 	}
 }
 
@@ -53,7 +61,7 @@ FloodFillEvent *floodFillSearch(GameState *gameState, float3 startP, float3 goal
 
     FloodFillEvent queue = {};
     queue.next = queue.prev = &queue; 
-	pushOnFloodFillQueue(&queue, visited, startP.x, startP.y, startP.z, origin);
+	pushOnFloodFillQueue(gameState, &queue, visited, startP.x, startP.y, startP.z, origin);
 
 	bool searching = true;
 	FloodFillEvent *foundNode = 0;
@@ -72,10 +80,10 @@ FloodFillEvent *floodFillSearch(GameState *gameState, float3 startP, float3 goal
 			  foundNode = node;
 			} else {
 				//push on more directions   
-				pushOnFloodFillQueue(&queue, visited, x + 1, y, z, origin);
-				pushOnFloodFillQueue(&queue, visited, x - 1, y, z, origin);
-				pushOnFloodFillQueue(&queue, visited, x, y + 1, z, origin);
-				pushOnFloodFillQueue(&queue, visited, x, y - 1, z, origin);
+				pushOnFloodFillQueue(gameState, &queue, visited, x + 1, y, z, origin);
+				pushOnFloodFillQueue(gameState, &queue, visited, x, y + 1, z, origin);
+				pushOnFloodFillQueue(gameState, &queue, visited, x - 1, y, z, origin);
+				pushOnFloodFillQueue(gameState, &queue, visited, x, y - 1, z, origin);
 				
 			}
 		} else {
@@ -83,7 +91,6 @@ FloodFillEvent *floodFillSearch(GameState *gameState, float3 startP, float3 goal
 			break;
 		}
 		searchCount++;
-		printf("%d\n", searchCount);
 	}
     return foundNode;
 }

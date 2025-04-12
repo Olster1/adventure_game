@@ -540,7 +540,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         //NOTE: Draw the path 
         MemoryArenaMark mark = takeMemoryMark(&globalPerFrameArena);
 
-        FloodFillEvent *foundNode = floodFillSearch(gameState, p, mouseWorldP);
+        FloodFillEvent *foundNode = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), convertRealWorldToBlockCoords(mouseWorldP));
 
         if(foundNode) {
         } else {
