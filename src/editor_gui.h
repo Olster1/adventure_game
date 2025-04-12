@@ -7,7 +7,7 @@ struct EditorGuiId {
     InteractionType type;
     int a;
     int b;
-    char *c;
+    u32 c;
 };
 
 struct GuiInteraction {

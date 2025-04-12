@@ -146,15 +146,6 @@ float3 convertRealWorldToBlockCoords(float3 p) {
     return p;
 }
 
-float3 convertRealWorldToBlockCenterWorld(float3 p) {
-    //NOTE: The origin is at the center of a block
-    p.x = round(p.x) + 0.5f;
-    p.y = round(p.y) + 0.5f;
-    p.z = round(p.z) + 0.5f;
-
-    return p;
-}
-
 int roundChunkCoord(float value) {
     return floor(value);
 }

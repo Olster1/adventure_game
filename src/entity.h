@@ -1,9 +1,10 @@
+static u32 global_entityId = 0;
+
 enum EntityFlag {
     ENTITY_ACTIVE = 1 << 0, 
     LIGHT_COMPONENT = 1 << 1,
     ENTITY_SPRITE_FLIPPED = 1 << 3,
 };
-
 
 #define MY_ENTITY_TYPE(FUNC) \
 FUNC(ENTITY_PEASANT)\
@@ -47,8 +48,7 @@ enum CollideEventType {
 };
 
 struct CollideEvent {
-    char *entityId;
-    int entityHash;
+    u32 entityId;
 
     CollideEventType type;
 
@@ -100,10 +100,9 @@ struct DefaultEntityAnimations {
 };
 
 struct Entity {
-    Entity *parent; //TODO: Not sure if we need this
-    char *id; //TODO: Not sure if we need this
-    int idHash; //TODO: Not sure if we need this
+    u32 id; 
 
+    Entity *parent; //TODO: Not sure if we need this
     EntityType type;
     u64 flags;
 
@@ -115,6 +114,10 @@ struct Entity {
     float3 velocity;
     float rotation;
     float targetRotation;
+    
+    int maxMoveDistance;
+    int moveCount;
+    float3 moveArray[MAX_MOVE_DISTANCE];
 
     float perlinNoiseLight; //NOTE: Used for the lights
 

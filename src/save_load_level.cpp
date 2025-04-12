@@ -54,8 +54,7 @@ void saveLevel_version1_json(GameState *gameState, char *utf8_full_file_name) {
         MemoryArenaMark memMark = takeMemoryMark(&globalPerFrameArena);
 
         writeVarString("{\n", "");
-        writeVarString("id: \"%s\"\n", e->id);
-        writeVarString("idHash: %d\n", e->idHash);
+        writeVarString("id: \"%d\"\n", e->id);
         writeVarString("type: \"%s\"\n", MyEntity_TypeStrings[(int)e->type]);
         writeVarString("pos: %f %f %f\n", e->pos.x, e->pos.y, e->pos.z);
         writeVarString("}\n", "");
@@ -173,14 +172,9 @@ void loadSaveLevel_json(GameState *state, char *fileName_utf8) {
                     if(easyString_stringsMatch_null_and_count("id", token.at, token.size)) {
                         EasyToken t = lexGetNextToken(&tokenizer);
                         assert(t.type == TOKEN_COLON);
-                        entity.id = getStringFromTokenizer(&tokenizer, &globalPerEntityLoadArena);
-                    }
-                    if(easyString_stringsMatch_null_and_count("idHash", token.at, token.size)) {
-                        EasyToken t = lexGetNextToken(&tokenizer);
-                        assert(t.type == TOKEN_COLON);
                         t = lexGetNextToken(&tokenizer);
                         assert(t.type == TOKEN_INTEGER);
-                        entity.idHash = t.intVal;
+                        entity.id = t.intVal;
                     }
                     if(easyString_stringsMatch_null_and_count("type", token.at, token.size)) {
                         EasyToken t = lexGetNextToken(&tokenizer);

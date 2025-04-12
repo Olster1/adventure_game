@@ -72,6 +72,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->gLogoText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/gLogo.png");
 		gameState->blueText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/b.png");
 		gameState->redText = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/r.png");
+		gameState->selectImage = backendRenderer_loadFromFileToGPU(backendRenderer, "../src/images/ui/select.png");
 		gameState->cloudText[0] = textureAtlas_getItem(&gameState->textureAtlas, "cloud.png");
 		gameState->cloudText[1] = textureAtlas_getItem(&gameState->textureAtlas, "cloud2.png");
 		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
@@ -83,6 +84,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		gameState->trees = initResizeArray(RenderObject);
 		gameState->waterAnimations = initResizeArray(RenderObject);
+
+		gameState->selectedColor = make_float4(1, 1, 1, 1);
 		
 
 		createAOOffsets(gameState);

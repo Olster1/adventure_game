@@ -106,7 +106,7 @@ void drawDebugAndEditorText(GameState *gameState, Renderer *renderer, float faux
 		pushShader(renderer, &textureShader);
 		pushMatrix(renderer, fovMatrix);
 
-		updateAStartEditor(gameState, renderer, windowWidth, windowHeight);
+		// updateAStartEditor(gameState, renderer, windowWidth, windowHeight);
 	}
 
     float16 orthoMatrix1 = make_ortho_matrix_bottom_left_corner(fauxDimensionX, fauxDimensionY, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);

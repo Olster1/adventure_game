@@ -88,7 +88,8 @@ typedef struct {
 
 	GameMode gameMode;
 
-	char *selectedEntityId;
+	int selectedEntityCount;
+	u32 selectedEntityIds[512];
 
 	//NOTE: For creating unique entity ids like MongoDb ObjectIds
 	int randomIdStartApp;
@@ -114,7 +115,7 @@ typedef struct {
 	float scrollDp;
 
 	int entityCount;
-	Entity entities[256];
+	Entity entities[2056];
 
 	float3 cameraPos;
 	float cameraFOV;
@@ -131,9 +132,14 @@ typedef struct {
 	Texture gLogoText;
 	Texture blueText;
 	Texture redText;
+	Texture selectImage;
 	AtlasAsset *cloudText[3];
 	AtlasAsset *treeTexture;
 	TextureAtlas textureAtlas;
+
+	float4 selectedColor;
+
+	float selectHoverTimer;
 
 	bool draggingCanvas;
 	float2 startDragP;

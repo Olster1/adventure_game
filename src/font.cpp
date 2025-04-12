@@ -325,7 +325,7 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
                 pos.x = xAt + fontScale*g.xoffset;
                 assert(pos.x >= startX);
                 pos.y = yAt -fontScale*g.yoffset + offsetY;
-                pos.z = 1.0f;
+                pos.z = 0;
                 pushGlyph(renderer, g.handle, pos, scale, font_color, g.uvCoords);
 
                 result = rect2f_union(make_rect2f_center_dim(make_float2(pos.x, pos.y), scale), result);

@@ -282,6 +282,10 @@ static char *sdfFragShader =
 
     "color.xyz /= color.a;"
 
+    "if(color.a == 0) {"
+        "discard;"
+    "}"
+
     "colorOut = color;"
 "}";
 
@@ -298,6 +302,10 @@ static char *pixelArtFragShader =
     "uv = floor(uv) + 0.5 + clamp(((fract(uv) - 0.5 + duv)/duv), 0.0, 1.0);"
     "uv /= size;"
     "vec4 sample = texture(diffuse, uv);"
+
+    "if(sample.w == 0) {"
+        "discard;"
+    "}"
    
     "color = sample*color_frag;"
 "}";

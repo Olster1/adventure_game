@@ -444,9 +444,11 @@ int main(int argc, char **argv) {
 
 
         //Now create the actual window
-        global_wndHandle = SDL_CreateWindow("Cozy Shop Simulator",  SDL_WINDOWPOS_CENTERED,  SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
+        global_wndHandle = SDL_CreateWindow("Boardgame",  SDL_WINDOWPOS_CENTERED,  SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
 
         assert(global_wndHandle);
+
+        SDL_RaiseWindow(global_wndHandle);
     }
 
     

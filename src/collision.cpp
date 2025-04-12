@@ -8,7 +8,7 @@ void addCollisionEvent(Collider *a1, Entity *b, float2 hitDir) {
     for(int i = 0; i < a1->collideEventsCount; ++i) {
         oldEvent = &a1->events[i];
 
-        if(oldEvent->entityHash == b->idHash && easyString_stringsMatch_nullTerminated(oldEvent->entityId, b->id)) {
+        if(oldEvent->entityId == b->id) {
             if(oldEvent->type == COLLIDE_EXIT) {
                 type = COLLIDE_ENTER;
             } else if(!oldEvent->hitThisFrame) {
@@ -26,7 +26,6 @@ void addCollisionEvent(Collider *a1, Entity *b, float2 hitDir) {
         
         e->type = type;
         e->entityId = b->id;
-        e->entityHash = b->idHash;
         e->entityType = b->type;
         e->hitThisFrame = true;
     } else if(oldEvent) {
@@ -49,7 +48,7 @@ void updateExitCollision(Collider *a1, Entity *b) {
     //NOTE: Loop though all the collision events on this collider and see if there was one with this colliding entity. 
     for(int i = 0; i < a1->collideEventsCount; ++i) {
         CollideEvent *oldEvent = &a1->events[i];
-        if(oldEvent->entityHash == b->idHash && easyString_stringsMatch_nullTerminated(oldEvent->entityId, b->id)) {
+        if(oldEvent->entityId == b->id) {
             if(oldEvent->type == COLLIDE_EXIT) {
                 //NOTE: Marked for removal by not setting hitThisFrame
                 int b = 0;
@@ -67,7 +66,6 @@ void updateExitCollision(Collider *a1, Entity *b) {
 void prepareCollisions(Collider *a1) {
     for(int i = 0; i < a1->collideEventsCount; ++i) {
         CollideEvent *e = &a1->events[i];
-        assert(e->entityHash);
         e->hitThisFrame = false;
     }
 }

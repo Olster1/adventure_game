@@ -9,7 +9,11 @@ typedef enum {
     EASY_PLATFORM_MEMORY_ZERO,
 } EasyPlatform_MemoryFlag;
 
-static void *easyPlatform_allocateMemory(u32 sizeInBytes, EasyPlatform_MemoryFlag flags) {
+static void easyPlatform_zeroMemory(void *ptr, size_t sizeInBytes) {
+    memset(ptr, 0, sizeInBytes);
+}
+
+static void *easyPlatform_allocateMemory(size_t sizeInBytes, EasyPlatform_MemoryFlag flags) {
     
     void *result = 0;
     
@@ -48,11 +52,11 @@ static void easyPlatform_freeMemory(void *memory) {
 }
 
 
-static inline void easyPlatform_copyMemory(void *to, void *from, u32 sizeInBytes) {
+static inline void easyPlatform_copyMemory(void *to, void *from, size_t sizeInBytes) {
     memcpy(to, from, sizeInBytes);
 }
 
-static inline u8 * easyPlatform_reallocMemory(void *from, u32 oldSize, u32 newSize) {
+static inline u8 * easyPlatform_reallocMemory(void *from, size_t oldSize, size_t newSize) {
     u8 *result = (u8 *)easyPlatform_allocateMemory(newSize, EASY_PLATFORM_MEMORY_ZERO);
 
     easyPlatform_copyMemory(result, from, oldSize);

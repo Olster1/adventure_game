@@ -178,6 +178,15 @@ static float3 make_float3(float x0, float y0, float z0) {
 	return result;
 }
 
+static float2 float2_hadamard(float2 a, float2 b) {
+	float2 result = {};
+
+	result.x = a.x * b.x;
+	result.y = a.y * b.y;
+
+	return result;
+}
+
 static float3 float3_hadamard(float3 a, float3 b) {
 	float3 result = {};
 
@@ -826,6 +835,12 @@ float16 float16_scale(float16 a, float3 scale) {
 	a.E_[2][2] *= scale.z;
 
     return a;
+}
+
+float sin01(float val) {
+	float result = 0.5f*(sin(val) + 1.0f);
+	assert(result >= 0.0f && result <= 1.0f);
+	return result;
 }
 
 

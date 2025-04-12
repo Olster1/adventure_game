@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdlib.h>
 
+#include "defines.h"
 #include "wl_memory.h"
 #include "save_settings.cpp"
 #include "file_helper.cpp"
@@ -27,6 +28,7 @@
 // #include "easy_text_io.h"
 #include "save_load_level.h"
 #include "editor_gui.cpp"
+#include "board_astar.cpp"
 #include "entity.cpp"
 #include "save_load_level.cpp"
 #include "collision.cpp"
