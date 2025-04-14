@@ -95,7 +95,9 @@ struct Chunk {
 
     float cloudFadeTimer = -1; //NOTE: Timer for fading out the clouds
     int cloudCount = 0;
-	CloudData clouds[400];
+	CloudData clouds[MAX_CLOUD_DIM*MAX_CLOUD_DIM];
+
+    u8 *visited; //NOTE: For when we create the board we keep track of where we've put positions. we allocate this on a temp arena when we do the board init
 
     // Entity *entities;
     Chunk *next = 0;
@@ -103,13 +105,12 @@ struct Chunk {
     Tile *getTile(int x, int y, int z) {
         Tile *t = 0;
         if(x >= 0 && y >= 0 && z >= 0 && x < CHUNK_DIM && y < CHUNK_DIM && z < CHUNK_DIM) {
-            //TODO
             t = &tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x];
         }
         return t;
     }
 
-    Chunk() {
+    Chunk(Memory_Arena *tempArena) {
         generateState = CHUNK_NOT_GENERATED;
         x = 0;
         y = 0;
@@ -117,6 +118,11 @@ struct Chunk {
         next = 0;
         cloudCount = 0;
         cloudFadeTimer = -1;
+
+        //NOTE: This is for when we create the board we only allocate this array
+        if(tempArena) {
+            visited = pushArray(tempArena, CHUNK_DIM*CHUNK_DIM, u8);
+        }
     }
 
 };
@@ -194,9 +200,9 @@ struct Terrain {
         memset(chunks, 0, arrayCount(chunks)*sizeof(Chunk *));
     }
 
-    Chunk *generateChunk(int x, int y, int z, uint32_t hash);
+    Chunk *generateChunk(int x, int y, int z, uint32_t hash, Memory_Arena *tempArena);
     void fillChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, Chunk *chunk);
-    Chunk *getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk = true, bool shouldGenerateFully = true);
+    Chunk *getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk = true, bool shouldGenerateFully = true, Memory_Arena *tempArena = 0);
        
 };
 

@@ -104,8 +104,22 @@ Entity *addKnightEntity(GameState *state, float3 worldP) {
     if(e) {
         e->type = ENTITY_KNIGHT;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->knightAnimations.idle, 0.08f);
+    }
+    return e;
+} 
+
+Entity *addHouseEntity(GameState *state, float3 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_HOUSE;
+        e->offsetP.x = 0.25f;
+        e->offsetP.y = 0.5f;
+        e->scale = make_float3(2, 3, 1);
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->houseAnimation, 0.08f);
     }
     return e;
 } 
@@ -200,9 +214,9 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
                 float maxTime = 1.5f;
 
                 if(c->cloudCount == 0) {
-                    int clouds = 10;
-                    for(int i = 0; i < clouds; i++) {
-                        for(int j = 0; j < clouds; j++) {
+                    
+                    for(int i = 0; i < MAX_CLOUD_DIM; i++) {
+                        for(int j = 0; j < MAX_CLOUD_DIM; j++) {
                             float2 p = {};
                             p.x += random_between_float(-1, CHUNK_DIM + 1);
                             p.y += random_between_float(-1, CHUNK_DIM + 1);
@@ -558,16 +572,21 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
 void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {
 
-    Texture *t = easyAnimation_updateAnimation_getTexture(&e->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
-    if(e->animationController.finishedAnimationLastUpdate) {
-        //NOTE: Make not active anymore. Should Probably remove it from the list. 
-        // e->flags &= ~ENTITY_ACTIVE;
+    Texture *t = 0;
 
-        // if(e->animationController.lastAnimationOn == &gameState->playerAttackAnimation) {
-        //     //NOTE: Turn off attack collider when attack finishes
-        //     // e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~COLLIDER_ACTIVE; 
-	    // }
-    }
+    if(easyAnimation_isControllerValid(&e->animationController)) {
+
+        t = easyAnimation_updateAnimation_getTexture(&e->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
+        if(e->animationController.finishedAnimationLastUpdate) {
+            //NOTE: Make not active anymore. Should Probably remove it from the list. 
+            // e->flags &= ~ENTITY_ACTIVE;
+
+            // if(e->animationController.lastAnimationOn == &gameState->playerAttackAnimation) {
+            //     //NOTE: Turn off attack collider when attack finishes
+            //     // e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~COLLIDER_ACTIVE; 
+            // }
+        }
+    } 
 
     
     float3 renderWorldP = getRenderWorldP(e->pos);
@@ -589,10 +608,12 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
     float3 tileP = convertRealWorldToBlockCoords(e->pos);
     char *str = easy_createString_printf(&globalPerFrameArena, "(%d %d %d)", (int)tileP.x, (int)tileP.y, (int)tileP.z);
     pushShader(renderer, &sdfFontShader);
-	draw_text(renderer, &gameState->font, str, renderWorldP.x, renderWorldP.y, 0.02, make_float4(0, 0, 0, 1)); 
+	// draw_text(renderer, &gameState->font, str, renderWorldP.x, renderWorldP.y, 0.02, make_float4(0, 0, 0, 1)); 
 
-    pushShader(renderer, &pixelArtShader);
-    pushTexture(renderer, t->handle, renderWorldP, e->scale.xy, color, t->uvCoords);
+    if(t) {
+        pushShader(renderer, &pixelArtShader);
+        pushTexture(renderer, t->handle, renderWorldP, e->scale.xy, color, t->uvCoords);
+    }
 }
 
 void pushAllEntityLights(GameState *gameState, float dt) {

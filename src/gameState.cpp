@@ -77,6 +77,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->cloudText[1] = textureAtlas_getItem(&gameState->textureAtlas, "cloud2.png");
 		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
 		gameState->treeTexture = textureAtlas_getItem(&gameState->textureAtlas, "tree.png");
+		gameState->houseTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house.png");
+		easyAnimation_pushFrame(&gameState->houseAnimation, &gameState->houseTexture);
 
 		DefaultEntityAnimations knightAnimations;
 		DefaultEntityAnimations peasantAnimations;

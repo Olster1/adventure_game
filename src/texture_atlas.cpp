@@ -67,6 +67,23 @@ struct TextureAtlas {
         return result;
     }
 
+
+    Texture textureAtlas_getItemAsTexture(TextureAtlas *atlas, char *name) {
+        Texture t = {};
+        AtlasAsset *i = textureAtlas_getItem(atlas, name);
+        if(i) {
+            //NOTE: Fill out the texture details
+            t.handle = atlas->texture.handle;
+            float wPercent = (i->uv.z - i->uv.x);
+            float hPercent = (i->uv.w - i->uv.y);
+            t.width = atlas->texture.width*wPercent;
+            t.height = atlas->texture.height*hPercent;
+            t.aspectRatio_h_over_w = i->aspectRatio_h_over_w;
+            t.uvCoords = i->uv;
+        }
+        return t;
+    }
+
     TextureAtlas readTextureAtlas(char *jsonFileName, char *textureFileName) {
         TextureAtlas result = {};
 

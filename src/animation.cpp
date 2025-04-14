@@ -66,6 +66,10 @@ static char *easyAnimation2d_copyString(char *str) {
     return result;
 }
 
+static bool easyAnimation_isControllerValid(EasyAnimation_Controller *controller) {
+    return (controller->parent.next != 0);
+}
+
 static void easyAnimation_initController(EasyAnimation_Controller *controller) {
     controller->parent.next = controller->parent.prev = &controller->parent;
     controller->finishedAnimationLastUpdate = false;

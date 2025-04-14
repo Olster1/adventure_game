@@ -73,7 +73,7 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 
 		//NOTE: P is now in camera space
 		
-		float scale = lerp(0.8f, 1.2f, make_lerpTValue(sin01(5*gameState->selectHoverTimer)));
+		float scale = 1;//erp(0.8f, 1.2f, make_lerpTValue(sin01(5*gameState->selectHoverTimer)));
         pushTexture(renderer, gameState->selectImage.handle, p, make_float2(scale, scale), gameState->selectedColor, gameState->selectImage.uvCoords);
 
 		float3 tileP = convertRealWorldToBlockCoords(make_float3(worldMouseP.x, worldMouseP.y, worldMouseP.z));

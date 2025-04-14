@@ -159,6 +159,9 @@ typedef struct {
 	DefaultEntityAnimations tntAnimations;
 	DefaultEntityAnimations barrellAnimations;
 
+	Texture houseTexture;
+	Animation houseAnimation;
+
 	AnimationState animationState;
 
 	GameDialogs dialogs;

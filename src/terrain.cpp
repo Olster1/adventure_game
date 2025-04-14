@@ -1,8 +1,8 @@
 
-Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash) {
+Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash, Memory_Arena *tempArena) {
     DEBUG_TIME_BLOCK()
     Chunk *chunk = (Chunk *)pushStruct(&global_long_term_arena, Chunk);
-    *chunk = Chunk();
+    *chunk = Chunk(tempArena);
     assert(chunk);
     // memset(chunk, 0, sizeof(Chunk));
 
@@ -52,9 +52,9 @@ static CubeVertex global_cubeData[] = {
     make_cube_vertex(make_float3(0.5f, -0.5f, 0.5f), make_float3(0, -1, 0)),
 };
 
-int getMapHeight(int worldX, int worldY) {
+int getMapHeight(float worldX, float worldY) {
     float maxHeight = 3.0f;
-    int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, 0.4*worldX, 0.4*worldY, 0.03f)));
+    int height = round(maxHeight*mapSimplexNoiseTo11(SimplexNoise_fractal_2d(8, 0.4*round(worldX), 0.4*round(worldY), 0.03f)));
     return height;
 }
 
@@ -301,7 +301,7 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
 
 }
 
-Chunk *Terrain::getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk, bool shouldGenerateFully) {
+Chunk *Terrain::getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk, bool shouldGenerateFully, Memory_Arena *tempArena) {
     DEBUG_TIME_BLOCK()
     uint32_t hash = getHashForChunk(x, y, z);
 
@@ -318,7 +318,7 @@ Chunk *Terrain::getChunk(LightingOffsets *lightingOffsets, AnimationState *anima
     }
 
     if((!chunk && shouldGenerateChunk)) {
-        chunk = generateChunk(x, y, z, hash);
+        chunk = generateChunk(x, y, z, hash, tempArena);
     }
 
     if(chunk && shouldGenerateFully && (chunk->generateState & CHUNK_NOT_GENERATED)) {
