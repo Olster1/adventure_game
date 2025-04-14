@@ -72,7 +72,7 @@ static void EasyProfile_DrawGraph(Renderer *renderer, GameState *gameState, Easy
 			Rect2f backDropRect = make_rect2f_min_dim(0, backdropY, resolution.x, backdropHeight);
 
 			float2 center = rect2f_getCenter(backDropRect);
-			pushRect(renderer,  make_float3(center.x, center.y, 10), get_scale_rect2f(backDropRect), make_float4(0.15, 0.17, 0.20, 1));
+			pushRect(renderer,  make_float3(center.x, center.y, 0), get_scale_rect2f(backDropRect), make_float4(0.15, 0.17, 0.20, 1));
 			
 			////////////////////////////////////////////////////////////////////
 			
@@ -160,7 +160,7 @@ static void EasyProfile_DrawGraph(Renderer *renderer, GameState *gameState, Easy
 					r = make_rect2f_min_dim(xMin + drawState->xOffset*graphWidth, handleY + backdropY, handleWidth, handleHeight);
 
 					float2 center = get_centre_rect2f(r);
-					pushRect(renderer,  make_float3(center.x, center.y, 10), get_scale_rect2f(r), color);
+					pushRect(renderer,  make_float3(center.x, center.y, 0), get_scale_rect2f(r), color);
 					
 					////////////////////////////////////////////////////////////////////
 
@@ -249,7 +249,7 @@ static void EasyProfile_DrawGraph(Renderer *renderer, GameState *gameState, Easy
 								}
 
 								float2 center = get_centre_rect2f(r);
-								pushRect(renderer,  make_float3(center.x, center.y, 10), get_scale_rect2f(r), color);
+								pushRect(renderer,  make_float3(center.x, center.y, 0), get_scale_rect2f(r), color);
 
 								if(drawState->hotIndex == i) {
 
@@ -336,7 +336,7 @@ static void EasyProfile_DrawGraph(Renderer *renderer, GameState *gameState, Easy
 						}
 
 						float2 center = get_centre_rect2f(r);
-						pushRect(renderer,  make_float3(center.x, center.y, 10), get_scale_rect2f(r), color);
+						pushRect(renderer,  make_float3(center.x, center.y, 0), get_scale_rect2f(r), color);
 
 						index++;
 						if(index == state->framesFilled) {
