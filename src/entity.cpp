@@ -115,11 +115,22 @@ Entity *addHouseEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_HOUSE;
-        e->offsetP.x = 0.25f;
-        e->offsetP.y = 0.5f;
+        e->offsetP.y = 0.08f;
         e->scale = make_float3(2, 3, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->houseAnimation, 0.08f);
+    }
+    return e;
+} 
+
+Entity *addCastleEntity(GameState *state, float3 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_CASTLE;
+        e->offsetP.y = 0.07;
+        e->scale = make_float3(6, 5, 1);
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->castleAnimation, 0.08f);
     }
     return e;
 } 
@@ -560,6 +571,9 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         } else {
             gameState->selectedColor = make_float4(1, 0, 0, 1);
         }
+
+        
+            
 
 	    releaseMemoryMark(&mark);
         if(clicked) {

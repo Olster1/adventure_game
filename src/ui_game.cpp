@@ -67,7 +67,6 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     float scalef = 25;
     float2 scale = make_float2(scalef, ar*scalef);
 
-    
 
     Rect2f bounds = getTextBounds(renderer, &gameState->pixelFont, text, 0, 0, 0.1); 
     float2 bScale = get_scale_rect2f(bounds);
@@ -80,8 +79,8 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     pos = getUiPosition(percentOffset, anchorPoint, pos, resolution);
     
     float sOffset = 0;
-    pushTexture(renderer, gameState->shadowUiTexture.handle, make_float3(pos.x + sOffset, pos.y - sOffset, 2), scale, make_float4(1, 1, 1, 0.3), gameState->shadowUiTexture.uvCoords);
-    pushTexture(renderer, gameState->bannerTexture.handle, make_float3(pos.x, pos.y, 2), scale, make_float4(1, 1, 1, 1), gameState->bannerTexture.uvCoords);
+    pushTexture(renderer, gameState->shadowUiTexture.handle, make_float3(pos.x + sOffset, pos.y - sOffset, UI_Z_POS), scale, make_float4(1, 1, 1, 0.3), gameState->shadowUiTexture.uvCoords);
+    pushTexture(renderer, gameState->bannerTexture.handle, make_float3(pos.x, pos.y, UI_Z_POS), scale, make_float4(1, 1, 1, 1), gameState->bannerTexture.uvCoords);
 
     pushShader(renderer, &sdfFontShader);
     draw_text(renderer, &gameState->pixelFont, text, pos.x - bScale.x*0.5f, pos.y + bScale.y*0.5f, 0.1, make_float4(0, 0, 0, 1)); 
@@ -130,7 +129,7 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         float2 s = make_float2(10, 10);
         float2 s1 = make_float2(7, 7);
         float2 pos = getUiPosition(make_float2(0, 1), UI_ANCHOR_CENTER_TOP, make_float2(0, 0.5f*s.y), resolution);
-        float3 p = make_float3(pos.x, pos.y, 2);
+        float3 p = make_float3(pos.x, pos.y, UI_Z_POS);
         float3 p1 = p;
         p1.y += 0.5f;
         // pushTexture(renderer, gameState->shadowUiTexture.handle, p, s, make_float4(1, 1, 1, 0.3), gameState->shadowUiTexture.uvCoords);

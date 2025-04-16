@@ -61,8 +61,19 @@ float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
 void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, float3 worldMouseP) {
 	// if(gameState->selectedEntityCount > 0) 
 	{
+
 		gameState->selectHoverTimer += dt;
 		float3 p = convertRealWorldToBlockCoords(worldMouseP);
+
+		{
+			float2 chunkP = getChunkPosForWorldP(worldMouseP.xy);
+			Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, chunkP.x, chunkP.y, 0, true, true);
+			float3 tileP = getChunkLocalPos(p.x, p.y, p.z);
+			Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
+			if(tile && !(tile->flags & TILE_FLAG_WALKABLE)) {
+				gameState->selectedColor = make_float4(1, 0, 0, 1);
+			}
+		}
 
 		p = getRenderWorldP(p);
 

@@ -114,7 +114,7 @@ void placeKnightUnit(GameState *gameState, float3 offset, PlacementType type) {
 void placeHouse(GameState *gameState, float3 offset) {
     DEBUG_TIME_BLOCK();
     int pWidth = 2;
-    int pHeight = 3;
+    int pHeight = 2;
         //NOTE: Find a safe location to spawn the hosue unit
     offset = getSafeSpawnLocation(gameState, offset, pWidth, pHeight);
 
@@ -132,8 +132,38 @@ void placeHouse(GameState *gameState, float3 offset) {
     float3 p = offset;
     p.z = getMapHeight(p.x, p.y);
     p = convertRealWorldToBlockCoords(p);
-    //NOTE: We place it at the left bottom corner tile
+    p.x += 0.5f; //NOTE: We move it to the center of the two tiles
+    p.y += 0.5f; //NOTE: We move it to the center of the two tiles
     addHouseEntity(gameState, p);
+}
+
+void placeCastle(GameState *gameState, float3 offset) {
+    DEBUG_TIME_BLOCK();
+    int pWidth = 6;
+    int pHeight = 3 + 2; //NOTE: + 2 for safe place out the front
+        //NOTE: Find a safe location to spawn the hosue unit
+    offset = getSafeSpawnLocation(gameState, offset, pWidth, pHeight);
+
+    for(int y = 0; y < pHeight; y++) {
+        for(int x = 0; x < pWidth; x++) {
+            float3 p = offset;
+            p.x += x;
+            p.y += y;
+            p.z = getMapHeight(p.x, p.y);
+            float3 boardP = convertRealWorldToBlockCoords(p);
+            if(y > 1) {
+                markTileAsUsed(gameState, boardP, true); //NOTE: Mark chunk as not WALKABLE aswell    
+            }
+            
+        }
+    }
+
+    float3 p = offset;
+    p.z = getMapHeight(p.x, p.y);
+    p = convertRealWorldToBlockCoords(p);
+    p.x += 2.5f; //NOTE: We move it to the center of the two tiles
+    p.y += 3.5f; //NOTE: We move it to the center of the two tiles
+    addCastleEntity(gameState, p);
 }
 
 void initPlayerBoard(GameState *gameState) {
@@ -150,6 +180,11 @@ void initPlayerBoard(GameState *gameState) {
     placeHouse(gameState, p);
     placeHouse(gameState, p);
     placeHouse(gameState, p);
+    placeHouse(gameState, p);
+    placeHouse(gameState, p);
+    placeHouse(gameState, p);
+    placeHouse(gameState, p);
+    placeCastle(gameState, p);
 
     // c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, 1, 0, 0);
     // assert(c);

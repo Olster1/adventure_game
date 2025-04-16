@@ -162,6 +162,9 @@ typedef struct {
 	Texture houseTexture;
 	Animation houseAnimation;
 
+	Texture castleTexture;
+	Animation castleAnimation;
+
 	AnimationState animationState;
 
 	GameDialogs dialogs;

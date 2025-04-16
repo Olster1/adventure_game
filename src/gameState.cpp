@@ -80,6 +80,9 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->houseTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house.png");
 		easyAnimation_pushFrame(&gameState->houseAnimation, &gameState->houseTexture);
 
+		gameState->castleTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "castle.png");
+		easyAnimation_pushFrame(&gameState->castleAnimation, &gameState->castleTexture);
+
 		DefaultEntityAnimations knightAnimations;
 		DefaultEntityAnimations peasantAnimations;
 		DefaultEntityAnimations archerAnimations;
