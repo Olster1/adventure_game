@@ -96,6 +96,24 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
     }
 }
 
+void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent *parent, float dt) {
+    for(int i = 0; i < parent->particlerCount; ) {
+        int addend = 1;
+        Particler *p = &parent->particlers[i];
+
+        bool shouldRemove = updateParticler(renderer, p, gameState->cameraPos, dt);
+
+        if(shouldRemove) {
+            //NOTE: Move from the end
+            parent->particlers[i] = parent->particlers[--parent->particlerCount];
+            addend = 0;
+        } 
+
+        i += addend;
+    }
+    
+}
+
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
 	DEBUG_TIME_BLOCK();
 
@@ -128,6 +146,8 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
+
+	updateParticlers(renderer, gameState, &gameState->particlers, dt);
 
 	drawSelectionHover(gameState, renderer, dt, worldMouseP);
 

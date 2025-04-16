@@ -9,10 +9,10 @@
 #include "color.cpp"
 #include "font.cpp"
 #include "SimplexNoise.cpp"
+#include "transform.cpp"
 #include "animation.cpp"
 #include "resize_array.cpp"
-
-// #include "transform.cpp"
+#include "particles.cpp"
 #include "easy_ai.h"
 #include "entity.h"
 #include "tileMap.h"

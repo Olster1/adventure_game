@@ -151,10 +151,7 @@ void placeCastle(GameState *gameState, float3 offset) {
             p.y += y;
             p.z = getMapHeight(p.x, p.y);
             float3 boardP = convertRealWorldToBlockCoords(p);
-            if(y > 1) {
-                markTileAsUsed(gameState, boardP, true); //NOTE: Mark chunk as not WALKABLE aswell    
-            }
-            
+            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell only if it's the ones not one out front   
         }
     }
 

@@ -78,6 +78,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
 		gameState->treeTexture = textureAtlas_getItem(&gameState->textureAtlas, "tree.png");
 		gameState->houseTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house.png");
+		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "smoke.png");
 		easyAnimation_pushFrame(&gameState->houseAnimation, &gameState->houseTexture);
 
 		gameState->castleTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "castle.png");

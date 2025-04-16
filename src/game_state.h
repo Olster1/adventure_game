@@ -159,6 +159,7 @@ typedef struct {
 	DefaultEntityAnimations tntAnimations;
 	DefaultEntityAnimations barrellAnimations;
 
+	Texture smokeTexture;
 	Texture houseTexture;
 	Animation houseAnimation;
 
@@ -166,6 +167,8 @@ typedef struct {
 	Animation castleAnimation;
 
 	AnimationState animationState;
+
+	ParticlerParent particlers;
 
 	GameDialogs dialogs;
 	TileSet sandTileSet;

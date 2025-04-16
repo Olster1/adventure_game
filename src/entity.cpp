@@ -107,6 +107,7 @@ Entity *addKnightEntity(GameState *state, float3 worldP) {
         e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->knightAnimations.idle, 0.08f);
+        
     }
     return e;
 } 
@@ -131,6 +132,17 @@ Entity *addCastleEntity(GameState *state, float3 worldP) {
         e->scale = make_float3(6, 5, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->castleAnimation, 0.08f);
+
+        {
+            float3 particleP = worldP;
+            particleP.y += 0.5f;
+            Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, make_float4(0, 0, 1, 1));
+            addColorToParticler(p, make_float4(1.0, 0.9, 0.6, 0.0));
+            addColorToParticler(p, make_float4(1.0, 0.5, 0.1, 0.8));
+            addColorToParticler(p, make_float4(0.6, 0.1, 0.05, 0.5));
+            addColorToParticler(p, make_float4(0.2, 0.2, 0.2, 0.0));
+           
+        }
     }
     return e;
 } 

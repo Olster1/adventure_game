@@ -1,5 +1,4 @@
-struct Xform {
-	Xform *parent;
+struct TransformX {
 	float3 pos;
     float3 scale;
     float rotation;
