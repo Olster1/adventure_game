@@ -160,11 +160,31 @@ typedef struct {
 	DefaultEntityAnimations barrellAnimations;
 
 	Texture smokeTexture;
+
+	Texture goblinHutTexture;
+	Animation goblinHutAnimation;
+	Texture goblinHutBurntTexture;
+	Animation goblinHutBurntAnimation;
+
+	Animation goblinTowerAnimation; 
+	Texture goblinTowerBurntTexture;
+	Animation goblinTowerBurntAnimation;
+
+	float3 averageStartBoardPos;
+	int averageStartBoardCount;
+	
+	Texture towerTexture;
+	Animation towerAnimation;
+	Texture towerBurntTexture;
+	Animation towerBurntAnimation;
 	Texture houseTexture;
 	Animation houseAnimation;
-
 	Texture castleTexture;
 	Animation castleAnimation;
+	Texture houseBurntTexture;
+	Animation houseBurntAnimation;
+	Texture castleBurntTexture;
+	Animation castleBurntAnimation;
 
 	AnimationState animationState;
 

@@ -97,20 +97,24 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 }
 
 void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent *parent, float dt) {
-    for(int i = 0; i < parent->particlerCount; ) {
-        int addend = 1;
-        Particler *p = &parent->particlers[i];
+	if(parent->particlerCount > 0) {
+		// pushBlendMode(renderer, RENDER_BLEND_MODE_ADD);
+		for(int i = 0; i < parent->particlerCount; ) {
+			int addend = 1;
+			Particler *p = &parent->particlers[i];
 
-        bool shouldRemove = updateParticler(renderer, p, gameState->cameraPos, dt);
+			bool shouldRemove = updateParticler(renderer, p, gameState->cameraPos, dt);
 
-        if(shouldRemove) {
-            //NOTE: Move from the end
-            parent->particlers[i] = parent->particlers[--parent->particlerCount];
-            addend = 0;
-        } 
+			if(shouldRemove) {
+				//NOTE: Move from the end
+				parent->particlers[i] = parent->particlers[--parent->particlerCount];
+				addend = 0;
+			} 
 
-        i += addend;
-    }
+			i += addend;
+		}
+		// pushBlendMode(renderer, RENDER_BLEND_MODE_DEFAULT);
+	}
     
 }
 
@@ -151,6 +155,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	drawSelectionHover(gameState, renderer, dt, worldMouseP);
 
-	// drawClouds(gameState, renderer, dt);
+	drawClouds(gameState, renderer, dt);
 	
 }

@@ -30,6 +30,36 @@ void createAOOffsets(GameState *gameState) {
     }
 }
 
+void initBuildingTextures(GameState *gameState) {
+	gameState->houseTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house.png");
+	easyAnimation_pushFrame(&gameState->houseAnimation, &gameState->houseTexture);
+
+	gameState->castleTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "castle.png");
+	easyAnimation_pushFrame(&gameState->castleAnimation, &gameState->castleTexture);
+
+	gameState->castleBurntTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "castle_burnt.png");
+	easyAnimation_pushFrame(&gameState->castleBurntAnimation, &gameState->castleBurntTexture);
+
+	gameState->houseBurntTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house_burnt.png");
+	easyAnimation_pushFrame(&gameState->houseBurntAnimation, &gameState->houseBurntTexture);
+
+	gameState->towerTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "tower.png");
+	easyAnimation_pushFrame(&gameState->towerAnimation, &gameState->towerTexture);
+
+	gameState->towerBurntTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "tower_burnt.png");
+	easyAnimation_pushFrame(&gameState->towerBurntAnimation, &gameState->towerBurntTexture);
+
+	gameState->goblinHutTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "goblinHut.png");
+	easyAnimation_pushFrame(&gameState->goblinHutAnimation, &gameState->goblinHutTexture);
+
+	gameState->goblinHutBurntTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "goblinHut_burnt.png");
+	easyAnimation_pushFrame(&gameState->goblinHutBurntAnimation, &gameState->goblinHutBurntTexture);
+
+	gameState->goblinTowerBurntTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "goblinTowerBurnt.png");
+	easyAnimation_pushFrame(&gameState->goblinTowerBurntAnimation, &gameState->goblinTowerBurntTexture);
+
+}
+
 
 void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->initialized = true;
@@ -77,12 +107,10 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->cloudText[1] = textureAtlas_getItem(&gameState->textureAtlas, "cloud2.png");
 		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
 		gameState->treeTexture = textureAtlas_getItem(&gameState->textureAtlas, "tree.png");
-		gameState->houseTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house.png");
-		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "smoke.png");
-		easyAnimation_pushFrame(&gameState->houseAnimation, &gameState->houseTexture);
+		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
 
-		gameState->castleTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "castle.png");
-		easyAnimation_pushFrame(&gameState->castleAnimation, &gameState->castleTexture);
+		initBuildingTextures(gameState);
+		loadImageStripFromAtlas(&gameState->goblinTowerAnimation, backendRenderer, &gameState->textureAtlas, textureAtlas_getItem(&gameState->textureAtlas, "goblinTower.png"), 256);
 
 		DefaultEntityAnimations knightAnimations;
 		DefaultEntityAnimations peasantAnimations;

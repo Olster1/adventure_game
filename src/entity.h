@@ -4,6 +4,8 @@ enum EntityFlag {
     ENTITY_ACTIVE = 1 << 0, 
     LIGHT_COMPONENT = 1 << 1,
     ENTITY_SPRITE_FLIPPED = 1 << 3,
+    ENTITY_ON_FIRE = 1 << 4, //NOTE: For buildings that catch fire
+    ENTITY_CAN_WALK = 1 << 5, //NOTE: For entities that can walk around like the peasant, knight, etc.
 };
 
 #define MY_ENTITY_TYPE(FUNC) \
@@ -16,6 +18,8 @@ FUNC(ENTITY_GOBLIN_BARREL)\
 FUNC(ENTITY_HOUSE)\
 FUNC(ENTITY_CASTLE)\
 FUNC(ENTITY_TOWER)\
+FUNC(ENTITY_GOBLIN_HOUSE)\
+FUNC(ENTITY_GOBLIN_TOWER)\
 
 typedef enum {
     MY_ENTITY_TYPE(ENUM)
@@ -124,10 +128,15 @@ struct Entity {
 
     float perlinNoiseLight; //NOTE: Used for the lights
 
-    float deltaTLeft;
+    float deltaTLeft; //NOTE: Used in collision loop
     float3 deltaPos; //NOTE: Used in collision loop
 
-    DefaultEntityAnimations *animations; //NOTE: Points to animations saved in the gameState
+    //NOTE: Particle systems associated with this entity
+    int particlerCount;
+    Particler *particlers[2];
+    float fireTimer;
+
+    DefaultEntityAnimations *animations; //NOTE: This points to animations stored on the gameState
     EasyAnimation_Controller animationController;
     EasyAiController *aStarController;
 };

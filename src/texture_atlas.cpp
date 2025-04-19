@@ -71,6 +71,7 @@ struct TextureAtlas {
     Texture textureAtlas_getItemAsTexture(TextureAtlas *atlas, char *name) {
         Texture t = {};
         AtlasAsset *i = textureAtlas_getItem(atlas, name);
+        assert(i);
         if(i) {
             //NOTE: Fill out the texture details
             t.handle = atlas->texture.handle;

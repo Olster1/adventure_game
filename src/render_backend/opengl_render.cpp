@@ -678,6 +678,14 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
 			case RENDER_NULL: {
 				assert(false);
 			} break;
+            case RENDER_SET_BLEND_MODE: {
+                if(c->blendMode == RENDER_BLEND_MODE_ADD) {
+                    glBlendFunc(GL_ONE, GL_ONE);  
+                } else if(c->blendMode == RENDER_BLEND_MODE_DEFAULT) {
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+                }
+                
+            } break;
 			case RENDER_SET_VIEWPORT: {
 				// glViewport(0, 0, );
 			} break;

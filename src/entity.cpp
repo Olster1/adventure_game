@@ -85,6 +85,8 @@ Entity *makeNewEntity(GameState *state, float3 worldP) {
 
         e->id = global_entityId++;
 
+        e->fireTimer = -1;
+
         e->velocity = make_float3(0, 0, 0);
         e->offsetP = make_float3(0, 0, 0);
         e->maxMoveDistance = MAX_MOVE_DISTANCE; //NOTE: Default move distance per turn
@@ -97,6 +99,29 @@ Entity *makeNewEntity(GameState *state, float3 worldP) {
 
     }
     return e;
+}
+
+void entityCatchFire(GameState *state, Entity *e, float2 spawnArea) {
+    assert(e->particlerCount < arrayCount(e->particlers));
+    if(e->fireTimer < 0 && e->particlerCount < arrayCount(e->particlers)) {
+        float3 particleP = e->pos;
+        particleP.y += 1.5f;
+
+        // Particler *p = getNewParticleSystem(&state->particlers, particleP, state->smokeTexture.handle, spawnArea, state->smokeTexture.uvCoords);
+        Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, spawnArea, make_float4(0, 0, 1, 1));
+        if(p) {
+            addColorToParticler(p, make_float4(1.0, 0.9, 0.6, 0.0));
+            addColorToParticler(p, make_float4(1.0, 0.5, 0.1, 0.8));
+            addColorToParticler(p, make_float4(0.6, 0.1, 0.05, 0.5));
+            addColorToParticler(p, make_float4(0.2, 0.2, 0.2, 0.0));
+
+            p->flags |= ENTITY_ON_FIRE; //NOTE: Tag it as a 'fire' particle system to check in the entity update code
+
+            e->particlers[e->particlerCount++] = p;
+            e->flags |= ENTITY_ON_FIRE;
+            e->fireTimer = 0;
+        }
+    }
 }
 
 Entity *addKnightEntity(GameState *state, float3 worldP) {
@@ -120,6 +145,51 @@ Entity *addHouseEntity(GameState *state, float3 worldP) {
         e->scale = make_float3(2, 3, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->houseAnimation, 0.08f);
+
+        // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
+    }
+    return e;
+} 
+
+Entity *addTowerEntity(GameState *state, float3 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_HOUSE;
+        e->offsetP.y = 0.08f;
+        e->scale = make_float3(2, 3, 1);
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->towerAnimation, 0.08f);
+
+        // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
+    }
+    return e;
+} 
+
+Entity *addGoblinHouseEntity(GameState *state, float3 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_GOBLIN_HOUSE;
+        e->offsetP.y = 0.08f;
+        e->scale = make_float3(1.8, 2.7, 1);
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinHutAnimation, 0.08f);
+
+        // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
+    }
+    return e;
+} 
+
+
+Entity *addGoblinTowerEntity(GameState *state, float3 worldP) {
+    Entity *e = makeNewEntity(state, worldP);
+    if(e) {
+        e->type = ENTITY_GOBLIN_TOWER;
+        e->offsetP.y = 0.08f;
+        e->scale = make_float3(2.66666, 2, 1);
+        easyAnimation_initController(&e->animationController);
+		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinTowerAnimation, 0.08f);
+
+        // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
     }
     return e;
 } 
@@ -133,16 +203,7 @@ Entity *addCastleEntity(GameState *state, float3 worldP) {
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->castleAnimation, 0.08f);
 
-        {
-            float3 particleP = worldP;
-            particleP.y += 0.5f;
-            Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, make_float4(0, 0, 1, 1));
-            addColorToParticler(p, make_float4(1.0, 0.9, 0.6, 0.0));
-            addColorToParticler(p, make_float4(1.0, 0.5, 0.1, 0.8));
-            addColorToParticler(p, make_float4(0.6, 0.1, 0.05, 0.5));
-            addColorToParticler(p, make_float4(0.2, 0.2, 0.2, 0.0));
-           
-        }
+        // entityCatchFire(state, e, make_float2(3, 1));
     }
     return e;
 } 
@@ -151,7 +212,8 @@ Entity *addPeasantEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_PEASANT;
-        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        e->offsetP.y = 0.12; //NOTE: Fraction of the scale
+        e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->peasantAnimations.idle, 0.08f);
     }
@@ -173,7 +235,8 @@ Entity *addGoblinEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_GOBLIN;
-        e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        e->offsetP.y = 0.12; //NOTE: Fraction of the scale
+        e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinAnimations.idle, 0.08f);
     }
@@ -201,7 +264,6 @@ Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
     }
     return e;
 } 
-
 
 int compare_by_height(const void *a, const void *b) {
     const RenderObject *pa = (const RenderObject *)a;
@@ -312,7 +374,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
         for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
             for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
-                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x_ + offset.x, y_ + offset.y, 0, true, true);
+                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x_ + offset.x, y_ + offset.y, 0, true, false);
                 if(c) {
             
                     for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
@@ -563,17 +625,66 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
     float3 p = getWorldPosition(e);
     float2 chunkP =  getChunkPosForWorldP(p.xy);
-    //NOTE: Make sure the chunk the player is on is available
-    int chunkRadius = 0;
-    //TODO: Maybe just if they get close to the edge
-    for(int i = -chunkRadius; i <= chunkRadius; i++) {
-        for(int j = -chunkRadius; j <= chunkRadius; j++) {
-            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, chunkP.x + j, chunkP.y + i, 0, true, true);
-            assert(c);
+    
+    {
+        //NOTE: Make sure the chunk the player is on is available. i.e. reveal the clouds off that chunk
+        int chunkRadius = 0;
+        //TODO: Maybe just if they get close to the edge
+        for(int i = -chunkRadius; i <= chunkRadius; i++) {
+            for(int j = -chunkRadius; j <= chunkRadius; j++) {
+                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, chunkP.x + j, chunkP.y + i, 0, true, true);
+                assert(c);
+            }
         }
     }
 
-    if(isEntitySelected(gameState, e)) {
+    if(e->fireTimer >= 0) {
+        e->fireTimer += dt;
+
+        Particler *p = 0;
+
+        for(int i = 0; i < e->particlerCount && !p; i++) {
+            Particler *pTemp = e->particlers[i];
+            if(pTemp->flags & ENTITY_ON_FIRE) {
+                p = pTemp;
+                break;
+            }
+        }
+        
+        if(p) {
+            //NOTE: Reset the lifespan so it keeps going
+            resetParticlerLife(p);
+        }
+
+        float burnTime = 0;
+
+        if(e->type == ENTITY_CASTLE) {
+            burnTime = TIME_TILL_CASTLE_BURNS;
+        } else if(e->type == ENTITY_HOUSE) {
+            burnTime = TIME_TILL_HOUSE_BURNS;
+        } else {
+            assert(false);
+        }
+
+        if(e->fireTimer >= burnTime) {
+            e->fireTimer = -1; //NOTE: Stop burning
+            //NOTE: Stop Particle system
+            p->lifeAt = p->lifespan;
+
+            easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+            if(e->type == ENTITY_CASTLE) {
+                easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->castleBurntAnimation, 0.08f);
+            } else if(e->type == ENTITY_HOUSE) {
+                easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->houseBurntAnimation, 0.08f);
+            } else {
+                assert(false);
+            }
+        }
+    }
+
+
+    //NOTE: Check if the player tried to move the units
+    if((e->flags & ENTITY_CAN_WALK) && isEntitySelected(gameState, e)) {
         //NOTE: Draw the path 
         MemoryArenaMark mark = takeMemoryMark(&globalPerFrameArena);
 
@@ -583,10 +694,6 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         } else {
             gameState->selectedColor = make_float4(1, 0, 0, 1);
         }
-
-        
-            
-
 	    releaseMemoryMark(&mark);
         if(clicked) {
             //NOTE: active the path
@@ -633,7 +740,7 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
     //NOTE: Draw position above player
     float3 tileP = convertRealWorldToBlockCoords(e->pos);
     char *str = easy_createString_printf(&globalPerFrameArena, "(%d %d %d)", (int)tileP.x, (int)tileP.y, (int)tileP.z);
-    pushShader(renderer, &sdfFontShader);
+    // pushShader(renderer, &sdfFontShader);
 	// draw_text(renderer, &gameState->font, str, renderWorldP.x, renderWorldP.y, 0.02, make_float4(0, 0, 0, 1)); 
 
     if(t) {

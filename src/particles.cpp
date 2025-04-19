@@ -29,6 +29,8 @@ struct Particler {
     TextureHandle *imageHandle;
     float4 uvCoords;
 
+    u32 flags; //NOTE: These are entity flags 
+
     int colorCount;
     float4 colors[4]; //NOTE: Moves through colors as lifespan increases
 
@@ -39,10 +41,15 @@ struct Particler {
     float spawnRate; //NOTE: seconds per particle
 };
 
+void resetParticlerLife(Particler *p) {
+    p->lifeAt = 0;
+}
+
 Particler initParticler(float lifespan, float spawnRate, Rect3f spawnBox, TextureHandle *imageHandle, float4 uvCoords, ParticlerId id) {
     Particler p = {};
 
     p.count = 0;
+    p.flags = 0;
     p.lifespan = lifespan;
     p.spawnRate = 1.0f / spawnRate;
     p.lastTimeCreation = 0;
@@ -70,6 +77,8 @@ bool addColorToParticler(Particler *p, float4 color) {
     }
     return result;
 }
+
+
 
 bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos, float dt) {
     particler->tAt += dt;
@@ -195,13 +204,13 @@ struct ParticlerParent {
     Particler particlers[256];
 };
 
-Particler *getNewParticleSystem(ParticlerParent *parent, float3 startP, TextureHandle *imageHandle, float4 uvCoords) {
+Particler *getNewParticleSystem(ParticlerParent *parent, float3 startP, TextureHandle *imageHandle, float2 spawnArea, float4 uvCoords) {
     Particler *p = 0;
     assert(parent->particlerCount < arrayCount(parent->particlers));
     if(parent->particlerCount < arrayCount(parent->particlers)) {
         float lifespan = 60.0f; //NOTE: Seconds for the _particler_ not particles. Particle lifespan is set by MAX_PARTICLE_LIFESPAN
         float spawnRatePerSecond = 100;
-        parent->particlers[parent->particlerCount++] = initParticler(lifespan, spawnRatePerSecond, make_rect3f_center_dim(startP, make_float3(3, 1, 1)), imageHandle, uvCoords, makeParticlerId(global_particleId++));
+        parent->particlers[parent->particlerCount++] = initParticler(lifespan, spawnRatePerSecond, make_rect3f_center_dim(startP, make_float3(spawnArea.x, spawnArea.y, 1)), imageHandle, uvCoords, makeParticlerId(global_particleId++));
         p = &parent->particlers[parent->particlerCount - 1];
     }
 

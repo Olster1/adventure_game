@@ -49,6 +49,7 @@ typedef struct {
 	ID3D11SamplerState* samplerState_linearTexture;
 
 	ID3D11BlendState *m_blendMode;
+	ID3D11BlendState *additive_blendMode;
 
 	ID3D11Buffer* constantBuffer; //NOTE: Used across all shaders to set the different 'uniform' matrices like MVP matrix and orthographic matrix
 
@@ -533,7 +534,7 @@ static UINT backendRender_init(BackendRenderer *r, HWND hwnd) {
 	}
 
 	{
-
+		//NOTE: Setup the default blend state
 		D3D11_BLEND_DESC blendDesc;
 		ZeroMemory(&blendDesc, sizeof(blendDesc));
 
@@ -549,7 +550,7 @@ static UINT backendRender_init(BackendRenderer *r, HWND hwnd) {
 		rtbd.DestBlendAlpha = D3D11_BLEND_ZERO;
 		rtbd.BlendOpAlpha = D3D11_BLEND_OP_ADD;
 		
-		rtbd.RenderTargetWriteMask = 0x0f;
+		rtbd.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 		blendDesc.RenderTarget[0] = rtbd;
 
 		d3d11Device->CreateBlendState(&blendDesc, &r->m_blendMode);
@@ -557,7 +558,32 @@ static UINT backendRender_init(BackendRenderer *r, HWND hwnd) {
 		float blendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		UINT sampleMask   = 0xffffffff;
 
-		d3d11DeviceContext->OMSetBlendState(r->m_blendMode, blendFactor, sampleMask);
+		HRESULT hr = d3d11DeviceContext->OMSetBlendState(r->m_blendMode, blendFactor, sampleMask);
+		assert(!FAILED(hr));
+	}
+
+	{
+		//NOTE: Setup the additive blend state
+		D3D11_BLEND_DESC blendDesc;
+		ZeroMemory(&blendDesc, sizeof(blendDesc));
+
+		D3D11_RENDER_TARGET_BLEND_DESC rtbd;
+		ZeroMemory(&rtbd, sizeof(rtbd));
+
+		rtbd.BlendEnable = true;
+		rtbd.SrcBlend = D3D11_BLEND_ONE;
+		rtbd.DestBlend = D3D11_BLEND_ONE;
+		rtbd.BlendOp = D3D11_BLEND_OP_ADD;
+
+		rtbd.SrcBlendAlpha = D3D11_BLEND_ONE;
+		rtbd.DestBlendAlpha = D3D11_BLEND_ONE;
+		rtbd.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		
+		rtbd.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		blendDesc.RenderTarget[0] = rtbd;
+
+		HRESULT hr = d3d11Device->CreateBlendState(&blendDesc, &r->additive_blendMode);
+		assert(!FAILED(hr));
 	}
 
 	//NOTE: Rasterizer state
@@ -654,6 +680,22 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
 				d3d11DeviceContext->RSSetViewports(1, &viewport);
 
 			} break;
+			case RENDER_SET_BLEND_MODE: {
+				float blendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+				UINT sampleMask   = 0xffffffff;
+
+				ID3D11BlendState* targetBlend = nullptr;
+                if(c->blendMode == RENDER_BLEND_MODE_ADD) {
+					targetBlend = r->additive_blendMode;
+                } else if(c->blendMode == RENDER_BLEND_MODE_DEFAULT) {
+                    targetBlend = r->m_blendMode;
+                } else {
+					assert(false);
+				}
+
+				d3d11DeviceContext->OMSetBlendState(targetBlend, blendFactor, sampleMask);
+
+            } break;
 			case RENDER_CLEAR_COLOR_BUFFER: {
 				FLOAT backgroundColor[4] = { c->color.x, c->color.y, c->color.z, c->color.w };
 				d3d11DeviceContext->ClearRenderTargetView(backend_r->default_d3d11FrameBufferView, backgroundColor);

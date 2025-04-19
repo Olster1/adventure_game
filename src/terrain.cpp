@@ -276,7 +276,7 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
                     }
 
                     if(type != TILE_TYPE_NONE) {
-                        if(!(flags & TILE_FLAG_TREE) && !(flags & TILE_FLAG_FRONT_FACE)) {
+                        if(!(flags & TILE_FLAG_TREE)) {
                             //NOTE: Can walk on this tile
                             flags |= TILE_FLAG_WALKABLE;
                         }

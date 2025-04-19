@@ -7,6 +7,12 @@ struct TextureHandle {
 	void *handle;
 #endif 
 };
+
+enum RenderBlendMode {
+	RENDER_BLEND_MODE_DEFAULT,
+	RENDER_BLEND_MODE_ADD, //NOTE: Used for particle effects
+};
+
 struct InstanceData {
     float3 pos;
     float2 scale;
@@ -43,6 +49,7 @@ enum RenderCommandType {
 	RENDER_SET_VIEWPORT,
 	RENDER_SET_SHADER,
 	RENDER_SET_SCISSORS,
+	RENDER_SET_BLEND_MODE,
 };
 
 #define MAX_TEXTURE_COUNT_PER_DRAW_BATCH 1
@@ -58,6 +65,7 @@ typedef struct {
 	float4 color; //NOTE: For the RENDER_CLEAR_COLOR_BUFFER
 	float4 viewport; //NOTE: For the RENDER_SET_VIEWPORT
 	void *shader; //NOTE: For the RENDER_SET_SHADER
+	RenderBlendMode blendMode; //NOTE: For the RENDER_SET_BLEND_MODE command
 
 	Rect2f scissors_bounds; //NOTE: For RENDER_SET_SCISSORS 
 
@@ -340,6 +348,13 @@ static void pushScissorsRect(Renderer *r, Rect2f scissors_bounds) {
 	assert(c->type == RENDER_SET_SCISSORS);
 	c->scissors_bounds = scissors_bounds;
 }
+
+static void pushBlendMode(Renderer *r, RenderBlendMode blendMode) {
+	RenderCommand *c = getRenderCommand(r, RENDER_SET_BLEND_MODE);
+	c->blendMode = blendMode;
+	assert(c->type == RENDER_SET_BLEND_MODE);
+}
+
 
 static void renderer_defaultScissors(Renderer *r, float windowWidth, float windowHeight) {
 	pushScissorsRect(r, make_rect2f(0, 0, windowWidth, windowHeight));
