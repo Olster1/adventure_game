@@ -52,6 +52,28 @@ enum RenderCommandType {
 	RENDER_SET_BLEND_MODE,
 };
 
+struct RenderObject {
+	Texture *sprite;
+	float3 pos;
+	float2 scale;
+	float4 uvs;
+	u32 lightingMask;
+	int sortIndex;
+
+	RenderObject() {}
+
+	RenderObject(Texture *sprite,
+		float3 pos,
+		float2 scale, u32 lightingMask, int sortIndex = 0) {
+			this->sprite = sprite;
+			this->pos = pos;
+			this->scale = scale;
+			this->lightingMask = lightingMask;
+			this->sortIndex = sortIndex;
+	}
+};
+
+
 #define MAX_TEXTURE_COUNT_PER_DRAW_BATCH 1
 
 //NOTE: Eventually we'll want to change this render command to be tight, that is just the command type, and then a data block after it based on what the command is

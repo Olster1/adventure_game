@@ -19,6 +19,13 @@ struct LightingOffsets {
     AOOffset aoOffsets[8];
 };
 
+struct DecorSprite {
+    float2 scale;
+    float3 worldP;
+    float4 uvs;
+    void *textureHandle;
+};
+
 enum TileType {
     TILE_TYPE_NONE,
     TILE_TYPE_WATER,
@@ -97,6 +104,9 @@ struct Chunk {
     int cloudCount = 0;
 	CloudData clouds[MAX_CLOUD_DIM*MAX_CLOUD_DIM];
 
+    int decorSpriteCount = 0;
+	DecorSprite decorSprites[100];
+
     u8 *visited; //NOTE: For when we create the board we keep track of where we've put positions. we allocate this on a temp arena when we do the board init
 
     // Entity *entities;
@@ -118,6 +128,7 @@ struct Chunk {
         next = 0;
         cloudCount = 0;
         cloudFadeTimer = -1;
+        decorSpriteCount = 0;
 
         //NOTE: This is for when we create the board we only allocate this array
         if(tempArena) {
@@ -201,8 +212,8 @@ struct Terrain {
     }
 
     Chunk *generateChunk(int x, int y, int z, uint32_t hash, Memory_Arena *tempArena);
-    void fillChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, Chunk *chunk);
-    Chunk *getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk = true, bool shouldGenerateFully = true, Memory_Arena *tempArena = 0);
+    void fillChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, TextureAtlas *textureAtlas, Chunk *chunk);
+    Chunk *getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, TextureAtlas *textureAtlas, int x, int y, int z, bool shouldGenerateChunk = true, bool shouldGenerateFully = true, Memory_Arena *tempArena = 0);
        
 };
 

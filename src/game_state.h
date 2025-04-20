@@ -62,27 +62,6 @@ enum GameMode {
 	SELECT_ENTITY_MODE,
 	A_STAR_MODE
 };
-
-struct RenderObject {
-	Texture *sprite;
-	float3 pos;
-	float2 scale;
-	u32 lightingMask;
-	int sortIndex;
-
-	RenderObject() {}
-
-	RenderObject(Texture *sprite,
-		float3 pos,
-		float2 scale, u32 lightingMask, int sortIndex = 0) {
-			this->sprite = sprite;
-			this->pos = pos;
-			this->scale = scale;
-			this->lightingMask = lightingMask;
-			this->sortIndex = sortIndex;
-	}
-};
-
 typedef struct {
 	bool initialized;
 

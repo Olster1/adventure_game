@@ -179,6 +179,8 @@ static void easyAnimation_randomStart(EasyAnimation_ListItem *item) {
     if(item) {
         item->timerAt = random_between_float(0, item->timerPeriod);
         item->frameIndex = random_between_int(0, item->animation->frameCount);
+        assert(item->frameIndex < item->animation->frameCount);
+
     }
 }
 

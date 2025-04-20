@@ -67,7 +67,7 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 
 		{
 			float2 chunkP = getChunkPosForWorldP(worldMouseP.xy);
-			Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, chunkP.x, chunkP.y, 0, true, true);
+			Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
 			float3 tileP = getChunkLocalPos(p.x, p.y, p.z);
 			Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
 			if(tile && !(tile->flags & TILE_FLAG_WALKABLE)) {

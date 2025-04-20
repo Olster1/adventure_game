@@ -294,7 +294,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
     int cloudDistance = 10;
     for(int y = cloudDistance; y >= -cloudDistance; --y) {
         for(int x = -cloudDistance; x <= cloudDistance; ++x) {
-            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x, y, 0, true, false);
+            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, x, y, 0, true, false);
             if(c && (c->generateState == CHUNK_NOT_GENERATED || c->cloudFadeTimer >= 0)) {
                 float maxTime = 1.5f;
 
@@ -309,6 +309,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
                             CloudData *d = &c->clouds[c->cloudCount++];
                             d->pos = p;
                             d->cloudIndex = random_between_int(0, 3);
+                            assert(d->cloudIndex < 3);
                             d->fadePeriod = random_between_float(0.4f, maxTime);
                             d->scale = random_between_float(4, 10);
                             d->darkness = random_between_float(0.95f, 1.0f);
@@ -360,6 +361,17 @@ float3 getRenderWorldP(float3 p) {
     return p;
 }
 
+void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
+    for(int i = 0; i < c->decorSpriteCount; ++i) {
+        DecorSprite b = c->decorSprites[i];
+        float3 renderP = getRenderWorldP(b.worldP);
+        renderP.x -= gameState->cameraPos.x;
+        renderP.y -= gameState->cameraPos.y;
+
+        pushTexture(renderer, b.textureHandle, renderP, b.scale, make_float4(1, 1, 1, 1), b.uvs);
+    }
+}
+
 void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     DEBUG_TIME_BLOCK();
 
@@ -374,9 +386,9 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
     for(int tilez = 0; tilez <= CHUNK_DIM; ++tilez) {
         for(int y_ = renderDistance; y_ >= -renderDistance; --y_) {
             for(int x_ = -renderDistance; x_ <= renderDistance; ++x_) {
-                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, x_ + offset.x, y_ + offset.y, 0, true, false);
+                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, x_ + offset.x, y_ + offset.y, 0, true, false);
                 if(c) {
-            
+                    
                     for(int tiley = 0; tiley <= CHUNK_DIM; ++tiley) {
                         for(int tilex = 0; tilex <= CHUNK_DIM; ++tilex) {
                             renderObjCount = 0; //NOTE: Clear the render queue
@@ -465,6 +477,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                             }
                         }
                     }
+                    renderChunkDecor(gameState, renderer, c);
                 }
             }
         }
@@ -632,7 +645,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         //TODO: Maybe just if they get close to the edge
         for(int i = -chunkRadius; i <= chunkRadius; i++) {
             for(int j = -chunkRadius; j <= chunkRadius; j++) {
-                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, chunkP.x + j, chunkP.y + i, 0, true, true);
+                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x + j, chunkP.y + i, 0, true, true);
                 assert(c);
             }
         }
@@ -748,6 +761,8 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
         pushTexture(renderer, t->handle, renderWorldP, e->scale.xy, color, t->uvCoords);
     }
 }
+
+
 
 void pushAllEntityLights(GameState *gameState, float dt) {
     //NOTE: Push all lights for the renderer to use

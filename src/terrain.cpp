@@ -191,7 +191,7 @@ static TileMapCoords global_tileLookup_elevated[16] = {
     {1, 1}  // 1111 - Surrounded by beach tiles
 };
 
-void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, Chunk *chunk) {
+void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, TextureAtlas *textureAtlas, Chunk *chunk) {
     DEBUG_TIME_BLOCK()
     assert(chunk);
     assert(chunk->generateState & CHUNK_NOT_GENERATED);
@@ -203,6 +203,41 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
     int chunkWorldX = roundChunkCoord(chunkP.x);
     int chunkWorldY = roundChunkCoord(chunkP.y);
     int chunkWorldZ = roundChunkCoord(chunkP.z);
+
+    char *decorNames[] = {"bush1.png", "bush2.png", "bush4.png", "bush5.png",};
+
+    for(int i = 0; i < 30; i++) {
+        assert(chunk->decorSpriteCount < arrayCount(chunk->decorSprites));
+        if(chunk->decorSpriteCount < arrayCount(chunk->decorSprites)) {
+            
+
+            int index = random_between_int(0, arrayCount(decorNames));
+            assert(index < arrayCount(decorNames));
+
+            
+
+            float3 worldP = {};
+            worldP.x = round(random_between_float(0, CHUNK_DIM) + chunkP.x);
+            worldP.y = round(random_between_float(0, CHUNK_DIM) + chunkP.y);
+            worldP.z = getMapHeight(round(worldP.x), round(worldP.y));
+
+            AtlasAsset *asset = 0;
+            if(hasGrassyTop(worldP.x, worldP.y, worldP.z)) {
+                asset = textureAtlas_getItem(textureAtlas, decorNames[index]);
+            } else {
+                asset = textureAtlas_getItem(textureAtlas, "rock.png");
+            }
+            assert(asset);
+
+            if(worldP.z > 0) {
+                DecorSprite *obj = chunk->decorSprites + chunk->decorSpriteCount++;
+                obj->worldP = worldP;
+                obj->uvs = asset->uv;
+                obj->textureHandle = textureAtlas->texture.handle;
+                obj->scale = make_float2(0.8f, 0.8f);
+            }
+        }
+    }
 
     for(int z = 0; z < CHUNK_DIM; ++z) {
         for(int y = 0; y < CHUNK_DIM; ++y) {
@@ -301,7 +336,7 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
 
 }
 
-Chunk *Terrain::getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, int x, int y, int z, bool shouldGenerateChunk, bool shouldGenerateFully, Memory_Arena *tempArena) {
+Chunk *Terrain::getChunk(LightingOffsets *lightingOffsets, AnimationState *animationState, TextureAtlas *textureAtlas, int x, int y, int z, bool shouldGenerateChunk, bool shouldGenerateFully, Memory_Arena *tempArena) {
     DEBUG_TIME_BLOCK()
     uint32_t hash = getHashForChunk(x, y, z);
 
@@ -323,7 +358,7 @@ Chunk *Terrain::getChunk(LightingOffsets *lightingOffsets, AnimationState *anima
 
     if(chunk && shouldGenerateFully && (chunk->generateState & CHUNK_NOT_GENERATED)) {
         //NOTE: Launches multi-thread work
-        fillChunk(lightingOffsets, animationState, chunk);
+        fillChunk(lightingOffsets, animationState, textureAtlas, chunk);
     } 
 
     return chunk;
