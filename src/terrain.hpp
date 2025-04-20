@@ -105,7 +105,7 @@ struct Chunk {
 	CloudData clouds[MAX_CLOUD_DIM*MAX_CLOUD_DIM];
 
     int decorSpriteCount = 0;
-	DecorSprite decorSprites[100];
+	DecorSprite decorSprites[CHUNK_DIM*CHUNK_DIM];
 
     u8 *visited; //NOTE: For when we create the board we keep track of where we've put positions. we allocate this on a temp arena when we do the board init
 

@@ -134,6 +134,14 @@ bool hasGrassyTop(int worldX, int worldY, int worldZ) {
     return result;
 }
 
+bool hasDecorBush(int worldX, int worldY, int worldZ) {
+    DEBUG_TIME_BLOCK()
+    float scale = 10;
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, scale*worldX, scale*worldY, scale*worldZ, 1.01f));
+    bool result = perlin > 0.65f;
+    return result;
+}
+
 bool hasTree(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
     float scaleFactor = 1.0f;
@@ -206,39 +214,7 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
 
     char *decorNames[] = {"bush1.png", "bush2.png", "bush4.png", "bush5.png",};
 
-    for(int i = 0; i < 30; i++) {
-        assert(chunk->decorSpriteCount < arrayCount(chunk->decorSprites));
-        if(chunk->decorSpriteCount < arrayCount(chunk->decorSprites)) {
-            
-
-            int index = random_between_int(0, arrayCount(decorNames));
-            assert(index < arrayCount(decorNames));
-
-            
-
-            float3 worldP = {};
-            worldP.x = round(random_between_float(0, CHUNK_DIM) + chunkP.x);
-            worldP.y = round(random_between_float(0, CHUNK_DIM) + chunkP.y);
-            worldP.z = getMapHeight(round(worldP.x), round(worldP.y));
-
-            AtlasAsset *asset = 0;
-            if(hasGrassyTop(worldP.x, worldP.y, worldP.z)) {
-                asset = textureAtlas_getItem(textureAtlas, decorNames[index]);
-            } else {
-                asset = textureAtlas_getItem(textureAtlas, "rock.png");
-            }
-            assert(asset);
-
-            if(worldP.z > 0) {
-                DecorSprite *obj = chunk->decorSprites + chunk->decorSpriteCount++;
-                obj->worldP = worldP;
-                obj->uvs = asset->uv;
-                obj->textureHandle = textureAtlas->texture.handle;
-                obj->scale = make_float2(0.8f, 0.8f);
-            }
-        }
-    }
-
+      
     for(int z = 0; z < CHUNK_DIM; ++z) {
         for(int y = 0; y < CHUNK_DIM; ++y) {
             for(int x = 0; x < CHUNK_DIM; ++x) {
@@ -318,6 +294,43 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
                         // assert(z == 0);
                         chunk->tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x] = Tile(type, &animationState->animationItemFreeListPtr, animation, tileCoords, tileCoordsSecondary, flags, lightingMask);
                     }
+
+                    //NOTE: Add decor item
+                    assert(chunk->decorSpriteCount < arrayCount(chunk->decorSprites));
+                    if(chunk->decorSpriteCount < arrayCount(chunk->decorSprites)) {
+                        
+                        int index = random_between_int(0, arrayCount(decorNames));
+                        assert(index < arrayCount(decorNames));
+
+                        float mapHeight = getMapHeight(worldX, worldY);
+
+                        if(mapHeight > 0 && mapHeight == worldZ && hasDecorBush(worldX, worldY, worldZ)) {
+            
+                            float3 worldP = {};
+                            
+                            worldP.x = random_between_float(-0.4f, 0.4f) + worldX;
+                            worldP.y = random_between_float(-0.4f, 0.4f) + worldY;
+                            worldP.z = mapHeight;
+                
+                            AtlasAsset *asset = 0;
+                            if(hasGrassyTop(round(worldP.x), round(worldP.y), worldP.z)) {
+                                asset = textureAtlas_getItem(textureAtlas, decorNames[index]);
+                            } else {
+                                asset = textureAtlas_getItem(textureAtlas, "rock.png");
+                            }
+                            assert(asset);
+                
+                            if(worldP.z > 0) {
+                                DecorSprite *obj = chunk->decorSprites + chunk->decorSpriteCount++;
+                                obj->worldP = worldP;
+                                obj->uvs = asset->uv;
+                                obj->textureHandle = textureAtlas->texture.handle;
+                                float s = random_between_float(0.4f, 0.8f);
+                                obj->scale = make_float2(s, s);
+                            }
+                        }
+                    }
+            
                     
                 } else {
                     bool waterRock = false;//isWaterRock(worldX, worldY, worldZ);
