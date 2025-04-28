@@ -1,5 +1,3 @@
-static void* global_white_texture;
-
 struct TextureHandle {
 #ifdef __APPLE__
 	u32 handle;
@@ -7,11 +5,47 @@ struct TextureHandle {
 	void *handle;
 #endif 
 };
+static TextureHandle* global_white_texture;
 
 enum RenderBlendMode {
 	RENDER_BLEND_MODE_DEFAULT,
 	RENDER_BLEND_MODE_ADD, //NOTE: Used for particle effects
 };
+
+enum RenderLayer {
+	RENDER_LAYER_0,
+	RENDER_LAYER_1,
+	RENDER_LAYER_2,
+	RENDER_LAYER_3,
+	RENDER_LAYER_4,
+	RENDER_LAYER_5,
+	RENDER_LAYER_6,
+};
+
+struct RenderSortIndex {
+	float3 worldP;
+	u32 layer;
+};
+
+struct InstanceEntityData {
+    float3 pos;
+    float2 scale;
+    float4 color;
+    float4 uv;
+    TextureHandle *textureHandle;
+    u32 aoMask;
+	RenderSortIndex sortIndex;
+};
+
+RenderSortIndex getSortIndex(float3 worldP, RenderLayer renderLayer = RENDER_LAYER_0) {
+    RenderSortIndex result = {};
+
+    result.worldP = worldP;
+	result.layer = renderLayer;
+
+    return result;
+}
+
 
 struct InstanceData {
     float3 pos;
@@ -126,6 +160,10 @@ typedef struct {
 	int textureCount;
 	u8  textureInstanceData[TEXTURE_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES]; //NOTE: This would be x, y, z, r, g, b, a, u, v, s, t, index
 
+	//NOTE: We store all the entities in a array, sort them,  then we push them all at once to the renderer
+	int entityRenderCount;
+	InstanceEntityData entityRenderData[MAX_TEXTURE_COUNT];
+
 	int lineCount;
 	u8  lineInstanceData[LINE_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES]; //NOTE: This would be x, y, z, x, y, z, r, g, b, a
 
@@ -140,6 +178,7 @@ static void initRenderer(Renderer *r) {
 	r->textureCount = 0;
 	r->lineCount = 0;
 	r->totalTime = 0;
+	r->entityRenderCount = 0;
 }
 
 static void clearRenderer(Renderer *r) {
@@ -147,8 +186,7 @@ static void clearRenderer(Renderer *r) {
 	r->currentType = RENDER_NULL;
 	r->glyphCount = 0;	
 	r->textureCount = 0;
-	r->lineCount = 0;
-
+	r->entityRenderCount = 0;
 }
 
 static void render_endCommand(Renderer *r) {
@@ -237,7 +275,7 @@ static void pushClearColor(Renderer *r, float4 color) {
 	c->color = color;
 }
 
-static int render_getTextureIndex(RenderCommand *c, void *textureHandle) {
+static int render_getTextureIndex(RenderCommand *c, TextureHandle *textureHandle) {
 
 	int index = -1;//NOTE: -1 for unitialized
 
@@ -261,7 +299,7 @@ static int render_getTextureIndex(RenderCommand *c, void *textureHandle) {
 	return index;
 }
 
-static void pushGlyph(Renderer *r, void *textureHandle, float3 pos, float2 size, float4 color, float4 uv) {
+static void pushGlyph(Renderer *r, TextureHandle *textureHandle, float3 pos, float2 size, float4 color, float4 uv) {
 
 	RenderCommand *c = getRenderCommand(r, RENDER_GLYPH);
 	int textureIndex = render_getTextureIndex(c, textureHandle);
@@ -304,9 +342,24 @@ static void pushGlyph(Renderer *r, void *textureHandle, float3 pos, float2 size,
 	}
 }
 
+static void pushEntityTexture(Renderer *r, TextureHandle *textureHandle, float3 pos, float2 size, float4 color, float4 uv, RenderSortIndex sortIndex, u32 lightingMask = 0) {
+	if(r->entityRenderCount < MAX_TEXTURE_COUNT) {
+		InstanceEntityData *data = r->entityRenderData + r->entityRenderCount++;
 
-static void pushTexture(Renderer *r, void *textureHandle, float3 pos, float2 size, float4 color, float4 uv, u32 lightingMask = 0) {
+		data->pos = pos;
+		data->scale = size;
+		data->color = color;
+		data->uv = uv;
+		data->sortIndex = sortIndex;
+		data->textureHandle = textureHandle;
+		data->aoMask = lightingMask;
+	}
+}
+
+
+static void pushTexture(Renderer *r, TextureHandle *textureHandle, float3 pos, float2 size, float4 color, float4 uv, u32 lightingMask = 0) {
 	RenderCommand *c = getRenderCommand(r, RENDER_TEXTURE);
+	assert(((TextureHandle *)textureHandle)->handle < 100);
 	int textureIndex = render_getTextureIndex(c, textureHandle);
 
 	// lightingMask = 0;

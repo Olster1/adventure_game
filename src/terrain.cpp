@@ -131,6 +131,13 @@ bool hasGrassyTop(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
     float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 0.1f));
     bool result = perlin > 0.5f;
+
+    float mapHeight = getMapHeight(worldX, worldY);
+
+    if(worldZ != mapHeight) {
+        result = false;
+    }
+    
     return result;
 }
 

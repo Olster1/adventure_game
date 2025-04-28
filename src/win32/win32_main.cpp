@@ -890,7 +890,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, int
         LONG window_height = 540;
 
         //NOTE: Allocate stuff
-        global_platform.permanent_storage_size = PERMANENT_STORAGE_SIZE;
+        global_platform.permanent_storage_size = PERMANENT_STORAGE_SIZE + sizeof(GameState);
         global_platform.permanent_storage = platform_alloc_memory_pages(global_platform.permanent_storage_size);
         
 

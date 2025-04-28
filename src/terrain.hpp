@@ -23,7 +23,7 @@ struct DecorSprite {
     float2 scale;
     float3 worldP;
     float4 uvs;
-    void *textureHandle;
+    TextureHandle *textureHandle;
 };
 
 enum TileType {

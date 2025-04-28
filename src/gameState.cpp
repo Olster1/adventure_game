@@ -106,7 +106,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->cloudText[0] = textureAtlas_getItem(&gameState->textureAtlas, "cloud.png");
 		gameState->cloudText[1] = textureAtlas_getItem(&gameState->textureAtlas, "cloud2.png");
 		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
-		gameState->treeTexture = textureAtlas_getItem(&gameState->textureAtlas, "tree.png");
+		gameState->treeTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "tree.png");
 		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
 
 		initBuildingTextures(gameState);
@@ -116,16 +116,9 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		DefaultEntityAnimations peasantAnimations;
 		DefaultEntityAnimations archerAnimations;
 
-		gameState->trees = initResizeArray(RenderObject);
-		gameState->waterAnimations = initResizeArray(RenderObject);
-
 		gameState->selectedColor = make_float4(1, 1, 1, 1);
-		
-
 		createAOOffsets(gameState);
-		
 		gameState->gameMode = PLAY_MODE;
-
 		gameState->cameraFollowPlayer = true;
 		//TODO: Probably save this each time we leave the app
 		gameState->zoomLevel = 1.8f;

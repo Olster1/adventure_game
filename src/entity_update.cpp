@@ -96,6 +96,57 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
     }
 }
 
+
+//NOTE: If this function returns a positive number it means it should swap a & b, making a come after b
+int compare_by_height(InstanceEntityData *pa, InstanceEntityData *pb) {
+    float a_yz = (float)pa->sortIndex.worldP.y + (float)pa->sortIndex.worldP.z;
+    float b_yz = (float)pb->sortIndex.worldP.y + (float)pb->sortIndex.worldP.z;
+
+	if (pa->sortIndex.layer != pb->sortIndex.layer) {
+		return (pa->sortIndex.layer - pb->sortIndex.layer);
+	}
+
+	if (a_yz != b_yz) {
+		return round(b_yz - a_yz); 
+	}
+
+	if(pa->sortIndex.worldP.z != pb->sortIndex.worldP.z) {
+		return pa->sortIndex.worldP.z - pb->sortIndex.worldP.z;
+	}
+	
+    if (pa->sortIndex.worldP.x != pb->sortIndex.worldP.x) {
+		return pa->sortIndex.worldP.x - pb->sortIndex.worldP.x;
+	}
+
+	
+    return 0;
+}
+
+void sortAndRenderEntityQueue(Renderer *renderer) {
+	DEBUG_TIME_BLOCK();
+	
+	{
+		DEBUG_TIME_BLOCK_NAMED("SORT RENDER ENTITIES");
+		//NOTE: First sort the list. This is an insert sort
+		for (int i = 1; i < renderer->entityRenderCount; i++) {
+			InstanceEntityData temp = renderer->entityRenderData[i];
+			int j = i - 1;
+			while (j >= 0 && compare_by_height(&renderer->entityRenderData[j], &temp) > 0) {
+				renderer->entityRenderData[j + 1] = renderer->entityRenderData[j];
+				j--;
+			}
+			renderer->entityRenderData[j + 1] = temp;
+		}
+	}
+
+	pushShader(renderer, &terrainLightingShader);
+	//NOTE: Draw the list
+	for(int i = 0; i < renderer->entityRenderCount; ++i) {
+		InstanceEntityData *d = renderer->entityRenderData + i; 
+		pushTexture(renderer, d->textureHandle, d->pos, d->scale, d->color, d->uv, d->aoMask);
+	}
+}
+
 void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent *parent, float dt) {
 	if(parent->particlerCount > 0) {
 		// pushBlendMode(renderer, RENDER_BLEND_MODE_ADD);
@@ -139,8 +190,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	updateEntitySelection(renderer, gameState, worldMouseP.xy);
 
-	drawTrees(gameState, renderer);
-
 	//NOTE: Gameplay code
 	for(int i = 0; i < gameState->entityCount; ++i) {
 		Entity *e = &gameState->entities[i];
@@ -152,6 +201,8 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	}
 
 	updateParticlers(renderer, gameState, &gameState->particlers, dt);
+
+	sortAndRenderEntityQueue(renderer);
 
 	drawSelectionHover(gameState, renderer, dt, worldMouseP);
 

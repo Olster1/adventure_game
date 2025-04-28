@@ -113,7 +113,7 @@ typedef struct {
 	Texture redText;
 	Texture selectImage;
 	AtlasAsset *cloudText[3];
-	AtlasAsset *treeTexture;
+	Texture treeTexture;
 	TextureAtlas textureAtlas;
 
 	float4 selectedColor;
@@ -124,9 +124,6 @@ typedef struct {
 	float2 startDragP;
 	float2 canvasMoveDp;
 	
-	RenderObject *trees;
-	RenderObject *waterAnimations;
-
 	int tileCount;
 	MapTile tiles[10000];
 

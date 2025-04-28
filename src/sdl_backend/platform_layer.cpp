@@ -415,8 +415,9 @@ int main(int argc, char **argv) {
     // Open a window
     {	
         //NOTE: Allocate stuff
-        global_platform.permanent_storage_size = PERMANENT_STORAGE_SIZE;
+        global_platform.permanent_storage_size = PERMANENT_STORAGE_SIZE + sizeof(GameState); //NOTE: Make sure we have enough room for the gameState
         global_platform.permanent_storage = platform_alloc_memory_pages(global_platform.permanent_storage_size);
+        assert(global_platform.permanent_storage);
         
         global_long_term_arena = initMemoryArena_withMemory(((u8 *)global_platform.permanent_storage) + sizeof(GameState), global_platform.permanent_storage_size - sizeof(GameState));
 

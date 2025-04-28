@@ -1,6 +1,6 @@
 
 typedef struct {
-    void *handle;
+    TextureHandle *handle;
 
     float4 uvCoords;
     u32 unicodePoint;
@@ -21,7 +21,7 @@ typedef struct {
 
 typedef struct FontSheet FontSheet;
 typedef struct FontSheet {
-    void *handle;
+    TextureHandle *handle;
 
     u32 glyphCount;
     GlyphInfo glyphs[MY_MAX_GLYPH_COUNT];
