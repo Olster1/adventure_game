@@ -61,11 +61,12 @@ float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
 void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, float3 worldMouseP) {
 	// if(gameState->selectedEntityCount > 0) 
 	{
-
 		gameState->selectHoverTimer += dt;
-		float3 p = convertRealWorldToBlockCoords(worldMouseP);
+		float3 worldP = convertRealWorldToBlockCoords(worldMouseP);
+		float3 p = worldP;
 
 		{
+			//NOTE: See if the selection is on a tree tile
 			float2 chunkP = getChunkPosForWorldP(worldMouseP.xy);
 			Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
 			float3 tileP = getChunkLocalPos(p.x, p.y, p.z);
@@ -75,17 +76,17 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 			}
 		}
 
-		p = getRenderWorldP(p);
-
-		p.z = 10;
+		p = getRenderWorldP(worldP);
+		p.z = RENDER_Z;
 
 		p.x -= gameState->cameraPos.x; //NOTE: Offset for middle of the tile
 		p.y -= gameState->cameraPos.y; //NOTE: Offset for middle of the tile
 
 		//NOTE: P is now in camera space
 		
-		float scale = 1;//erp(0.8f, 1.2f, make_lerpTValue(sin01(5*gameState->selectHoverTimer)));
-        pushTexture(renderer, gameState->selectImage.handle, p, make_float2(scale, scale), gameState->selectedColor, gameState->selectImage.uvCoords);
+		float scale = 1;//lerp(0.8f, 1.2f, make_lerpTValue(sin01(5*gameState->selectHoverTimer)));
+		float3 sortP = worldP;
+		pushEntityTexture(renderer, gameState->selectImage.handle, p, make_float2(scale, scale), gameState->selectedColor, gameState->selectImage.uvCoords, getSortIndex(sortP, RENDER_LAYER_2));
 
 		float3 tileP = convertRealWorldToBlockCoords(make_float3(worldMouseP.x, worldMouseP.y, worldMouseP.z));
 		 //NOTE: Draw position above player
@@ -98,32 +99,35 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 
 
 //NOTE: If this function returns a positive number it means it should swap a & b, making a come after b
+// int compare_by_height(const void *a, const void *b) {
+// 	InstanceEntityData *pa = (InstanceEntityData *)a; 
+// 	InstanceEntityData *pb = (InstanceEntityData *)b; 
 int compare_by_height(InstanceEntityData *pa, InstanceEntityData *pb) {
     float a_yz = (float)pa->sortIndex.worldP.y + (float)pa->sortIndex.worldP.z;
     float b_yz = (float)pb->sortIndex.worldP.y + (float)pb->sortIndex.worldP.z;
+
+	if (a_yz != b_yz) {
+		return (b_yz - a_yz) > 0 ? 1 : -1; 
+	}
+
+	if(pa->sortIndex.worldP.z != pb->sortIndex.worldP.z) {
+		return (pa->sortIndex.worldP.z - pb->sortIndex.worldP.z)  > 0 ? 1 : -1;
+	}
 
 	if (pa->sortIndex.layer != pb->sortIndex.layer) {
 		return (pa->sortIndex.layer - pb->sortIndex.layer);
 	}
 
-	if (a_yz != b_yz) {
-		return round(b_yz - a_yz); 
-	}
-
-	if(pa->sortIndex.worldP.z != pb->sortIndex.worldP.z) {
-		return pa->sortIndex.worldP.z - pb->sortIndex.worldP.z;
-	}
-	
     if (pa->sortIndex.worldP.x != pb->sortIndex.worldP.x) {
 		return pa->sortIndex.worldP.x - pb->sortIndex.worldP.x;
 	}
-
-	
     return 0;
 }
 
 void sortAndRenderEntityQueue(Renderer *renderer) {
 	DEBUG_TIME_BLOCK();
+
+	// qsort(renderer->entityRenderData, renderer->entityRenderCount, sizeof(InstanceEntityData), compare_by_height);
 	
 	{
 		DEBUG_TIME_BLOCK_NAMED("SORT RENDER ENTITIES");
@@ -202,9 +206,9 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	updateParticlers(renderer, gameState, &gameState->particlers, dt);
 
-	sortAndRenderEntityQueue(renderer);
-
 	drawSelectionHover(gameState, renderer, dt, worldMouseP);
+
+	sortAndRenderEntityQueue(renderer);
 
 	drawClouds(gameState, renderer, dt);
 	

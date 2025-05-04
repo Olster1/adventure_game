@@ -129,11 +129,12 @@ u32 calculateLightingMask(int worldX, int worldY, int worldZ, LightingOffsets *o
 
 bool hasGrassyTop(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
-    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, worldX, worldY, worldZ, 0.1f));
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, worldX, worldY, 0.1f));
     bool result = perlin > 0.5f;
 
     float mapHeight = getMapHeight(worldX, worldY);
-
+    
+    //NOTE: Only on the top
     if(worldZ != mapHeight) {
         result = false;
     }
@@ -144,16 +145,32 @@ bool hasGrassyTop(int worldX, int worldY, int worldZ) {
 bool hasDecorBush(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
     float scale = 10;
-    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, scale*worldX, scale*worldY, scale*worldZ, 1.01f));
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, scale*worldX, scale*worldY, 1.01f));
     bool result = perlin > 0.65f;
+
+    float mapHeight = getMapHeight(worldX, worldY);
+
+    //NOTE: Only on the top
+    if(worldZ != mapHeight) {
+        result = false;
+    }
+
     return result;
 }
 
 bool hasTree(int worldX, int worldY, int worldZ) {
     DEBUG_TIME_BLOCK()
     float scaleFactor = 1.0f;
-    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_3d(8, scaleFactor*worldX, scaleFactor*worldY, scaleFactor*worldZ, 10.f));
+    float perlin = mapSimplexNoiseTo01(SimplexNoise_fractal_2d(8, scaleFactor*worldX, scaleFactor*worldY, 10.f));
     bool result = perlin > 0.7f;
+
+    float mapHeight = getMapHeight(worldX, worldY);
+
+    //NOTE: Only on the top
+    if(worldZ != mapHeight) {
+        result = false;
+    }
+
     return result;
 }
 
@@ -288,6 +305,7 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
                             tileCoordsSecondary = global_tileLookup[bits2];
 
                             if(hasTree(worldX, worldY, worldZ)) {
+                                assert(worldZ > 0);
                                 flags |= TILE_FLAG_TREE;
                             } 
                         }
@@ -298,7 +316,6 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
                             //NOTE: Can walk on this tile
                             flags |= TILE_FLAG_WALKABLE;
                         }
-                        // assert(z == 0);
                         chunk->tiles[z*CHUNK_DIM*CHUNK_DIM + y*CHUNK_DIM + x] = Tile(type, &animationState->animationItemFreeListPtr, animation, tileCoords, tileCoordsSecondary, flags, lightingMask);
                     }
 

@@ -146,8 +146,7 @@ float3 getChunkWorldP(Chunk *c) {
 }
 
 float3 getTileWorldP(Chunk *c, int x, int y, int z) {
-    int zComp = c->z*CHUNK_DIM + z;
-    float3 worldP = make_float3(c->x*CHUNK_DIM + x, c->y*CHUNK_DIM + y + zComp, 0);
+    float3 worldP = make_float3(c->x*CHUNK_DIM + x, c->y*CHUNK_DIM + y, c->z*CHUNK_DIM + z);
     return worldP;
 }
 

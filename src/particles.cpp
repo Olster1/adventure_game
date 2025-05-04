@@ -179,7 +179,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
             }
 
             //NOTE: Draw the particle
-            pushEntityTexture(renderer, particler->imageHandle, drawP, p->T.scale.xy, color, particler->uvCoords, getSortIndex(p->T.pos));
+            // pushEntityTexture(renderer, particler->imageHandle, drawP, p->T.scale.xy, color, particler->uvCoords, getSortIndex(p->T.pos));
           
         } else {
             deadCount++;
