@@ -90,13 +90,13 @@ Entity *makeNewEntity(GameState *state, float3 worldP) {
 
         e->velocity = make_float3(0, 0, 0);
         e->offsetP = make_float3(0, 0, 0);
-        e->maxMoveDistance = MAX_MOVE_DISTANCE; //NOTE: Default move distance per turn
+        e->maxMoveDistance = 0.5f*DOUBLE_MAX_MOVE_DISTANCE; //NOTE: Default move distance per turn
         e->pos = make_float3(worldP.x, worldP.y, worldP.z);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(4, 4, 1);
         e->speed = 3.0f;
 
-        assert(e->maxMoveDistance <= MAX_MOVE_DISTANCE);
+        assert(e->maxMoveDistance <= 0.5f*DOUBLE_MAX_MOVE_DISTANCE);
 
     }
     return e;
@@ -129,6 +129,7 @@ Entity *addKnightEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_KNIGHT;
+        e->flags |= ENTITY_CAN_WALK;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
@@ -213,6 +214,7 @@ Entity *addPeasantEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_PEASANT;
+        e->flags |= ENTITY_CAN_WALK;
         e->offsetP.y = 0.12; //NOTE: Fraction of the scale
         e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
@@ -225,6 +227,7 @@ Entity *addArcherEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_ARCHER;
+        e->flags |= ENTITY_CAN_WALK;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->archerAnimations.idle, 0.08f);
@@ -236,6 +239,7 @@ Entity *addGoblinEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_GOBLIN;
+        e->flags |= ENTITY_CAN_WALK;
         e->offsetP.y = 0.12; //NOTE: Fraction of the scale
         e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
@@ -248,6 +252,7 @@ Entity *addGoblinBarrelEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_GOBLIN_BARREL;
+        e->flags |= ENTITY_CAN_WALK;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->barrellAnimations.idle, 0.08f);
@@ -259,6 +264,7 @@ Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_GOBLIN_TNT;
+        e->flags |= ENTITY_CAN_WALK;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->tntAnimations.idle, 0.08f);
@@ -381,72 +387,75 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float dt) {
                                 float waterScale = 3;
                                 float shadowScale = 3.1f;
                                 float3 worldP = getTileWorldP(c, tilex, tiley, tilez);
-                                float3 p = getRenderWorldP(worldP);
-                                float pX = (p.x) - gameState->cameraPos.x;
-                                float pY = (p.y)  - gameState->cameraPos.y;
-                                float3 defaultP = make_float3(pX, pY, RENDER_Z);
-
-                                u32 lightingMask = tile->lightingMask;
-
                                 {
-                                    if(tile->type == TILE_TYPE_BEACH) {
-                                        Texture *t = getTileTexture(&gameState->sandTileSet, tile->coords);
-                                        pushEntityTexture(renderer, t->handle, defaultP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_1), lightingMask);
-                                    } else if(tile->type == TILE_TYPE_WATER_ROCK) {
-                                        waterScale = 2;
+
+                                    float3 p = getRenderWorldP(worldP);
+                                    float pX = (p.x) - gameState->cameraPos.x;
+                                    float pY = (p.y)  - gameState->cameraPos.y;
+                                    float3 defaultP = make_float3(pX, pY, RENDER_Z);
+
+                                    u32 lightingMask = tile->lightingMask;
+
+                                    {
+                                        if(tile->type == TILE_TYPE_BEACH) {
+                                            Texture *t = getTileTexture(&gameState->sandTileSet, tile->coords);
+                                            pushEntityTexture(renderer, t->handle, defaultP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_1), lightingMask);
+                                        } else if(tile->type == TILE_TYPE_WATER_ROCK) {
+                                            waterScale = 2;
+                                            if(tile->animationController) {
+                                                Texture *animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
+                                                pushEntityTexture(renderer, animationSprite->handle, defaultP, make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords, getSortIndex(worldP, RENDER_LAYER_1), lightingMask);
+                                            }
+                                        } else if(tile->type == TILE_TYPE_ROCK) {
+                                            Texture *t = getTileTexture(&gameState->sandTileSet, tile->coords);
+                                            pushEntityTexture(renderer, t->handle, defaultP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_1), lightingMask);
+
+                                            if(tile->flags & TILE_FLAG_FRONT_FACE) {
+                                                TileMapCoords coord = tile->coords;
+                                                coord.y += 1;
+                                                u32 lightingMask = tile->lightingMask >> 8; //NOTE: We want the top 8 bits so move them down
+
+                                                float3 p1 = worldP;
+                                                p1.y -= 1;
+                                                RenderSortIndex sort = getSortIndex(p1, RENDER_LAYER_2);
+                                                
+                                                Texture *t = getTileTexture(&gameState->sandTileSet, coord);
+                                                pushEntityTexture(renderer, t->handle, make_float3(pX, pY - 1, RENDER_Z), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, sort, lightingMask);
+                                            }
+                                            if(tile->flags & TILE_FLAG_TREE) {
+                                                RenderSortIndex sort = getSortIndex(worldP, RENDER_LAYER_3);
+                                                float renderOffset = 1;
+                                                pushEntityTexture(renderer, gameState->treeTexture.handle, make_float3(pX, pY + renderOffset, RENDER_Z), make_float2(3, 3), make_float4(1, 1, 1, 1), gameState->treeTexture.uvCoords, sort, 0);
+                                            }
+                                        }
+
+                                        if(tile->flags & TILE_FLAG_GRASSY_TOP) {
+                                            Texture *t = getTileTexture(&gameState->sandTileSet, tile->coordsSecondary);
+                                            pushEntityTexture(renderer, t->handle, defaultP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_2), lightingMask);
+                                        }
+
+                                        if((tile->flags & TILE_FLAG_FRONT_GRASS) || (tile->flags & TILE_FLAG_FRONT_BEACH)) {
+                                            TileMapCoords coord = {};
+                                            coord.x = 4;
+                                            coord.y = 0;
+
+                                            if(tile->flags & TILE_FLAG_FRONT_BEACH) {
+                                                coord.x += 5;
+                                            }
+
+                                            Texture *t = getTileTexture(&gameState->sandTileSet, coord);
+                                            pushEntityTexture(renderer, t->handle, make_float3(pX, pY - 1, RENDER_Z), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_3), lightingMask);
+                                        }
+                                    } 
+                                    
+                                    if(tile->type != TILE_TYPE_WATER_ROCK) {
                                         if(tile->animationController) {
                                             Texture *animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
-                                            pushEntityTexture(renderer, animationSprite->handle, defaultP, make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords, getSortIndex(worldP, RENDER_LAYER_1), lightingMask);
+                                            //TODO: Add the water animation back in
+                                            float3 sortP = worldP;
+                                            // sortP.z += 2;
+                                            // pushEntityTexture(renderer, animationSprite->handle, defaultP, make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords, getSortIndex(sortP, RENDER_LAYER_0), lightingMask);
                                         }
-                                    } else if(tile->type == TILE_TYPE_ROCK) {
-                                        Texture *t = getTileTexture(&gameState->sandTileSet, tile->coords);
-                                        pushEntityTexture(renderer, t->handle, defaultP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_1), lightingMask);
-
-                                        if(tile->flags & TILE_FLAG_FRONT_FACE) {
-                                            TileMapCoords coord = tile->coords;
-                                            coord.y += 1;
-                                            u32 lightingMask = tile->lightingMask >> 8; //NOTE: We want the top 8 bits so move them down
-
-                                            float3 p1 = worldP;
-                                            p1.y -= 1;
-                                            RenderSortIndex sort = getSortIndex(p1, RENDER_LAYER_2);
-                                            
-                                            Texture *t = getTileTexture(&gameState->sandTileSet, coord);
-                                            pushEntityTexture(renderer, t->handle, make_float3(pX, pY - 1, RENDER_Z), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, sort, lightingMask);
-                                        }
-                                        if(tile->flags & TILE_FLAG_TREE) {
-                                            RenderSortIndex sort = getSortIndex(worldP, RENDER_LAYER_3);
-                                            float renderOffset = 1;
-                                            pushEntityTexture(renderer, gameState->treeTexture.handle, make_float3(pX, pY + renderOffset, RENDER_Z), make_float2(3, 3), make_float4(1, 1, 1, 1), gameState->treeTexture.uvCoords, sort, 0);
-                                        }
-                                    }
-
-                                    if(tile->flags & TILE_FLAG_GRASSY_TOP) {
-                                        Texture *t = getTileTexture(&gameState->sandTileSet, tile->coordsSecondary);
-                                        pushEntityTexture(renderer, t->handle, defaultP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_2), lightingMask);
-                                    }
-
-                                    if((tile->flags & TILE_FLAG_FRONT_GRASS) || (tile->flags & TILE_FLAG_FRONT_BEACH)) {
-                                        TileMapCoords coord = {};
-                                        coord.x = 4;
-                                        coord.y = 0;
-
-                                        if(tile->flags & TILE_FLAG_FRONT_BEACH) {
-                                            coord.x += 5;
-                                        }
-
-                                        Texture *t = getTileTexture(&gameState->sandTileSet, coord);
-                                        pushEntityTexture(renderer, t->handle, make_float3(pX, pY - 1, RENDER_Z), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_3), lightingMask);
-                                    }
-                                } 
-                                
-                                if(tile->type != TILE_TYPE_WATER_ROCK) {
-                                    if(tile->animationController) {
-                                        Texture *animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
-                                        //TODO: Add the water animation back in
-                                        float3 sortP = worldP;
-                                        // sortP.z += 2;
-                                        // pushEntityTexture(renderer, animationSprite->handle, defaultP, make_float2(waterScale, waterScale), make_float4(1, 1, 1, 1), animationSprite->uvCoords, getSortIndex(sortP, RENDER_LAYER_0), lightingMask);
                                     }
                                 }
                             }
@@ -475,79 +484,6 @@ static float3 roundToGridBoard(float3 in, float tileSize) {
     }
     
     return result;
-}
-
-void updateAStarEntity(GameState *gameState, Entity *e, float dt) {
-    if(e->aStarController) {
-        EasyAiController *controller = e->aStarController;
-        
-        float3 entP_inWorld_ = getWorldPosition(e);
-
-        float3 playerInWorldP_ = getWorldPosition(gameState->player);
-
-        float3 playerInWorldP = roundToGridBoard(playerInWorldP_, 1);
-        float3 entP_inWorld = roundToGridBoard(entP_inWorld_, 1);
-        entP_inWorld.z = 0;
-        playerInWorldP.z = 0;
-        entP_inWorld_.z = 0;
-        playerInWorldP_.z = 0;
-        
-        float distance = float3_magnitude(minus_float3(playerInWorldP, entP_inWorld));
-        //NOTE: See if we are far enough away from the player
-        // if(distance > 0.5f) 
-        {
-            if(e->aStarController->searchBouysCount > 0) {
-                playerInWorldP = playerInWorldP_ = controller->searchBouys[controller->bouyIndexAt];
-
-                //NOTE: See if we have reached the bouy position
-                float searchDist = 1.0f;
-                if(float3_magnitude_sqr(minus_float3(playerInWorldP, entP_inWorld)) < (searchDist*searchDist)) {
-
-                    // e->velocity.xy = make_float2(0, 0);
-                    controller->bouyIndexAt++;
-
-                    if(controller->bouyIndexAt >= controller->searchBouysCount) {
-                        controller->bouyIndexAt = 0;
-                    }
-                }
-            }
-        }  
-        
-        {
-            //NOTE: Update the A Start controller
-            EasyAi_A_Star_Result aiResult = easyAi_update_A_star(controller, entP_inWorld,  playerInWorldP);
-
-            //NOTE: Is in attacking animation
-            // bool attack = easyAnimation_getCurrentAnimation(&entity->animationController, getAnimationForEnemy(gameState, ENTITY_ANIMATION_ATTACK, entity->enemyType));
-
-            if(aiResult.found) {
-                controller->lastSetPos = aiResult.nextPos;
-
-                if(float3_equal(controller->lastSetPos, playerInWorldP)) {
-                    controller->lastSetPos = playerInWorldP_; //get floating point version
-                }
-
-                float3 diff = minus_float3(controller->lastSetPos, e->pos);
-
-                float2 dir = normalize_float2(diff.xy);
-
-                e->velocity.xy = scale_float2(e->speed, dir);
-
-                // if(getLengthSqrV3(diff) < 0.5f) { //if less than 1 metre away, try attacking
-                // 	if(!attack) //NOTE: If not already attacking
-                // 	{
-                // 		//NOTE: Attack 
-                // 		isAttackAnim = true;
-                // 		animToAdd = getAnimationForEnemy(gameState, ENTITY_ANIMATION_ATTACK, entity->enemyType);
-                // 	}
-                // } else { //NOTE: More than 1m away
-                // 	if(!attack) { //NOTE: Walk animation if not in the middle of attack animation
-                // 		animToAdd = getAnimationForEnemy(gameState, ENTITY_ANIMATION_WALK, entity->enemyType);
-                // 	}
-                // }    
-            }
-        }
-    }
 }
 
 void updateEntityVeclocity(Entity *e, float speed, float2 dir) {
@@ -607,8 +543,6 @@ bool isEntitySelected(GameState *gameState, Entity *e) {
 
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
     DEBUG_TIME_BLOCK();
-    updateAStarEntity(gameState, e, dt);
-
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
     float3 p = getWorldPosition(e);
@@ -676,16 +610,31 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         //NOTE: Draw the path 
         MemoryArenaMark mark = takeMemoryMark(&globalPerFrameArena);
 
-        FloodFillEvent *foundNode = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), convertRealWorldToBlockCoords(mouseWorldP));
+        FloodFillResult searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), convertRealWorldToBlockCoords(mouseWorldP), e->maxMoveDistance);
 
-        if(foundNode) {
+        if(searchResult.foundNode) {
+            FloodFillEvent *path = searchResult.foundNode;
+            assert(path);
+            //NOTE: Path is a sentinel doubley linked list
+            NodeDirection *d = searchResult.cameFrom;
+            while(d) {
+                float3 worldP = make_float3(d->p.x, d->p.y, d->p.z);
+                float3 renderP = getRenderWorldP(worldP);
+                renderP.z = RENDER_Z;
+
+                renderP.x -= gameState->cameraPos.x;
+                renderP.y -= gameState->cameraPos.y;
+                pushEntityTexture(renderer, gameState->selectImage.handle, renderP, make_float2(1, 1), make_float4(1, 1, 1, 1), gameState->selectImage.uvCoords, getSortIndex(worldP, RENDER_LAYER_4));
+
+                d = d->next;
+            }
+
         } else {
             gameState->selectedColor = make_float4(1, 0, 0, 1);
         }
 	    releaseMemoryMark(&mark);
         if(clicked) {
             //NOTE: active the path
-
         }
     }
 }

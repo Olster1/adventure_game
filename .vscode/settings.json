@@ -22,6 +22,7 @@
         "__node_handle": "cpp",
         "optional": "cpp",
         "map": "cpp",
-        "unordered_map": "cpp"
+        "unordered_map": "cpp",
+        "queue": "cpp"
     }
 }

@@ -6,10 +6,12 @@ struct FloodFillEvent {
     FloodFillEvent *prev;
 };
 
-#define MAX_ASTAR_ARRAY_LENGTH MAX_MOVE_DISTANCE*MAX_MOVE_DISTANCE*MAX_HEIGHT_LEVEL
+int getLocalBoardIndex(int x, int y, int z, float3 origin) {
+	return DOUBLE_MAX_MOVE_DISTANCE*DOUBLE_MAX_MOVE_DISTANCE*z + DOUBLE_MAX_MOVE_DISTANCE*(y - origin.y) + (x - origin.x);
+}
 
-void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *visited, int x, int y, int z, float3 origin) {
-	int index = MAX_MOVE_DISTANCE*MAX_MOVE_DISTANCE*z + MAX_MOVE_DISTANCE*(y - origin.y) + (x - origin.x);
+void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *visited, float3 *cameFrom, float3 cameFromThisTile, int x, int y, int z, float3 origin) {
+	int index = getLocalBoardIndex(x, y, z, origin);
 		
 	if(index >= 0 && index < MAX_ASTAR_ARRAY_LENGTH && !visited[index]) { 
 		//NOTE: Now check if it's a valid square to stand on i.e. not water or tree or house etc.
@@ -29,6 +31,8 @@ void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *vis
 
 				queue->next = node;
 				node->prev = queue;
+
+				cameFrom[index] = cameFromThisTile;
 			}
 		}
 
@@ -36,6 +40,11 @@ void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *vis
 		visited[index] = true;
 	}
 }
+
+struct NodeDirection {
+	float3 p;
+	NodeDirection *next;
+};
 
 FloodFillEvent *popOffFloodFillQueue(FloodFillEvent *queue) {
 	FloodFillEvent *result = 0;
@@ -50,25 +59,30 @@ FloodFillEvent *popOffFloodFillQueue(FloodFillEvent *queue) {
 	return result;
 }
 
+struct FloodFillResult {
+	FloodFillEvent *foundNode;
+	NodeDirection *cameFrom;
+};
 
-FloodFillEvent *floodFillSearch(GameState *gameState, float3 startP, float3 goalP) {
+FloodFillResult floodFillSearch(GameState *gameState, float3 startP, float3 goalP, int maxMoveDistance) {
     bool *visited = pushArray(&globalPerFrameArena, MAX_ASTAR_ARRAY_LENGTH, bool);
+	float3 *cameFrom = pushArray(&globalPerFrameArena, MAX_ASTAR_ARRAY_LENGTH, float3);
 
 	//NOTE: Need this because the visited array is local coordinates
 	float3 origin = startP;	
-	origin.x -= 0.5f*MAX_MOVE_DISTANCE;
-	origin.y -= 0.5f*MAX_MOVE_DISTANCE;
+	origin.x -= 0.5f*DOUBLE_MAX_MOVE_DISTANCE;
+	origin.y -= 0.5f*DOUBLE_MAX_MOVE_DISTANCE;
 
-    FloodFillEvent queue = {};
-    queue.next = queue.prev = &queue; 
-	pushOnFloodFillQueue(gameState, &queue, visited, startP.x, startP.y, startP.z, origin);
+    FloodFillEvent *queue = pushStruct(&globalPerFrameArena, FloodFillEvent);
+    queue->next = queue->prev = queue; 
+	pushOnFloodFillQueue(gameState, queue, visited, cameFrom, startP, startP.x, startP.y, startP.z, origin);
 
 	bool searching = true;
 	FloodFillEvent *foundNode = 0;
 	int maxSearchTime = 1000;
 	int searchCount = 0;
 	while(searching && searchCount < maxSearchTime) {	
-		FloodFillEvent *node = popOffFloodFillQueue(&queue);
+		FloodFillEvent *node = popOffFloodFillQueue(queue);
 		if(node) {
 			int x = node->x;
 			int y = node->y;
@@ -79,11 +93,12 @@ FloodFillEvent *floodFillSearch(GameState *gameState, float3 startP, float3 goal
 			  searching = false;
 			  foundNode = node;
 			} else {
+				float3 cameFromThisTile = make_float3(x, y, z);
 				//push on more directions   
-				pushOnFloodFillQueue(gameState, &queue, visited, x + 1, y, z, origin);
-				pushOnFloodFillQueue(gameState, &queue, visited, x, y + 1, z, origin);
-				pushOnFloodFillQueue(gameState, &queue, visited, x - 1, y, z, origin);
-				pushOnFloodFillQueue(gameState, &queue, visited, x, y - 1, z, origin);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x + 1, y, z, origin);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x, y + 1, z, origin);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x - 1, y, z, origin);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x, y - 1, z, origin);
 				
 			}
 		} else {
@@ -92,6 +107,39 @@ FloodFillEvent *floodFillSearch(GameState *gameState, float3 startP, float3 goal
 		}
 		searchCount++;
 	}
-    return foundNode;
+
+	FloodFillResult result = {};
+	result.foundNode = foundNode;
+
+	if(foundNode) {
+		bool building = true;
+		result.cameFrom = pushStruct(&globalPerFrameArena, NodeDirection);
+		result.cameFrom->p = goalP;
+		int pathCount = 1;
+		while(building && pathCount <= maxMoveDistance) {
+			int index = getLocalBoardIndex(result.cameFrom->p.x, result.cameFrom->p.y, result.cameFrom->p.z, origin);
+			assert(index >= 0 && index < MAX_ASTAR_ARRAY_LENGTH);
+			float3 posAt = cameFrom[index];
+
+			if(posAt.x == startP.x && posAt.y == startP.y && posAt.z == startP.z) {
+				building = false;
+			} else {
+				NodeDirection *f = pushStruct(&globalPerFrameArena, NodeDirection);
+				f->p = posAt;
+				f->next = result.cameFrom;
+				result.cameFrom = f;
+				pathCount++;
+			}
+
+			if(pathCount > maxMoveDistance && building) {
+				//NOTE: Too far to move, so make it an invalid move
+				result.cameFrom = 0;
+				result.foundNode = 0;
+				building = false;
+			}
+		}
+	}
+
+    return result;
 }
 

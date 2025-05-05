@@ -130,6 +130,7 @@ void sortAndRenderEntityQueue(Renderer *renderer) {
 	// qsort(renderer->entityRenderData, renderer->entityRenderCount, sizeof(InstanceEntityData), compare_by_height);
 	
 	{
+		//TODO: Make this faster
 		DEBUG_TIME_BLOCK_NAMED("SORT RENDER ENTITIES");
 		//NOTE: First sort the list. This is an insert sort
 		for (int i = 1; i < renderer->entityRenderCount; i++) {

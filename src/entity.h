@@ -124,7 +124,7 @@ struct Entity {
     
     int maxMoveDistance;
     int moveCount;
-    float3 moveArray[MAX_MOVE_DISTANCE];
+    float3 moveArray[MAX_ASTAR_ARRAY_LENGTH];
 
     float perlinNoiseLight; //NOTE: Used for the lights
 
