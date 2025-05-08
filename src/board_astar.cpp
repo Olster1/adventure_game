@@ -115,16 +115,16 @@ FloodFillResult floodFillSearch(GameState *gameState, float3 startP, float3 goal
 		bool building = true;
 		result.cameFrom = pushStruct(&globalPerFrameArena, NodeDirection);
 		result.cameFrom->p = goalP;
-		int pathCount = 1;
+		int pathCount = 0;
 		while(building && pathCount <= maxMoveDistance) {
-			int index = getLocalBoardIndex(result.cameFrom->p.x, result.cameFrom->p.y, result.cameFrom->p.z, origin);
-			assert(index >= 0 && index < MAX_ASTAR_ARRAY_LENGTH);
-			float3 posAt = cameFrom[index];
-
-			if(posAt.x == startP.x && posAt.y == startP.y && posAt.z == startP.z) {
+			if(result.cameFrom->p.x == startP.x && result.cameFrom->p.y == startP.y && result.cameFrom->p.z == startP.z) {
 				building = false;
 			} else {
 				NodeDirection *f = pushStruct(&globalPerFrameArena, NodeDirection);
+				int index = getLocalBoardIndex(result.cameFrom->p.x, result.cameFrom->p.y, result.cameFrom->p.z, origin);
+				assert(index >= 0 && index < MAX_ASTAR_ARRAY_LENGTH);
+				float3 posAt = cameFrom[index];
+
 				f->p = posAt;
 				f->next = result.cameFrom;
 				result.cameFrom = f;

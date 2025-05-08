@@ -166,8 +166,6 @@ static float2 lerp_float2(float2 a, float2 b, float t) {
 	return make_float2((b.x - a.x)*t + a.x, (b.y - a.y)*t + a.y);
 }
 
-
-
 static float3 make_float3(float x0, float y0, float z0) {
 	float3 result = {};
 
@@ -176,6 +174,10 @@ static float3 make_float3(float x0, float y0, float z0) {
 	result.z = z0;
 
 	return result;
+}
+
+static float3 lerp_float3(float3 a, float3 b, float t) {
+	return make_float3((b.x - a.x)*t + a.x, (b.y - a.y)*t + a.y, (b.z - a.z)*t + a.z);
 }
 
 static float2 float2_hadamard(float2 a, float2 b) {

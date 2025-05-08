@@ -4,7 +4,6 @@ Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash, Memory_Arena *
     Chunk *chunk = (Chunk *)pushStruct(&global_long_term_arena, Chunk);
     *chunk = Chunk(tempArena);
     assert(chunk);
-    // memset(chunk, 0, sizeof(Chunk));
 
     chunk->x = x;
     chunk->y = y;

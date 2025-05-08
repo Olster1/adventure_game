@@ -133,6 +133,66 @@ static TextureHandle *Platform_loadTextureToGPU(void *data, u32 texWidth, u32 te
     return handle;
 }
 
+struct FramebufferHandle {
+    u32 width;
+    u32 height;
+    GLuint framebuffer;
+    TextureHandle *textureHandle;
+};
+
+static FramebufferHandle platform_createFramebuffer(u32 width, u32 height) {
+    GLuint framebufferId, textureId;
+    
+    // Generate framebuffer
+    glGenFramebuffers(1, &framebufferId);
+    renderCheckError();
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+    renderCheckError();
+
+    // Create texture to attach to framebuffer
+    glGenTextures(1, &textureId);
+    renderCheckError();
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    renderCheckError();
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    renderCheckError();
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    renderCheckError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    renderCheckError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    renderCheckError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    renderCheckError();
+
+    // Attach texture to framebuffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId, 0);
+    renderCheckError();
+
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+    // Unbind framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    renderCheckError();
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Allocate and return framebuffer handle
+    FramebufferHandle fboHandle = {};
+    TextureHandle *texHandle = (TextureHandle *)platform_alloc_memory(sizeof(TextureHandle), true);
+    texHandle->handle = textureId;
+    
+    fboHandle.framebuffer = framebufferId;
+    fboHandle.textureHandle = texHandle;
+    fboHandle.width = width;
+    fboHandle.height = height;
+
+    return fboHandle;
+}
+
 static Texture platform_loadFromFileToGPU(char *image_to_load_utf8) {
 	Texture result = {};
 
@@ -687,12 +747,14 @@ static void backendRender_processCommandBuffer(Renderer *r, BackendRenderer *bac
                 
             } break;
 			case RENDER_SET_VIEWPORT: {
-				// glViewport(0, 0, );
+				glViewport(c->viewport.x, c->viewport.y, c->viewport.z, c->viewport.w);
 			} break;
 			case RENDER_CLEAR_COLOR_BUFFER: {
-                glBindFramebuffer(GL_FRAMEBUFFER, 0); //TODO: When there is more than one frame buffer 
                 glClearColor(c->color.x, c->color.y, c->color.z, c->color.w);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
+			} break;
+            case RENDER_SET_FRAME_BUFFER: {
+                glBindFramebuffer(GL_FRAMEBUFFER, c->frameId);
 			} break;
 			case RENDER_MATRIX: {
 				backend_r->orthoMatrix = c->matrix;

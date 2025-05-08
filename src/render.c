@@ -80,6 +80,7 @@ enum RenderCommandType {
 	RENDER_LINE,
 	RENDER_MATRIX,
 	RENDER_CLEAR_COLOR_BUFFER,
+	RENDER_SET_FRAME_BUFFER,
 	RENDER_SET_VIEWPORT,
 	RENDER_SET_SHADER,
 	RENDER_SET_SCISSORS,
@@ -117,6 +118,7 @@ struct RenderObject {
 typedef struct {
 	RenderCommandType type;
 
+	u32 frameId; //NOTE: For setting a frambuffer object
 	float16 matrix; //NOTE: For the Render_Matrix type
 	float4 color; //NOTE: For the RENDER_CLEAR_COLOR_BUFFER
 	float4 viewport; //NOTE: For the RENDER_SET_VIEWPORT
@@ -273,6 +275,14 @@ static void pushClearColor(Renderer *r, float4 color) {
 
 	assert(c->type == RENDER_CLEAR_COLOR_BUFFER);
 	c->color = color;
+}
+
+static void pushRenderFrameBuffer(Renderer *r, u32 frameId) {
+	render_endCommand(r); //NOTE: So you can put more than one clear color on in a row
+	RenderCommand *c = getRenderCommand(r, RENDER_SET_FRAME_BUFFER);
+
+	assert(c->type == RENDER_SET_FRAME_BUFFER);
+	c->frameId = frameId;
 }
 
 static int render_getTextureIndex(RenderCommand *c, TextureHandle *textureHandle) {

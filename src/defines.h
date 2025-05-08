@@ -8,3 +8,6 @@
 #define TIME_TILL_CASTLE_BURNS 8
 #define RENDER_Z 10
 #define CLOUDS_RENDER_Z 4
+#define BACKGROUND_COLOR make_float4(0.278, 0.671, 0.663, 1.0)
+#define TILE_WIDTH_PIXELS 64
+#define CHUNK_DIM 16

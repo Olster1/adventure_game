@@ -109,6 +109,13 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->treeTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "tree.png");
 		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
 
+		gameState->arrows[0] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowRight.png");
+		gameState->arrows[1] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowUp.png");
+		gameState->arrows[2] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowLeft.png");
+		gameState->arrows[3] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowDown.png");
+		gameState->arrows[4] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "routeFinish.png");
+		
+
 		initBuildingTextures(gameState);
 		loadImageStripFromAtlas(&gameState->goblinTowerAnimation, backendRenderer, &gameState->textureAtlas, textureAtlas_getItem(&gameState->textureAtlas, "goblinTower.png"), 256);
 

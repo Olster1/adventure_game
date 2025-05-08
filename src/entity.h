@@ -123,6 +123,8 @@ struct Entity {
     float targetRotation;
     
     int maxMoveDistance;
+    
+    int moveOn; //NOTE: index on 
     int moveCount;
     float3 moveArray[MAX_ASTAR_ARRAY_LENGTH];
 

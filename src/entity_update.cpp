@@ -97,61 +97,6 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
     }
 }
 
-
-//NOTE: If this function returns a positive number it means it should swap a & b, making a come after b
-// int compare_by_height(const void *a, const void *b) {
-// 	InstanceEntityData *pa = (InstanceEntityData *)a; 
-// 	InstanceEntityData *pb = (InstanceEntityData *)b; 
-int compare_by_height(InstanceEntityData *pa, InstanceEntityData *pb) {
-    float a_yz = (float)pa->sortIndex.worldP.y + (float)pa->sortIndex.worldP.z;
-    float b_yz = (float)pb->sortIndex.worldP.y + (float)pb->sortIndex.worldP.z;
-
-	if (a_yz != b_yz) {
-		return (b_yz - a_yz) > 0 ? 1 : -1; 
-	}
-
-	if(pa->sortIndex.worldP.z != pb->sortIndex.worldP.z) {
-		return (pa->sortIndex.worldP.z - pb->sortIndex.worldP.z)  > 0 ? 1 : -1;
-	}
-
-	if (pa->sortIndex.layer != pb->sortIndex.layer) {
-		return (pa->sortIndex.layer - pb->sortIndex.layer);
-	}
-
-    if (pa->sortIndex.worldP.x != pb->sortIndex.worldP.x) {
-		return pa->sortIndex.worldP.x - pb->sortIndex.worldP.x;
-	}
-    return 0;
-}
-
-void sortAndRenderEntityQueue(Renderer *renderer) {
-	DEBUG_TIME_BLOCK();
-
-	// qsort(renderer->entityRenderData, renderer->entityRenderCount, sizeof(InstanceEntityData), compare_by_height);
-	
-	{
-		//TODO: Make this faster
-		DEBUG_TIME_BLOCK_NAMED("SORT RENDER ENTITIES");
-		//NOTE: First sort the list. This is an insert sort
-		for (int i = 1; i < renderer->entityRenderCount; i++) {
-			InstanceEntityData temp = renderer->entityRenderData[i];
-			int j = i - 1;
-			while (j >= 0 && compare_by_height(&renderer->entityRenderData[j], &temp) > 0) {
-				renderer->entityRenderData[j + 1] = renderer->entityRenderData[j];
-				j--;
-			}
-			renderer->entityRenderData[j + 1] = temp;
-		}
-	}
-
-	pushShader(renderer, &terrainLightingShader);
-	//NOTE: Draw the list
-	for(int i = 0; i < renderer->entityRenderCount; ++i) {
-		InstanceEntityData *d = renderer->entityRenderData + i; 
-		pushTexture(renderer, d->textureHandle, d->pos, d->scale, d->color, d->uv, d->aoMask);
-	}
-}
-
 void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent *parent, float dt) {
 	if(parent->particlerCount > 0) {
 		// pushBlendMode(renderer, RENDER_BLEND_MODE_ADD);
@@ -171,7 +116,6 @@ void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent 
 		}
 		// pushBlendMode(renderer, RENDER_BLEND_MODE_DEFAULT);
 	}
-    
 }
 
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
@@ -185,7 +129,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	pushMatrix(renderer, fovMatrix);
 
-	renderTileMap(gameState, renderer, dt);
+	renderTileMap(gameState, renderer, fovMatrix, make_float2(windowWidth, windowHeight), dt);
 
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(gameState, dt);

@@ -78,10 +78,11 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	//NOTE: Get pointer to player - always at slot zero
 	gameState->player = &gameState->entities[0];
 
-	pushViewport(renderer, make_float4(0, 0, 0, 0));
+	pushViewport(renderer, make_float4(0, 0, windowWidth, windowHeight));
 	renderer_defaultScissors(renderer, windowWidth, windowHeight);
-	
-	pushClearColor(renderer, make_float4(0.278, 0.671, 0.663, 1.0));
+
+	pushRenderFrameBuffer(renderer, 0);
+	pushClearColor(renderer, BACKGROUND_COLOR);
 
 	float2 mouse_point_top_left_origin = make_float2(global_platformInput.mouseX, global_platformInput.mouseY);	
 	float2 mouse_point_top_left_origin_01 = make_float2(global_platformInput.mouseX / windowWidth, global_platformInput.mouseY / windowHeight);

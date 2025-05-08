@@ -23,6 +23,7 @@
         "optional": "cpp",
         "map": "cpp",
         "unordered_map": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "stack": "cpp"
     }
 }

@@ -87,12 +87,12 @@ enum ChunkGenerationState {
     CHUNK_MESH_BUILDING = 1 << 4, 
 };
 
-#define CHUNK_DIM 16
-
 struct Chunk {
     int x = 0;
     int y = 0;
     int z = 0;
+
+    FramebufferHandle texture;
 
     volatile int64_t generateState = 0; //NOTE: Chunk might not be generated, so check first when you get one
 
@@ -129,6 +129,7 @@ struct Chunk {
         cloudCount = 0;
         cloudFadeTimer = -1;
         decorSpriteCount = 0;
+        texture.textureHandle = 0;
 
         //NOTE: This is for when we create the board we only allocate this array
         if(tempArena) {
