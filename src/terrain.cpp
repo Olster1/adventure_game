@@ -305,6 +305,11 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
 
                             if(hasTree(worldX, worldY, worldZ)) {
                                 assert(worldZ > 0);
+                                assert(chunk->treeSpriteCount < arrayCount(chunk->treeSpritesWorldP));
+                                if(chunk->treeSpriteCount < arrayCount(chunk->treeSpritesWorldP)) {
+                                    chunk->treeSpritesWorldP[chunk->treeSpriteCount++] = make_float3(worldX, worldY, worldZ);
+                                }
+                        
                                 flags |= TILE_FLAG_TREE;
                             } 
                         }

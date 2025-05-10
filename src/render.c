@@ -166,6 +166,10 @@ typedef struct {
 	int entityRenderCount;
 	InstanceEntityData entityRenderData[MAX_TEXTURE_COUNT];
 
+	//NOTE: We store all the tiles in a array, sort them,  then we push them all at once to the renderer
+	int tileEntityRenderCount;
+	InstanceEntityData tileRenderData[MAX_TEXTURE_COUNT];
+
 	int lineCount;
 	u8  lineInstanceData[LINE_INSTANCE_DATA_TOTAL_SIZE_IN_BYTES]; //NOTE: This would be x, y, z, x, y, z, r, g, b, a
 
@@ -181,6 +185,7 @@ static void initRenderer(Renderer *r) {
 	r->lineCount = 0;
 	r->totalTime = 0;
 	r->entityRenderCount = 0;
+	r->tileEntityRenderCount = 0;
 }
 
 static void clearRenderer(Renderer *r) {
@@ -189,6 +194,7 @@ static void clearRenderer(Renderer *r) {
 	r->glyphCount = 0;	
 	r->textureCount = 0;
 	r->entityRenderCount = 0;
+	r->tileEntityRenderCount = 0;
 }
 
 static void render_endCommand(Renderer *r) {
@@ -349,6 +355,20 @@ static void pushGlyph(Renderer *r, TextureHandle *textureHandle, float3 pos, flo
 		r->glyphCount++;
 		c->instanceCount++;
 		c->size_in_bytes += SIZE_OF_GLYPH_INSTANCE_IN_BYTES;
+	}
+}
+
+static void pushTileEntityTexture(Renderer *r, TextureHandle *textureHandle, float3 pos, float2 size, float4 color, float4 uv, RenderSortIndex sortIndex, u32 lightingMask = 0) {
+	if(r->tileEntityRenderCount < MAX_TEXTURE_COUNT) {
+		InstanceEntityData *data = r->tileRenderData + r->tileEntityRenderCount++;
+
+		data->pos = pos;
+		data->scale = size;
+		data->color = color;
+		data->uv = uv;
+		data->sortIndex = sortIndex;
+		data->textureHandle = textureHandle;
+		data->aoMask = lightingMask;
 	}
 }
 

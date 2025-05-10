@@ -106,6 +106,8 @@ struct Chunk {
 
     int decorSpriteCount = 0;
 	DecorSprite decorSprites[CHUNK_DIM*CHUNK_DIM];
+    int treeSpriteCount = 0;
+	float3 treeSpritesWorldP[CHUNK_DIM*CHUNK_DIM];
 
     u8 *visited; //NOTE: For when we create the board we keep track of where we've put positions. we allocate this on a temp arena when we do the board init
 
@@ -129,6 +131,7 @@ struct Chunk {
         cloudCount = 0;
         cloudFadeTimer = -1;
         decorSpriteCount = 0;
+        treeSpriteCount = 0;
         texture.textureHandle = 0;
 
         //NOTE: This is for when we create the board we only allocate this array
