@@ -75,6 +75,31 @@ float16 getModelToViewTransform(Entity *e_, float3 cameraPos) {
 
 }
 
+void markBoardAsEntityOccupied(GameState *gameState, float3 worldP) {
+    float2 chunkP = getChunkPosForWorldP(worldP.xy);
+    Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
+    if(c) {
+        float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
+        Tile *tile = c->getTile(localP.x, localP.y, localP.z);
+        if(tile) {
+            tile->flags |= TILE_FLAG_ENTITY_OCCUPIED;
+            assert((tile->flags & TILE_FLAG_ENTITY_OCCUPIED));
+        }
+    }
+}
+
+void markBoardAsEntityUnOccupied(GameState *gameState, float3 worldP) {
+    float2 chunkP = getChunkPosForWorldP(worldP.xy);
+    Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
+    if(c) {
+        float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
+        Tile *tile = c->getTile(localP.x, localP.y, localP.z);
+        if(tile) {
+            tile->flags &= ~TILE_FLAG_ENTITY_OCCUPIED;
+            assert(!(tile->flags & TILE_FLAG_ENTITY_OCCUPIED));
+        }
+    }
+}
 
 
 Entity *makeNewEntity(GameState *state, float3 worldP) {
@@ -94,9 +119,13 @@ Entity *makeNewEntity(GameState *state, float3 worldP) {
         e->pos = make_float3(worldP.x, worldP.y, worldP.z);
         e->flags |= ENTITY_ACTIVE;
         e->scale = make_float3(4, 4, 1);
-        e->speed = 3.0f;
+        e->speed = 5.0f;
+        e->sortYOffset = 0;
 
         assert(e->maxMoveDistance <= 0.5f*DOUBLE_MAX_MOVE_DISTANCE);
+
+        markBoardAsEntityOccupied(state, worldP);
+
 
     }
     return e;
@@ -144,6 +173,7 @@ Entity *addHouseEntity(GameState *state, float3 worldP) {
     if(e) {
         e->type = ENTITY_HOUSE;
         e->offsetP.y = 0.08f;
+        e->sortYOffset = 0.9f;
         e->scale = make_float3(2, 3, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->houseAnimation, 0.08f);
@@ -158,6 +188,7 @@ Entity *addTowerEntity(GameState *state, float3 worldP) {
     if(e) {
         e->type = ENTITY_HOUSE;
         e->offsetP.y = 0.2f;
+        e->sortYOffset = 0.7f;
         e->scale = make_float3(2, 4, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->towerAnimation, 0.08f);
@@ -172,6 +203,7 @@ Entity *addGoblinHouseEntity(GameState *state, float3 worldP) {
     if(e) {
         e->type = ENTITY_GOBLIN_HOUSE;
         e->offsetP.y = 0.08f;
+        e->sortYOffset = 0.6f;
         e->scale = make_float3(1.8, 2.7, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinHutAnimation, 0.08f);
@@ -187,6 +219,7 @@ Entity *addGoblinTowerEntity(GameState *state, float3 worldP) {
     if(e) {
         e->type = ENTITY_GOBLIN_TOWER;
         e->offsetP.y = 0.08f;
+        e->sortYOffset = 0.5f;
         e->scale = make_float3(2.66666, 2, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinTowerAnimation, 0.08f);
@@ -201,6 +234,7 @@ Entity *addCastleEntity(GameState *state, float3 worldP) {
     if(e) {
         e->type = ENTITY_CASTLE;
         e->offsetP.y = 0.07;
+        e->sortYOffset = 1.7f;
         e->scale = make_float3(6, 5, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->castleAnimation, 0.08f);
@@ -583,6 +617,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                     }
                     sortAndRenderTileQueue(renderer);
 
+                    //NOTE: Restore the regular render state
                     pushRenderFrameBuffer(renderer, 0);
                     pushMatrix(renderer, fovMatrix);
                     pushViewport(renderer, make_float4(0, 0, windowScale.x, windowScale.y));
@@ -591,6 +626,20 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
             }
         }
     }
+}
+
+bool tileIsOccupied(GameState *gameState, float3 worldP) {
+    bool result = false;
+    float2 chunkP = getChunkPosForWorldP(worldP.xy);
+    Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
+    if(c) {
+        float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
+        Tile *tile = c->getTile(localP.x, localP.y, localP.z);
+        if(tile) {
+            result = (tile->flags & TILE_FLAG_ENTITY_OCCUPIED);
+        }
+    }
+    return result;
 }
 
 
@@ -666,7 +715,7 @@ bool isEntitySelected(GameState *gameState, Entity *e) {
     return result;
 }
 
-void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
+void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool endMove) {
     DEBUG_TIME_BLOCK();
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
@@ -743,8 +792,6 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             //NOTE: Path is a sentinel doubley linked list
             NodeDirection *d = searchResult.cameFrom;
             assert(d);
-            e->moveCount = 0;
-            e->moveOn = 1;
             while(d) {
                 float3 worldP = d->p;
                 float3 renderP = getRenderWorldP(worldP);
@@ -774,16 +821,34 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                     }
                 }
 
-                assert(e->moveCount < arrayCount(e->moveArray));
-                if(e->moveCount < arrayCount(e->moveArray)) {
-                    e->moveArray[e->moveCount++] = worldP;
+                if(endMove) {
+                    EntityMove *move = 0;
+                    if(gameState->freeEntityMoves) {
+                        move = gameState->freeEntityMoves;
+                        gameState->freeEntityMoves = move->next;
+                        move->next = 0;
+                    } else {
+                        move = pushStruct(&global_long_term_arena, EntityMove);
+                    }
+                    move->move = worldP;
+                    move->next = 0;
+
+                    //NOTE: Add to the end of the list
+                    {
+                        EntityMove **lastMove = &e->moves;
+                        while(*lastMove) {
+                            lastMove = &(*lastMove)->next;
+                        }
+
+                        *lastMove = move;
+                    }
                 }
 
                 Texture *t = &gameState->arrows[arrowIndex];
 
                 renderP.x -= gameState->cameraPos.x;
                 renderP.y -= gameState->cameraPos.y;
-                pushEntityTexture(renderer, t->handle, renderP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_4));
+                pushEntityTexture(renderer, t->handle, renderP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_2));
 
                 d = d->next;
             }
@@ -794,13 +859,37 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
        
     }
 
-    if(e->moveCount > 0 && !isEntitySelected(gameState, e)) {
-        float3 target = e->moveArray[e->moveOn];
-        e->pos = lerp_float3(e->pos, target, clamp(0, 1, 5.0f*dt));
+    //NOTE: Update the entity move cycle
+    if(e->moves != 0) {
+        float3 lastP = convertRealWorldToBlockCoords(e->pos); 
 
-        if(float3_magnitude(minus_float3(target, e->pos)) < 0.2f) {
-            e->moveOn++;
+        float3 target = e->moves->move;
+        float3 dir = normalize_float3(minus_float3(target, e->pos));
+        float speed = e->speed*dt;
+        e->pos = plus_float3(scale_float3(speed, dir), e->pos);
+
+        
+
+        if(float3_magnitude(minus_float3(target, e->pos)) < 0.1f) {
+            e->pos = target;
+            EntityMove *move = e->moves;
+            //NOTE: Move to the next in the list
+            e->moves = move->next;
+            
+
+            //NOTE: Add to the free list
+            move->next = gameState->freeEntityMoves;
+            gameState->freeEntityMoves = move;
         }
+
+        float3 currentP = convertRealWorldToBlockCoords(e->pos); 
+
+        if(!sameFloat3(currentP, lastP)) {
+            markBoardAsEntityOccupied(gameState, currentP);
+            markBoardAsEntityUnOccupied(gameState, lastP);
+        }
+
+        assert(tileIsOccupied(gameState, currentP));
     }
 }
 
@@ -847,8 +936,21 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
 
     if(t) {
         float3 sortPos = e->pos;
-        sortPos.y -= 0.5f*e->scale.y;
+        sortPos.y -= e->sortYOffset;
         renderWorldP.z = RENDER_Z;
+
+        {
+            //NOTE: This draws the position of the sort index position
+            /*
+            float3 a = sortPos;
+            a.y += a.z;
+            a.z = 2;
+            a.x -= gameState->cameraPos.x;
+            a.y -= gameState->cameraPos.y;
+            pushRect(renderer, a, make_float2(0.3f, 0.3f), make_float4(1, 0, 0, 1));
+            */
+        }
+
         pushEntityTexture(renderer, t->handle, renderWorldP, e->scale.xy, color, t->uvCoords, getSortIndex(sortPos, RENDER_LAYER_3));
     }
 }
@@ -877,7 +979,8 @@ void pushAllEntityLights(GameState *gameState, float dt) {
 	}
 }
 
-void updateEntitySelection(Renderer *renderer, GameState *gameState, float2 mouseWorldP) {
+bool updateEntitySelection(Renderer *renderer, GameState *gameState, float2 mouseWorldP) {
+    bool endMove = false;
     //NOTE: Update entity selection
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
     bool released = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].releasedCount > 0;
@@ -903,10 +1006,10 @@ void updateEntitySelection(Renderer *renderer, GameState *gameState, float2 mous
 		}
 	}
 
-    if(clicked && entityClickCount == 0) {
-        gameState->selectedEntityCount = 0;
-        gameState->selectHoverTimer = 0;
+    if(clicked && entityClickCount == 0 && gameState->selectedEntityCount > 0) {
+        endMove = true;
     }
-    
+
+    return endMove;
 }
 

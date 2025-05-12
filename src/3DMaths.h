@@ -132,6 +132,10 @@ static int maxi(int a, int b) {
 	return value;
 }
 
+inline bool sameFloat3(float3 a, float3 b) {
+	return (a.x == b.x && a.y == b.y && a.z == b.z);
+}
+
 static float2 scale_float2(float dt, float2 value) {
 	return make_float2(dt*value.x, dt*value.y);
 }

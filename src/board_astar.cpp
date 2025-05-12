@@ -10,7 +10,7 @@ int getLocalBoardIndex(int x, int y, int z, float3 origin) {
 	return DOUBLE_MAX_MOVE_DISTANCE*DOUBLE_MAX_MOVE_DISTANCE*z + DOUBLE_MAX_MOVE_DISTANCE*(y - origin.y) + (x - origin.x);
 }
 
-void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *visited, float3 *cameFrom, float3 cameFromThisTile, int x, int y, int z, float3 origin) {
+void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *visited, float3 *cameFrom, float3 cameFromThisTile, int x, int y, int z, float3 origin, float3 startP) {
 	int index = getLocalBoardIndex(x, y, z, origin);
 		
 	if(index >= 0 && index < MAX_ASTAR_ARRAY_LENGTH && !visited[index]) { 
@@ -20,7 +20,8 @@ void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *vis
 		if(c) {
 			float3 tileP = getChunkLocalPos(x, y, z);
 			Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
-			if(tile && (tile->flags & TILE_FLAG_WALKABLE)) {
+			if(tile && (tile->flags & TILE_FLAG_WALKABLE) && (!(tile->flags & TILE_FLAG_ENTITY_OCCUPIED) || sameFloat3(make_float3(x, y, z), startP))) {
+				
 				FloodFillEvent *node = pushStruct(&globalPerFrameArena, FloodFillEvent);
 				node->x = x;
 				node->y = y;
@@ -75,7 +76,7 @@ FloodFillResult floodFillSearch(GameState *gameState, float3 startP, float3 goal
 
     FloodFillEvent *queue = pushStruct(&globalPerFrameArena, FloodFillEvent);
     queue->next = queue->prev = queue; 
-	pushOnFloodFillQueue(gameState, queue, visited, cameFrom, startP, startP.x, startP.y, startP.z, origin);
+	pushOnFloodFillQueue(gameState, queue, visited, cameFrom, startP, startP.x, startP.y, startP.z, origin, startP);
 
 	bool searching = true;
 	FloodFillEvent *foundNode = 0;
@@ -95,10 +96,10 @@ FloodFillResult floodFillSearch(GameState *gameState, float3 startP, float3 goal
 			} else {
 				float3 cameFromThisTile = make_float3(x, y, z);
 				//push on more directions   
-				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x + 1, y, z, origin);
-				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x, y + 1, z, origin);
-				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x - 1, y, z, origin);
-				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x, y - 1, z, origin);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x + 1, y, z, origin, startP);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x, y + 1, z, origin, startP);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x - 1, y, z, origin, startP);
+				pushOnFloodFillQueue(gameState, queue, visited, cameFrom, cameFromThisTile, x, y - 1, z, origin, startP);
 				
 			}
 		} else {

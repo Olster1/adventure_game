@@ -116,6 +116,8 @@ typedef struct {
 	Texture treeTexture;
 	TextureAtlas textureAtlas;
 
+	EntityMove *freeEntityMoves;
+
 	Texture arrows[5]; //NOTE: goes anti-clockwise, starting at right. Last one is a circle when there is no direction
 
 	float4 selectedColor;

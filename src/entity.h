@@ -106,6 +106,11 @@ struct DefaultEntityAnimations {
     Animation scared;
 };
 
+struct EntityMove {
+    float3 move;
+    EntityMove *next;
+};
+
 struct Entity {
     u32 id; 
 
@@ -116,6 +121,7 @@ struct Entity {
     //NOTE: TRANSFORM component
     float3 pos;
     float3 offsetP;
+    float sortYOffset;
     float speed; //NOTE: How fast the entity moves - used to scale direction vectors
     float3 scale;
     float3 velocity;
@@ -123,10 +129,7 @@ struct Entity {
     float targetRotation;
     
     int maxMoveDistance;
-    
-    int moveOn; //NOTE: index on 
-    int moveCount;
-    float3 moveArray[MAX_ASTAR_ARRAY_LENGTH];
+    EntityMove *moves;
 
     float perlinNoiseLight; //NOTE: Used for the lights
 

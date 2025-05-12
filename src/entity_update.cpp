@@ -137,19 +137,25 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	float3 worldMouseP = getMouseWorldP(gameState, windowWidth, windowHeight);
 
-	updateEntitySelection(renderer, gameState, worldMouseP.xy);
+	bool endMove = updateEntitySelection(renderer, gameState, worldMouseP.xy);
 
 	//NOTE: Gameplay code
 	for(int i = 0; i < gameState->entityCount; ++i) {
 		Entity *e = &gameState->entities[i];
 
 		if(e->flags & ENTITY_ACTIVE) {
-			updateEntity(gameState, renderer, e, dt, worldMouseP);
+			updateEntity(gameState, renderer, e, dt, worldMouseP, endMove);
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
 
 	updateParticlers(renderer, gameState, &gameState->particlers, dt);
+
+	if(endMove) {
+		//NOTE: Clear the selected entities
+		gameState->selectedEntityCount = 0;
+        gameState->selectHoverTimer = 0;
+	}
 
 	drawSelectionHover(gameState, renderer, dt, worldMouseP);
 
