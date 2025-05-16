@@ -441,7 +441,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
     }
 }
 
-void renderTrees(GameState *gameState, Renderer *renderer, Chunk *c) {
+void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
     //NOTE: Render trees
     for(int i = 0; i < c->treeSpriteCount; ++i) {
         float3 worldP = c->treeSpritesWorldP[i];
@@ -457,23 +457,21 @@ void renderTrees(GameState *gameState, Renderer *renderer, Chunk *c) {
         pushEntityTexture(renderer, gameState->treeTexture.handle, renderP, make_float2(3, 3), make_float4(1, 1, 1, 1), gameState->treeTexture.uvCoords, getSortIndex(sortP, RENDER_LAYER_4));
     }
 
-   
-}
-
-void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
-    
-    //NOTE: Render stones and bushes
+     //NOTE: Render stones and bushes
     for(int i = 0; i < c->decorSpriteCount; ++i) {
         DecorSprite b = c->decorSprites[i];
         float3 renderP = getRenderWorldP(b.worldP);
-       
+        
+        renderP.x -= gameState->cameraPos.x;
+        renderP.y -= gameState->cameraPos.y;
         renderP.z = RENDER_Z;
 
-        float3 sortP = b.worldP;
-        sortP.y -= 0.5f*b.scale.y;
+        float3 sortP = convertRealWorldToBlockCoords(b.worldP);
 
-        pushTileEntityTexture(renderer, b.textureHandle, renderP, b.scale, make_float4(1, 1, 1, 1), b.uvs, getSortIndex(sortP, RENDER_LAYER_4));
+        pushEntityTexture(renderer, b.textureHandle, renderP, b.scale, make_float4(1, 1, 1, 1), b.uvs, getSortIndex(sortP, RENDER_LAYER_3));
     }
+
+   
 }
 
 //NOTE: If this function returns a positive number it means it should swap a & b, making a come after b
@@ -586,7 +584,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                     // pushEntityTexture(renderer, c->texture.textureHandle, renderP, chunkScale, make_float4(1, 1, 1, 1), make_float4(0, 1, 1, 0), getSortIndex(worldP, RENDER_LAYER_1), 0);
                     pushTexture(renderer, c->texture.textureHandle, renderP, chunkScale, make_float4(1, 1, 1, 1), make_float4(0, 1, 1, 0));
                     
-                    renderTrees(gameState, renderer, c);
+                    renderChunkDecor(gameState, renderer, c);
                 } else if(c->generateState & CHUNK_GENERATED) {
                     float2 chunkInPixels = make_float2(chunkScale.x*TILE_WIDTH_PIXELS, chunkScale.y*TILE_WIDTH_PIXELS);
                     c->texture = platform_createFramebuffer(chunkInPixels.x, chunkInPixels.y);
@@ -682,7 +680,6 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                             }
                         }
                     }
-                    renderChunkDecor(gameState, renderer, c);
                     sortAndRenderTileQueue(renderer);
 
                     //NOTE: Restore the regular render state

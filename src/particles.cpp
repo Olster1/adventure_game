@@ -159,7 +159,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
 
             drawP.x -= cameraPos.x;
             drawP.y -= cameraPos.y;
-            drawP.z = 1;
+            drawP.z = RENDER_Z;
 
             float4 color = (particler->colorCount == 1) ? particler->colors[0] : make_float4(1, 1, 1, 1);
 
