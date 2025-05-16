@@ -131,25 +131,86 @@ Entity *makeNewEntity(GameState *state, float3 worldP) {
     return e;
 }
 
+int getNewOrReuseParticler(Entity *e, EntityFlag type, ParticlerParent *parent) {
+    int index = -1;
+    
+    assert(parent->particlerCount < arrayCount(parent->particlers));
+    if(parent->particlerCount < arrayCount(parent->particlers)) { //NOTE: IF there's no particlers left don;t bother
+        
+        for(int i = 0; i < e->particlerCount && index < 0; i++) {
+            Particler *pTemp = e->particlers[i];
+            if(pTemp->flags & type) {
+                index = i;
+                break;
+            }
+        }
+
+        if(index < 0) {
+            
+            //NOTE: Get a new one from the storeage
+            assert(e->particlerCount < arrayCount(e->particlers));
+            if(e->particlerCount < arrayCount(e->particlers)) {
+                index = e->particlerCount++;
+            }
+        }
+    }
+
+    return index;
+}
+
 void entityCatchFire(GameState *state, Entity *e, float2 spawnArea) {
-    assert(e->particlerCount < arrayCount(e->particlers));
-    if(e->fireTimer < 0 && e->particlerCount < arrayCount(e->particlers)) {
-        float3 particleP = e->pos;
-        particleP.y += 1.5f;
+    if(e->fireTimer) {
+        int pEntIndex = getNewOrReuseParticler(e, ENTITY_ON_FIRE, &state->particlers);
+        if(pEntIndex >= 0) {
+            float3 particleP = e->pos;
+            particleP.y += 1.5f;
 
-        // Particler *p = getNewParticleSystem(&state->particlers, particleP, state->smokeTexture.handle, spawnArea, state->smokeTexture.uvCoords);
-        Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, spawnArea, make_float4(0, 0, 1, 1));
-        if(p) {
-            addColorToParticler(p, make_float4(1.0, 0.9, 0.6, 0.0));
-            addColorToParticler(p, make_float4(1.0, 0.5, 0.1, 0.8));
-            addColorToParticler(p, make_float4(0.6, 0.1, 0.05, 0.5));
-            addColorToParticler(p, make_float4(0.2, 0.2, 0.2, 0.0));
+            Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, spawnArea, make_float4(0, 0, 1, 1), 100);
+            if(p) {
+                addColorToParticler(p, make_float4(1.0, 0.9, 0.6, 0.0));
+                addColorToParticler(p, make_float4(1.0, 0.5, 0.1, 0.8));
+                addColorToParticler(p, make_float4(0.6, 0.1, 0.05, 0.5));
+                addColorToParticler(p, make_float4(0.2, 0.2, 0.2, 0.0));
 
-            p->flags |= ENTITY_ON_FIRE; //NOTE: Tag it as a 'fire' particle system to check in the entity update code
+                p->pattern.randomSize = make_float2(0.3f, 1.0f);
+                p->pattern.dpMargin = 0.8f;
+                p->pattern.speed = 2.0f;
 
-            e->particlers[e->particlerCount++] = p;
-            e->flags |= ENTITY_ON_FIRE;
-            e->fireTimer = 0;
+                p->flags |= ENTITY_ON_FIRE; //NOTE: Tag it as a 'fire' particle system to check in the entity update code
+
+                e->particlers[pEntIndex] = p;
+                e->particlerIds[pEntIndex] = p->id;
+                e->flags |= ENTITY_ON_FIRE;
+                e->fireTimer = 0;
+            }
+        }
+    }
+}
+
+
+void entityRenderSelected(GameState *state, Entity *e) {
+    if(!(e->flags & ENTITY_SELECTED)) {
+        int pEntIndex = getNewOrReuseParticler(e, ENTITY_SELECTED, &state->particlers);
+        if(pEntIndex >= 0) {
+            float3 particleP = e->pos;
+
+            float2 spawnMargin = make_float2(0.6f, 0.6f);
+            Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, spawnMargin, make_float4(0, 0, 1, 1), 3);
+            if(p) {
+                addColorToParticler(p, make_float4(1.0, 0.843, 0.0, 0.0));
+                addColorToParticler(p, make_float4(1.0, 0.843, 0.0, 1.0));
+                addColorToParticler(p, make_float4(1.0, 0.843, 0.0, 0.0));
+
+                p->pattern.randomSize = make_float2(0.2f, 0.2f);
+                p->pattern.dpMargin = 0.0f;
+                p->pattern.speed = 1.3f;
+
+                p->flags |= ENTITY_SELECTED; //NOTE: Tag it as a 'fire' particle system to check in the entity update code
+
+                e->particlers[pEntIndex] = p;
+                e->particlerIds[pEntIndex] = p->id;
+                e->flags |= ENTITY_SELECTED;
+            }
         }
     }
 }
@@ -313,15 +374,16 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
     DEBUG_TIME_BLOCK();
 
     TextureHandle *atlasHandle = gameState->textureAtlas.texture.handle;
-    int cloudDistance = 10;
+    int cloudDistance = 3;
     for(int y = cloudDistance; y >= -cloudDistance; --y) {
         for(int x = -cloudDistance; x <= cloudDistance; ++x) {
             Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, x, y, 0, true, false);
             if(c && (c->generateState == CHUNK_NOT_GENERATED || c->cloudFadeTimer >= 0)) {
                 float maxTime = 1.5f;
-
+                
+                //NOTE: Generate the clouds
                 if(c->cloudCount == 0) {
-                    
+                    DEBUG_TIME_BLOCK_NAMED("CREATE CLOUDS");
                     for(int i = 0; i < MAX_CLOUD_DIM; i++) {
                         for(int j = 0; j < MAX_CLOUD_DIM; j++) {
                             float2 p = {};
@@ -342,6 +404,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
                 }   
                 
                 for(int i = 0; i < c->cloudCount; ++i) {
+                    DEBUG_TIME_BLOCK_NAMED("PUSH CLOUDS AS TEXTUREs");
                     CloudData *cloud = &c->clouds[i];
                     float3 worldP = make_float3(x*CHUNK_DIM, y*CHUNK_DIM, CLOUDS_RENDER_Z);
                     worldP.x += cloud->pos.x;
@@ -378,12 +441,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
     }
 }
 
-float3 getRenderWorldP(float3 p) {
-    p.y += p.z;
-    return p;
-}
-
-void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
+void renderTrees(GameState *gameState, Renderer *renderer, Chunk *c) {
     //NOTE: Render trees
     for(int i = 0; i < c->treeSpriteCount; ++i) {
         float3 worldP = c->treeSpritesWorldP[i];
@@ -399,25 +457,29 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
         pushEntityTexture(renderer, gameState->treeTexture.handle, renderP, make_float2(3, 3), make_float4(1, 1, 1, 1), gameState->treeTexture.uvCoords, getSortIndex(sortP, RENDER_LAYER_4));
     }
 
+   
+}
+
+void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
+    
     //NOTE: Render stones and bushes
     for(int i = 0; i < c->decorSpriteCount; ++i) {
         DecorSprite b = c->decorSprites[i];
         float3 renderP = getRenderWorldP(b.worldP);
-        renderP.x -= gameState->cameraPos.x;
-        renderP.y -= gameState->cameraPos.y;
+       
         renderP.z = RENDER_Z;
 
         float3 sortP = b.worldP;
         sortP.y -= 0.5f*b.scale.y;
 
-        pushEntityTexture(renderer, b.textureHandle, renderP, b.scale, make_float4(1, 1, 1, 1), b.uvs, getSortIndex(sortP, RENDER_LAYER_4));
+        pushTileEntityTexture(renderer, b.textureHandle, renderP, b.scale, make_float4(1, 1, 1, 1), b.uvs, getSortIndex(sortP, RENDER_LAYER_4));
     }
 }
 
 //NOTE: If this function returns a positive number it means it should swap a & b, making a come after b
 int compare_by_height(InstanceEntityData *pa, InstanceEntityData *pb) {
-    float a_yz = (float)pa->sortIndex.worldP.y + (float)pa->sortIndex.worldP.z;
-    float b_yz = (float)pb->sortIndex.worldP.y + (float)pb->sortIndex.worldP.z;
+    float a_yz = (float)pa->sortIndex.worldP.y;// + (float)pa->sortIndex.worldP.z;
+    float b_yz = (float)pb->sortIndex.worldP.y;// + (float)pb->sortIndex.worldP.z;
 
 	if (a_yz != b_yz) {
 		return (b_yz - a_yz) > 0 ? 1 : -1; 
@@ -509,6 +571,10 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
             if(c) {
                 float2 chunkScale = make_float2(CHUNK_DIM, CHUNK_DIM + MAX_HEIGHT_LEVEL);
                 if(c->texture.textureHandle) {
+                    if(!c->generatedMipMaps) {
+                        generateMipMapsForTexture(c->texture.textureHandle);
+                        c->generatedMipMaps = true;
+                    }
                     //NOTE: Render this tile
                     float3 worldP = getChunkWorldP(c);
                     float3 renderP = worldP;
@@ -519,7 +585,8 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                     renderP.z = RENDER_Z;
                     // pushEntityTexture(renderer, c->texture.textureHandle, renderP, chunkScale, make_float4(1, 1, 1, 1), make_float4(0, 1, 1, 0), getSortIndex(worldP, RENDER_LAYER_1), 0);
                     pushTexture(renderer, c->texture.textureHandle, renderP, chunkScale, make_float4(1, 1, 1, 1), make_float4(0, 1, 1, 0));
-                    renderChunkDecor(gameState, renderer, c);
+                    
+                    renderTrees(gameState, renderer, c);
                 } else if(c->generateState & CHUNK_GENERATED) {
                     float2 chunkInPixels = make_float2(chunkScale.x*TILE_WIDTH_PIXELS, chunkScale.y*TILE_WIDTH_PIXELS);
                     c->texture = platform_createFramebuffer(chunkInPixels.x, chunkInPixels.y);
@@ -615,6 +682,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                             }
                         }
                     }
+                    renderChunkDecor(gameState, renderer, c);
                     sortAndRenderTileQueue(renderer);
 
                     //NOTE: Restore the regular render state
@@ -660,12 +728,6 @@ static float3 roundToGridBoard(float3 in, float tileSize) {
     return result;
 }
 
-void updateEntityVeclocity(Entity *e, float speed, float2 dir) {
-    dir = normalize_float2(dir);
-	dir = scale_float2(speed, dir); 
-
-	e->velocity.xy = plus_float2(e->velocity.xy, dir);
-}
 
 Animation *getBestWalkAnimation(Entity *e) {
     Animation *animation = &e->animations->idle;
@@ -715,6 +777,55 @@ bool isEntitySelected(GameState *gameState, Entity *e) {
     return result;
 }
 
+void refreshParticlers(GameState *gameState, Entity *e) {
+    ParticlerParent *parent = &gameState->particlers;
+    bool wentIn0 = false;
+    bool wentIn1 = false;
+    bool wentIn2 = false;
+    for(int i = 0; i < e->particlerCount; ) {
+        Particler *p = e->particlers[i];
+        ParticlerId id = e->particlerIds[i];
+        int addend = 1;
+
+        if(p->id.id == id.id && !p->id.invalid) {
+            //NOTE: Wasn't moved in the master array, so don't do anything
+            wentIn1 = true;
+        } else {
+            //NOTE: Try find the right particle system
+            bool found = false;
+            for(int j = 0; j < parent->particlerCount && !found; j++) {
+        		Particler *pCheck = &parent->particlers[j];
+
+                if(pCheck->id.id == id.id) {
+                    e->particlers[i] = pCheck;
+                    assert(pCheck->id.id == e->particlerIds[i].id);
+                    found = true;
+                    wentIn0 = true;
+                }
+            }
+
+            if(!found) {
+                //NOTE: For some reason this doesn't exist so invalidate it
+                // assert(false);
+                assert(e->particlerCount > 0);
+                e->particlers[i] = e->particlers[--e->particlerCount];
+                e->particlerIds[i] = e->particlerIds[e->particlerCount];
+                addend = 0;
+                wentIn2 = true;
+            }
+        }
+
+        i += addend;
+    }
+
+    for(int i = 0; i < e->particlerCount; i++) {
+        Particler *p = e->particlers[i];
+        ParticlerId id = e->particlerIds[i];
+
+        assert(p->id.id == id.id);
+    }
+}
+
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool endMove) {
     DEBUG_TIME_BLOCK();
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
@@ -734,6 +845,28 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         }
     }
 
+    refreshParticlers(gameState, e);
+
+    if(e->flags & ENTITY_SELECTED) {
+        Particler *p = 0;
+
+        for(int i = 0; i < e->particlerCount && !p; i++) {
+            Particler *pTemp = e->particlers[i];
+            if(pTemp && pTemp->flags & ENTITY_SELECTED) {
+                assert(pTemp->id.id == e->particlerIds[i].id);
+                {
+                    p = pTemp;
+                    break;
+                }
+            }
+        }
+
+        if(p) {
+            //NOTE: Reset the lifespan so it keeps going
+            resetParticlerLife(p);
+        }
+    }
+    
     if(e->fireTimer >= 0) {
         e->fireTimer += dt;
 
@@ -742,8 +875,11 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         for(int i = 0; i < e->particlerCount && !p; i++) {
             Particler *pTemp = e->particlers[i];
             if(pTemp->flags & ENTITY_ON_FIRE) {
-                p = pTemp;
-                break;
+                assert(pTemp->id.id == e->particlerIds[i].id);
+                {
+                    p = pTemp;
+                    break;
+                }
             }
         }
         
@@ -925,6 +1061,10 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
     // NOTE: color the entity that you have selected
     if(isEntitySelected(gameState, e)) {
         color.y = 0;
+
+        entityRenderSelected(gameState, e);
+    } else {
+        e->flags &= ~(ENTITY_SELECTED);
     }
     
 

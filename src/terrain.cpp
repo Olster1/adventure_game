@@ -1,4 +1,3 @@
-
 Chunk *Terrain::generateChunk(int x, int y, int z, uint32_t hash, Memory_Arena *tempArena) {
     DEBUG_TIME_BLOCK()
     Chunk *chunk = (Chunk *)pushStruct(&global_long_term_arena, Chunk);
@@ -336,8 +335,8 @@ void Terrain::fillChunk(LightingOffsets *lightingOffsets, AnimationState *animat
             
                             float3 worldP = {};
                             
-                            worldP.x = random_between_float(-0.4f, 0.4f) + worldX;
-                            worldP.y = random_between_float(-0.4f, 0.4f) + worldY;
+                            worldP.x = random_between_float(-0.2f, 0.2f) + worldX;
+                            worldP.y = random_between_float(-0.2f, 0.2f) + worldY;
                             worldP.z = mapHeight;
                 
                             AtlasAsset *asset = 0;

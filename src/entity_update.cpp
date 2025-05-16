@@ -98,23 +98,22 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 }
 
 void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent *parent, float dt) {
-	if(parent->particlerCount > 0) {
-		// pushBlendMode(renderer, RENDER_BLEND_MODE_ADD);
-		for(int i = 0; i < parent->particlerCount; ) {
-			int addend = 1;
-			Particler *p = &parent->particlers[i];
+	for(int i = 0; i < parent->particlerCount; ) {
+		int addend = 1;
+		Particler *p = &parent->particlers[i];
 
-			bool shouldRemove = updateParticler(renderer, p, gameState->cameraPos, dt);
+		bool shouldRemove = updateParticler(renderer, p, gameState->cameraPos, dt, p->pattern);
 
-			if(shouldRemove) {
-				//NOTE: Move from the end
-				parent->particlers[i] = parent->particlers[--parent->particlerCount];
-				addend = 0;
-			} 
+		if(shouldRemove) {
+			//NOTE: Move from the end
+			parent->particlers[i] = parent->particlers[--parent->particlerCount];
+			
+			//NOTE: Invalidate the end particle system so any entity still pointing to this knows to reset their pointer
+			parent->particlers[parent->particlerCount].id = getInvalidParticleId();
+			addend = 0;
+		} 
 
-			i += addend;
-		}
-		// pushBlendMode(renderer, RENDER_BLEND_MODE_DEFAULT);
+		i += addend;
 	}
 }
 
@@ -129,7 +128,9 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	pushMatrix(renderer, fovMatrix);
 
-	renderTileMap(gameState, renderer, fovMatrix, make_float2(windowWidth, windowHeight), dt);
+	float2 windowSize = make_float2(windowWidth, windowHeight);
+
+	renderTileMap(gameState, renderer, fovMatrix, windowSize, dt);
 
 	//NOTE: Collision code - fill all colliders with info and move entities
 	updateEntityCollisions(gameState, dt);
@@ -162,5 +163,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	sortAndRenderEntityQueue(renderer);
 
 	drawClouds(gameState, renderer, dt);
+	// drawCloudsAsTexture(gameState, renderer, dt, fovMatrix, windowSize);
 	
 }

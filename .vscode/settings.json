@@ -25,6 +25,7 @@
         "unordered_map": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "__bit_reference": "cpp"
+        "__bit_reference": "cpp",
+        "complex": "cpp"
     }
 }

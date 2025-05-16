@@ -389,7 +389,7 @@ static void pushEntityTexture(Renderer *r, TextureHandle *textureHandle, float3 
 
 static void pushTexture(Renderer *r, TextureHandle *textureHandle, float3 pos, float2 size, float4 color, float4 uv, u32 lightingMask = 0) {
 	RenderCommand *c = getRenderCommand(r, RENDER_TEXTURE);
-	assert(((TextureHandle *)textureHandle)->handle < 100);
+	// assert(((TextureHandle *)textureHandle)->handle < 100);
 	int textureIndex = render_getTextureIndex(c, textureHandle);
 
 	// lightingMask = 0;

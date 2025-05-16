@@ -133,6 +133,17 @@ static TextureHandle *Platform_loadTextureToGPU(void *data, u32 texWidth, u32 te
     return handle;
 }
 
+void generateMipMapsForTexture(TextureHandle *handle) {
+    glBindTexture(GL_TEXTURE_2D, handle->handle);
+    renderCheckError();
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    renderCheckError();
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    renderCheckError();
+}
+
 struct FramebufferHandle {
     u32 width;
     u32 height;
@@ -154,18 +165,18 @@ static FramebufferHandle platform_createFramebuffer(u32 width, u32 height) {
     renderCheckError();
     glBindTexture(GL_TEXTURE_2D, textureId);
     renderCheckError();
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    renderCheckError();
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     renderCheckError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     renderCheckError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     renderCheckError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    renderCheckError();
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     renderCheckError();
 
     // Attach texture to framebuffer
@@ -597,65 +608,6 @@ Texture loadCubeMapTextureToGPU(char *folderName) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     return result;
-}
-
-Texture loadTextureArrayToGPU(char *fileName, int fileNameCount) {
-    Texture t = {};
-
-    unsigned char **imageDatas = (unsigned char **)malloc(sizeof(unsigned char *)*fileNameCount);
-
-    for(int i = 0; i < fileNameCount; ++i) {
-        int width, height;
-        imageDatas[i] = (unsigned char *)stbi_load(fileName, &width, &height, 0, STBI_rgb_alpha);
-
-        t.width = width;
-        t.height = height;
-
-        if(imageDatas[i]) {
-        // assert(result.comp == 4);
-        } else {
-            printf("%s\n", fileName);
-            assert(!"no image found");
-        }
-    }
-
-    GLuint resultId;
-    glGenTextures(1, &resultId);
-    renderCheckError();
-    
-    glBindTexture(GL_TEXTURE_2D_ARRAY, resultId);
-    renderCheckError();
-    
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    renderCheckError();
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    renderCheckError();
-
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    renderCheckError();
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    renderCheckError();
-
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB8, t.width, t.height, fileNameCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    renderCheckError();
-
-    for(int i = 0; i < fileNameCount; ++i) {
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, t.width, t.height, 1, GL_RGB, GL_UNSIGNED_BYTE, imageDatas[i]);
-        stbi_image_free(imageDatas[i]);
-    }
-
-    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-    renderCheckError();
-    
-    glBindTexture(GL_TEXTURE_2D, 0);
-    renderCheckError();
-
-    TextureHandle *handle = (TextureHandle *)platform_alloc_memory(sizeof(TextureHandle), true);
-    handle->handle = resultId;
-
-    t.handle = handle;
-
-    return t;
 }
 
 void updateInstanceData(uint32_t bufferHandle, void *data, size_t sizeInBytes) {

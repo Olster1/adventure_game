@@ -5,13 +5,27 @@ struct Particle {
     bool alive;
 };
 
+struct PariclePattern {
+    float2 randomSize;
+    float dpMargin;
+    float speed;
+};
+
 struct ParticlerId {
     int id; 
+    bool invalid;
 };
 
 ParticlerId makeParticlerId(int id) {
     ParticlerId result = {};
     result.id = id;
+    return result;
+}
+
+ParticlerId getInvalidParticleId() {
+    ParticlerId result = {};
+    result.id = -1;
+    result.invalid = true;
     return result;
 }
 
@@ -24,6 +38,7 @@ struct Particler {
     Particle particles[255];
     int count;
     int indexAt;
+    PariclePattern pattern;
 
     Rect3f spawnBox;
     TextureHandle *imageHandle;
@@ -80,7 +95,7 @@ bool addColorToParticler(Particler *p, float4 color) {
 
 
 
-bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos, float dt) {
+bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos, float dt, PariclePattern pattern) {
     particler->tAt += dt;
     particler->lifeAt += dt;
 
@@ -114,11 +129,9 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
             float y = lerp(particler->spawnBox.minY, particler->spawnBox.maxY, make_lerpTValue((float)rand() / RAND_MAX));
             float z = lerp(particler->spawnBox.minZ, particler->spawnBox.maxZ, make_lerpTValue((float)rand() / RAND_MAX));
             p->T.pos = make_float3(x, y, z);
-            p->T.scale = make_float3(random_between_float(0.3f, 1.0f), random_between_float(0.3f, 1.0f), 0.1f);
+            p->T.scale = make_float3(random_between_float(pattern.randomSize.x, pattern.randomSize.y), random_between_float(pattern.randomSize.x, pattern.randomSize.y), 0.1f);
 
-            float dpMargin = 0.8f;
-
-            p->dP = make_float3(random_between_float(-dpMargin, dpMargin), 2, random_between_float(-dpMargin, dpMargin)); //NOTE: Straight up
+            p->dP = make_float3(random_between_float(-pattern.dpMargin, pattern.dpMargin), random_between_float(-pattern.dpMargin, pattern.dpMargin), pattern.speed); //NOTE: Straight up
             p->lifeTime = MAX_PARTICLE_LIFETIME; //Seconds
             p->alive = true;
         }
@@ -142,7 +155,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
             //NOTE: Get the movement vector for this frame
             p->T.pos = plus_float3(p->T.pos, scale_float3(dt, p->dP));
 
-            float3 drawP = p->T.pos;
+            float3 drawP = getRenderWorldP(p->T.pos);
 
             drawP.x -= cameraPos.x;
             drawP.y -= cameraPos.y;
@@ -179,7 +192,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
             }
 
             //NOTE: Draw the particle
-            // pushEntityTexture(renderer, particler->imageHandle, drawP, p->T.scale.xy, color, particler->uvCoords, getSortIndex(p->T.pos));
+            pushEntityTexture(renderer, particler->imageHandle, drawP, p->T.scale.xy, color, particler->uvCoords, getSortIndex(p->T.pos));
           
         } else {
             deadCount++;
@@ -201,17 +214,17 @@ static int global_particleId = 0;
 
 struct ParticlerParent {
     int particlerCount;
-    Particler particlers[256];
+    Particler particlers[1024];
 };
 
-Particler *getNewParticleSystem(ParticlerParent *parent, float3 startP, TextureHandle *imageHandle, float2 spawnArea, float4 uvCoords) {
+Particler *getNewParticleSystem(ParticlerParent *parent, float3 startP, TextureHandle *imageHandle, float2 spawnArea, float4 uvCoords, float spawnRatePerSecond) {
     Particler *p = 0;
     assert(parent->particlerCount < arrayCount(parent->particlers));
     if(parent->particlerCount < arrayCount(parent->particlers)) {
-        float lifespan = 60.0f; //NOTE: Seconds for the _particler_ not particles. Particle lifespan is set by MAX_PARTICLE_LIFESPAN
-        float spawnRatePerSecond = 100;
+        float lifespan = 0.1f; //NOTE: Seconds for the _particler_ not particles. Particle lifespan is set by MAX_PARTICLE_LIFESPAN
         parent->particlers[parent->particlerCount++] = initParticler(lifespan, spawnRatePerSecond, make_rect3f_center_dim(startP, make_float3(spawnArea.x, spawnArea.y, 1)), imageHandle, uvCoords, makeParticlerId(global_particleId++));
         p = &parent->particlers[parent->particlerCount - 1];
+        
     }
 
     return p;

@@ -104,6 +104,10 @@ struct Chunk {
     float cloudFadeTimer = -1; //NOTE: Timer for fading out the clouds
     int cloudCount = 0;
 	CloudData clouds[MAX_CLOUD_DIM*MAX_CLOUD_DIM];
+    FramebufferHandle cloudTexture;
+
+    bool generatedMipMaps = false;
+    bool generatedCloudMipMaps = false;
 
     int decorSpriteCount = 0;
 	DecorSprite decorSprites[CHUNK_DIM*CHUNK_DIM];
@@ -134,6 +138,8 @@ struct Chunk {
         decorSpriteCount = 0;
         treeSpriteCount = 0;
         texture.textureHandle = 0;
+        generatedMipMaps = false;
+        generatedCloudMipMaps = false;
 
         //NOTE: This is for when we create the board we only allocate this array
         if(tempArena) {

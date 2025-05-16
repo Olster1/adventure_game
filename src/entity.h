@@ -6,6 +6,7 @@ enum EntityFlag {
     ENTITY_SPRITE_FLIPPED = 1 << 3,
     ENTITY_ON_FIRE = 1 << 4, //NOTE: For buildings that catch fire
     ENTITY_CAN_WALK = 1 << 5, //NOTE: For entities that can walk around like the peasant, knight, etc.
+    ENTITY_SELECTED = 1 << 6, //NOTE: Whether entity is selected
 };
 
 #define MY_ENTITY_TYPE(FUNC) \
@@ -138,6 +139,7 @@ struct Entity {
 
     //NOTE: Particle systems associated with this entity
     int particlerCount;
+    ParticlerId particlerIds[2];
     Particler *particlers[2];
     float fireTimer;
 

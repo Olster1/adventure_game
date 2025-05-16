@@ -30,6 +30,7 @@
 #include "editor_gui.cpp"
 #include "board_astar.cpp"
 #include "entity.cpp"
+#include "cloudAlt.cpp"
 #include "save_load_level.cpp"
 #include "collision.cpp"
 #include "entity_update.cpp"
