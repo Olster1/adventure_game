@@ -326,7 +326,7 @@ static void EasyProfile_DrawGraph(Renderer *renderer, GameState *gameState, Easy
 							float yAt = easyInput_mouseToResolution_originLeftBottomCorner(mouseP_01, resolution).y + backdropY;
 
 							pushShader(renderer, &sdfFontShader);
-							draw_text(renderer, &gameState->font, strBuffer, xAt, yAt, 1, make_float4(1, 1, 1 ,1)); 
+							draw_text(renderer, &gameState->font, strBuffer, 10, 40, 1, make_float4(1, 1, 1 ,1)); 
 							////////////////////////////////////////////////////////////////////
 
 							if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {

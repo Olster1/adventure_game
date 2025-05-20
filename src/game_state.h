@@ -62,13 +62,25 @@ enum GameMode {
 	SELECT_ENTITY_MODE,
 	A_STAR_MODE
 };
+
+struct SelectedEntityData {
+	u32 id;
+	float3 worldPos;
+	bool isValidPos; //NOTE: If this selected entity is allowed to move
+	FloodFillResult floodFillResult; //NOTE: Allocated on the perframe arena, so is rubbish across frame boundaries
+	Entity *e;
+};
+
 typedef struct {
 	bool initialized;
 
 	GameMode gameMode;
 
+	float2 startDragPForSelect;
+	bool holdingSelect;
+	int selectedMoveCount;
 	int selectedEntityCount;
-	u32 selectedEntityIds[512];
+	SelectedEntityData selectedEntityIds[32];
 
 	//NOTE: For creating unique entity ids like MongoDb ObjectIds
 	int randomIdStartApp;

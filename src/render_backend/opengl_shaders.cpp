@@ -212,9 +212,9 @@ static char *lineVertexShader =
 "in vec2 texUV;	"
 
 //per instanced variables
-"vec3 pos1;"
-"vec3 pos2;"
-"vec4 color1;"
+"in vec3 pos1;"
+"in vec3 pos2;"
+"in vec4 color1;"
 
 //uniform variables
 "uniform mat4 projection;"

@@ -1,10 +1,3 @@
-struct FloodFillEvent {
-    int x; 
-    int y;
-	int z;
-    FloodFillEvent *next;
-    FloodFillEvent *prev;
-};
 
 int getLocalBoardIndex(int x, int y, int z, float3 origin) {
 	return DOUBLE_MAX_MOVE_DISTANCE*DOUBLE_MAX_MOVE_DISTANCE*z + DOUBLE_MAX_MOVE_DISTANCE*(y - origin.y) + (x - origin.x);
@@ -20,7 +13,7 @@ void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *vis
 		if(c) {
 			float3 tileP = getChunkLocalPos(x, y, z);
 			Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
-			if(tile && (tile->flags & TILE_FLAG_WALKABLE) && (!(tile->flags & TILE_FLAG_ENTITY_OCCUPIED) || sameFloat3(make_float3(x, y, z), startP))) {
+			if(tile && (tile->flags & TILE_FLAG_WALKABLE) && (tile->entityOccupation == 0 || sameFloat3(make_float3(x, y, z), startP))) {
 				
 				FloodFillEvent *node = pushStruct(&globalPerFrameArena, FloodFillEvent);
 				node->x = x;
@@ -42,10 +35,6 @@ void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *vis
 	}
 }
 
-struct NodeDirection {
-	float3 p;
-	NodeDirection *next;
-};
 
 FloodFillEvent *popOffFloodFillQueue(FloodFillEvent *queue) {
 	FloodFillEvent *result = 0;
@@ -59,11 +48,6 @@ FloodFillEvent *popOffFloodFillQueue(FloodFillEvent *queue) {
 
 	return result;
 }
-
-struct FloodFillResult {
-	FloodFillEvent *foundNode;
-	NodeDirection *cameFrom;
-};
 
 FloodFillResult floodFillSearch(GameState *gameState, float3 startP, float3 goalP, int maxMoveDistance) {
     bool *visited = pushArray(&globalPerFrameArena, MAX_ASTAR_ARRAY_LENGTH, bool);

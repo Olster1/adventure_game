@@ -14,7 +14,8 @@ void updateZoomAndPan(GameState *gameState, float dt, float2 mouseP_01) {
 		}
 	} 
 
-	{
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
 		//NOTE: Update Pan
 		if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {
 			//NOTE: Move the canvas

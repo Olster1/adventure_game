@@ -49,7 +49,6 @@ enum TileFlags {
     TILE_FLAG_FRONT_BEACH = 1 << 4, 
     TILE_FLAG_TREE = 1 << 5,  //NOTE: Wether this tile has a tree
     TILE_FLAG_WALKABLE = 1 << 6,  //NOTE: Wether we can walk on this tile
-    TILE_FLAG_ENTITY_OCCUPIED = 1 << 7,  //NOTE: Wether there's an entity on this tile
 };
 
 struct Tile {
@@ -59,9 +58,10 @@ struct Tile {
     TileMapCoords coordsSecondary;
     u32 flags = 0;
     u32 lightingMask = 0; //NOTE: Minecraft like lighting data bottom 8 bits are top surface, next 8 bits are the front facing surface 
+    int entityOccupation = 0;
 
     Tile() {
-
+        this->entityOccupation = 0;
     }
 
     Tile(TileType type, EasyAnimation_ListItem **freeList, Animation *animation, TileMapCoords coords, TileMapCoords coordsSecondary, u32 flags, u32 lightingMask) {
@@ -69,6 +69,7 @@ struct Tile {
         this->coords = coords;
         this->coordsSecondary = coordsSecondary;
         this->flags = flags;
+        this->entityOccupation = 0;
         this->lightingMask = lightingMask;
         if(type == TILE_TYPE_BEACH || type == TILE_TYPE_WATER_ROCK) {
             assert(animation);

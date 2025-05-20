@@ -21,6 +21,7 @@
 #include "texture_atlas.cpp"
 #include "terrain.hpp"
 #include "gameplay.cpp"
+#include "board_astar.h"
 #include "game_state.h"
 #include "terrain.cpp"
 #include "assets.cpp"

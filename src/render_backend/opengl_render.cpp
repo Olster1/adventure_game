@@ -409,13 +409,13 @@ void addInstancingAttribsForShader(AttribInstancingType type) {
         addInstancingAttrib_int32(LIGHTING_MASK_ATTRIB_LOCATION, 1, offsetForStruct, aoMaskOffset);
         renderCheckError();
     } else if(type == ATTRIB_INSTANCE_TYPE_LINE) {
-         size_t offsetForStruct = sizeof(InstanceDataLine); 
+        size_t offsetForStruct = sizeof(InstanceDataLine); 
 
         unsigned int pos1Offset = (intptr_t)(&(((InstanceDataLine *)0)->pos1));
         addInstancingAttrib (POS1_ATTRIB_LOCATION, 3, offsetForStruct, pos1Offset);
         renderCheckError();
         unsigned int pos2Offset = (intptr_t)(&(((InstanceDataLine *)0)->pos2));
-        addInstancingAttrib (POS1_ATTRIB_LOCATION, 3, offsetForStruct, pos2Offset);
+        addInstancingAttrib (POS2_ATTRIB_LOCATION, 3, offsetForStruct, pos2Offset);
         renderCheckError();
         unsigned int colorOffset = (intptr_t)(&(((InstanceDataLine *)0)->color));
         addInstancingAttrib (COLOR1_ATTRIB_LOCATION, 4, offsetForStruct, colorOffset);

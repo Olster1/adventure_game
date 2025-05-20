@@ -11,3 +11,4 @@
 #define BACKGROUND_COLOR make_float4(0.278, 0.671, 0.663, 1.0)
 #define TILE_WIDTH_PIXELS 64
 #define CHUNK_DIM 16
+#define CHUNK_REVEAL_MARGIN 3

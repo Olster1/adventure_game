@@ -82,8 +82,7 @@ void markBoardAsEntityOccupied(GameState *gameState, float3 worldP) {
         float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
         Tile *tile = c->getTile(localP.x, localP.y, localP.z);
         if(tile) {
-            tile->flags |= TILE_FLAG_ENTITY_OCCUPIED;
-            assert((tile->flags & TILE_FLAG_ENTITY_OCCUPIED));
+            tile->entityOccupation++;
         }
     }
 }
@@ -95,8 +94,8 @@ void markBoardAsEntityUnOccupied(GameState *gameState, float3 worldP) {
         float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
         Tile *tile = c->getTile(localP.x, localP.y, localP.z);
         if(tile) {
-            tile->flags &= ~TILE_FLAG_ENTITY_OCCUPIED;
-            assert(!(tile->flags & TILE_FLAG_ENTITY_OCCUPIED));
+            tile->entityOccupation--;
+            assert(tile->entityOccupation >= 0);
         }
     }
 }
@@ -197,7 +196,6 @@ void entityRenderSelected(GameState *state, Entity *e) {
             float2 spawnMargin = make_float2(0.6f, 0.6f);
             Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, spawnMargin, make_float4(0, 0, 1, 1), 3);
             if(p) {
-                addColorToParticler(p, make_float4(1.0, 0.843, 0.0, 0.0));
                 addColorToParticler(p, make_float4(1.0, 0.843, 0.0, 1.0));
                 addColorToParticler(p, make_float4(1.0, 0.843, 0.0, 0.0));
 
@@ -454,7 +452,31 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
 
         float3 sortP = worldP;
 
-        pushEntityTexture(renderer, gameState->treeTexture.handle, renderP, make_float2(3, 3), make_float4(1, 1, 1, 1), gameState->treeTexture.uvCoords, getSortIndex(sortP, RENDER_LAYER_4));
+        float alpha = 1.0f;
+
+        float3 posToCheck = worldP;
+        posToCheck.y += 1; //NOTE For behind the tree
+        float3 tileP = getChunkLocalPos(posToCheck.x, posToCheck.y, posToCheck.z);
+
+        Tile *tile = 0;
+
+        if((posToCheck.y / CHUNK_DIM) != c->y) {
+            //NOTE: See if it is on a different chunk
+            float2 chunkP = getChunkPosForWorldP(posToCheck.xy);
+            Chunk *chunkToCheck = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, false, false);
+            if(chunkToCheck) {
+                tile = chunkToCheck->getTile(tileP.x, tileP.y, tileP.z);
+            }
+            
+        } else {
+            tile = c->getTile(tileP.x, tileP.y, tileP.z);
+        }
+        
+        if(tile && (tile->entityOccupation > 0)) {
+            alpha = 0.5f;
+        }
+
+        pushEntityTexture(renderer, gameState->treeTexture.handle, renderP, make_float2(3, 3), make_float4(1, 1, 1, alpha), gameState->treeTexture.uvCoords, getSortIndex(sortP, RENDER_LAYER_4));
     }
 
      //NOTE: Render stones and bushes
@@ -582,7 +604,8 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                     renderP.y += 0.5f*chunkScale.y - 0.5f;
                     renderP.z = RENDER_Z;
                     // pushEntityTexture(renderer, c->texture.textureHandle, renderP, chunkScale, make_float4(1, 1, 1, 1), make_float4(0, 1, 1, 0), getSortIndex(worldP, RENDER_LAYER_1), 0);
-                    pushTexture(renderer, c->texture.textureHandle, renderP, chunkScale, make_float4(1, 1, 1, 1), make_float4(0, 1, 1, 0));
+                    float4 color = make_float4(1, 1, 1, 1); //make_float4(c->y % 2 ? 1 : 0, c->x % 2 ? 1 : 0, 1, 1)
+                    pushTexture(renderer, c->texture.textureHandle, renderP, chunkScale, color, make_float4(0, 1, 1, 0));
                     
                     renderChunkDecor(gameState, renderer, c);
                 } else if(c->generateState & CHUNK_GENERATED) {
@@ -701,7 +724,7 @@ bool tileIsOccupied(GameState *gameState, float3 worldP) {
         float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
         Tile *tile = c->getTile(localP.x, localP.y, localP.z);
         if(tile) {
-            result = (tile->flags & TILE_FLAG_ENTITY_OCCUPIED);
+            result = (tile->entityOccupation > 0);
         }
     }
     return result;
@@ -763,11 +786,11 @@ Animation *getBestWalkAnimation(Entity *e) {
     return animation;
 }
 
-bool isEntitySelected(GameState *gameState, Entity *e) {
-    bool result = false;
-    for(int i = 0; i < gameState->selectedEntityCount && !result; ++i) {
-        if(gameState->selectedEntityIds[i] == e->id) {
-            result = true;
+int isEntitySelected(GameState *gameState, Entity *e) {
+    int result = -1;
+    for(int i = 0; i < gameState->selectedEntityCount; ++i) {
+        if(gameState->selectedEntityIds[i].id == e->id) {
+            result = i;
             break;
         }
     }
@@ -823,22 +846,113 @@ void refreshParticlers(GameState *gameState, Entity *e) {
     }
 }
 
+void addMovePositionsFromBoardAstar(GameState *gameState, FloodFillResult searchResult, Entity *e, bool endMove) {
+    //NOTE: Path is a sentinel doubley linked list
+    NodeDirection *d = searchResult.cameFrom;
+    assert(d);
+    while(d) {
+        float3 worldP = d->p;
+
+        /* NOTE: Rendering code for the arrows 
+        float3 renderP = getRenderWorldP(worldP);
+        renderP.z = RENDER_Z;
+
+        int arrowIndex = 0;
+
+        {
+            //NOTE: Get the right texture to show the direction
+            if(d->next) {
+                
+                float3 p = d->next->p;
+                float3 diff = minus_float3(p, worldP);
+
+                if(diff.x < 0) {
+                    arrowIndex = 2;
+                } else if(diff.x > 0) {
+                    arrowIndex = 0;
+                } else if(diff.y > 0) {
+                    arrowIndex = 1;
+                } else if(diff.y < 0) {
+                    arrowIndex = 3;
+                }
+            } else {
+                //NOTE: No direction, so show the circle 
+                arrowIndex = 4;
+            }
+        }
+        */
+
+        if(endMove) {
+            //NOTE: Move the entities
+            EntityMove *move = 0;
+            if(gameState->freeEntityMoves) {
+                move = gameState->freeEntityMoves;
+                gameState->freeEntityMoves = move->next;
+                move->next = 0;
+            } else {
+                move = pushStruct(&global_long_term_arena, EntityMove);
+            }
+            move->move = worldP;
+            move->next = 0;
+
+            //NOTE: Add to the end of the list
+            {
+                EntityMove **lastMove = &e->moves;
+                while(*lastMove) {
+                    lastMove = &(*lastMove)->next;
+                }
+
+                *lastMove = move;
+            }
+        }
+
+        /*
+        //NOTE: This draw the direction arrow images
+        Texture *t = &gameState->arrows[arrowIndex];
+        renderP.x -= gameState->cameraPos.x;
+        renderP.y -= gameState->cameraPos.y;
+        pushEntityTexture(renderer, t->handle, renderP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_2));
+        */
+
+        d = d->next;
+    }
+}
+
+float3 getOriginSelection(GameState *gameState) {
+    float3 p = {};
+    if(gameState->selectedEntityCount > 0) {
+        p = gameState->selectedEntityIds[gameState->selectedEntityCount - 1].worldPos;    
+    }
+    return p;
+}
+
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool endMove) {
     DEBUG_TIME_BLOCK();
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
     float3 p = getWorldPosition(e);
-    float2 chunkP =  getChunkPosForWorldP(p.xy);
     
     {
-        //NOTE: Make sure the chunk the player is on is available. i.e. reveal the clouds off that chunk
-        int chunkRadius = 0;
-        //TODO: Maybe just if they get close to the edge
-        for(int i = -chunkRadius; i <= chunkRadius; i++) {
-            for(int j = -chunkRadius; j <= chunkRadius; j++) {
-                Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x + j, chunkP.y + i, 0, true, true);
-                assert(c);
-            }
+        float2 chunkP =  getChunkPosForWorldP(p.xy);
+        float3 localP = getChunkLocalPos(p.x, p.y, p.z);
+
+        int margin = 1;
+
+        if(localP.x < margin) {
+            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x - 1, chunkP.y, 0, true, true);
+            assert(c);
+        }
+        if(localP.x >= (CHUNK_DIM - margin)) {
+            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x + 1, chunkP.y, 0, true, true);
+            assert(c);
+        }
+        if(localP.y < margin) {
+            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y - 1, 0, true, true);
+            assert(c);
+        }
+        if(localP.y >= (CHUNK_DIM - margin)) {
+            Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y + 1, 0, true, true);
+            assert(c);
         }
     }
 
@@ -913,83 +1027,29 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
 
     //NOTE: Check if the player tried to move the units
-    if((e->flags & ENTITY_CAN_WALK) && isEntitySelected(gameState, e)) {
-        //NOTE: Draw the path 
-        MemoryArenaMark mark = takeMemoryMark(&globalPerFrameArena);
+    int selectedEntityIndex = isEntitySelected(gameState, e);
+    if(selectedEntityIndex >= 0) {
+        gameState->selectedEntityIds[selectedEntityIndex].isValidPos = false;
+        
+        if((e->flags & ENTITY_CAN_WALK)) {
+            //NOTE: Draw the path 
+            // MemoryArenaMark mark = takeMemoryMark(&globalPerFrameArena);
 
-        FloodFillResult searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), convertRealWorldToBlockCoords(mouseWorldP), e->maxMoveDistance);
+            float3 offset = minus_float3(gameState->selectedEntityIds[selectedEntityIndex].worldPos, getOriginSelection(gameState));
+            float3 targetP = plus_float3(mouseWorldP, offset);
 
-        if(searchResult.foundNode) {
-            FloodFillEvent *path = searchResult.foundNode;
-            assert(path);
-            //NOTE: Path is a sentinel doubley linked list
-            NodeDirection *d = searchResult.cameFrom;
-            assert(d);
-            while(d) {
-                float3 worldP = d->p;
-                float3 renderP = getRenderWorldP(worldP);
-                renderP.z = RENDER_Z;
+            FloodFillResult searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), convertRealWorldToBlockCoords(targetP), e->maxMoveDistance);
 
-                int arrowIndex = 0;
-
-                {
-                    //NOTE: Get the right texture to show the direction
-                    if(d->next) {
-                        
-                        float3 p = d->next->p;
-                        float3 diff = minus_float3(p, worldP);
-
-                        if(diff.x < 0) {
-                            arrowIndex = 2;
-                        } else if(diff.x > 0) {
-                            arrowIndex = 0;
-                        } else if(diff.y > 0) {
-                            arrowIndex = 1;
-                        } else if(diff.y < 0) {
-                            arrowIndex = 3;
-                        }
-                    } else {
-                        //NOTE: No direction, so show the circle 
-                        arrowIndex = 4;
-                    }
-                }
-
-                if(endMove) {
-                    EntityMove *move = 0;
-                    if(gameState->freeEntityMoves) {
-                        move = gameState->freeEntityMoves;
-                        gameState->freeEntityMoves = move->next;
-                        move->next = 0;
-                    } else {
-                        move = pushStruct(&global_long_term_arena, EntityMove);
-                    }
-                    move->move = worldP;
-                    move->next = 0;
-
-                    //NOTE: Add to the end of the list
-                    {
-                        EntityMove **lastMove = &e->moves;
-                        while(*lastMove) {
-                            lastMove = &(*lastMove)->next;
-                        }
-
-                        *lastMove = move;
-                    }
-                }
-
-                Texture *t = &gameState->arrows[arrowIndex];
-
-                renderP.x -= gameState->cameraPos.x;
-                renderP.y -= gameState->cameraPos.y;
-                pushEntityTexture(renderer, t->handle, renderP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_2));
-
-                d = d->next;
-            }
-        } else {
-            gameState->selectedColor = make_float4(1, 0, 0, 1);
+            if(searchResult.foundNode) {
+                gameState->selectedMoveCount++;
+                gameState->selectedEntityIds[selectedEntityIndex].isValidPos = true;
+                gameState->selectedEntityIds[selectedEntityIndex].floodFillResult = searchResult;
+                // addMovePositionsFromBoardAstar(gameState, searchResult, e, endMove);
+            } 
+            
+            // releaseMemoryMark(&mark);
+        
         }
-	    releaseMemoryMark(&mark);
-       
     }
 
     //NOTE: Update the entity move cycle
@@ -1056,7 +1116,7 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
     float4 color = make_float4(1, 1, 1, 1);
 
     // NOTE: color the entity that you have selected
-    if(isEntitySelected(gameState, e)) {
+    if(isEntitySelected(gameState, e) >= 0) {
         color.y = 0;
 
         entityRenderSelected(gameState, e);
@@ -1135,7 +1195,10 @@ bool updateEntitySelection(Renderer *renderer, GameState *gameState, float2 mous
                 if(inSelectionBounds) {
                     assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
                     if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
-                        gameState->selectedEntityIds[gameState->selectedEntityCount++] = e->id;
+                        SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
+                        data->id = e->id;
+                        data->e = e;
+                        data->worldPos = e->pos;
                     }
                     entityClickCount++;
                 }

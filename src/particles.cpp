@@ -39,6 +39,7 @@ struct Particler {
     int count;
     int indexAt;
     PariclePattern pattern;
+    bool warmStart;
 
     Rect3f spawnBox;
     TextureHandle *imageHandle;
@@ -75,6 +76,7 @@ Particler initParticler(float lifespan, float spawnRate, Rect3f spawnBox, Textur
     p.imageHandle = imageHandle;
     p.uvCoords = uvCoords;
     p.id = id;
+    p.warmStart = true;
 
     return p;   
 }
@@ -102,9 +104,14 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
     bool isDead = (particler->lifeAt >= particler->lifespan);
 
     float diff = (particler->tAt - particler->lastTimeCreation);
-    if(!isDead && diff >= particler->spawnRate) {
+    if(!isDead && (diff >= particler->spawnRate) || particler->warmStart) {
+        
         int numberOfParticles = diff / particler->spawnRate;
 
+        if(particler->warmStart) {
+            numberOfParticles = 1.0f / particler->spawnRate;
+            particler->warmStart = false;
+        }
         assert(numberOfParticles > 0);
 
         for(int i = 0; i < numberOfParticles; ++i) {
