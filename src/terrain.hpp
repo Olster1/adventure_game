@@ -189,17 +189,17 @@ float2 getChunkPosForWorldP(float2 p) {
     return p;
 }
 
-float3 getChunkLocalPos(int x, int y, int z)  {
-    x = round(x);
-    y = round(y);
-    z = round(z);
+float3 getChunkLocalPos(float x_, float y_, float z_)  {
+    int x = (int)round(x_);
+    int y = (int)round(y_);
+    int z = (int)round(z_);
 
     //NOTE: CHUNK DIM Must be power of 2
     assert((CHUNK_DIM & (CHUNK_DIM - 1)) == 0);
 
-    x &= (CHUNK_DIM - 1);
-    y &= (CHUNK_DIM - 1);
-    z &= (CHUNK_DIM - 1);
+    x = ((x % CHUNK_DIM) + CHUNK_DIM) % CHUNK_DIM;
+    y = ((y % CHUNK_DIM) + CHUNK_DIM) % CHUNK_DIM;
+    z = ((z % CHUNK_DIM) + CHUNK_DIM) % CHUNK_DIM;
 
     return make_float3(x, y, z);
 }

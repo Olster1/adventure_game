@@ -73,7 +73,7 @@ float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
 
 void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, float3 worldMouseP, SelectedEntityData *selectedData) {
 	{
-		gameState->selectHoverTimer += dt;
+		
 		float3 worldP = convertRealWorldToBlockCoords(worldMouseP);
 		float3 p = worldP;
 
@@ -102,7 +102,7 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 
 		//NOTE: P is now in camera space
 		
-		float scale = 1;//lerp(0.8f, 1.2f, make_lerpTValue(sin01(5*gameState->selectHoverTimer)));
+		float scale = 1.0f;//lerp(0.9f, 1.1f, make_lerpTValue(sin01(gameState->selectHoverTimer)));
 		float3 sortP = worldP;
 		pushEntityTexture(renderer, gameState->selectImage.handle, p, make_float2(scale, scale), color, gameState->selectImage.uvCoords, getSortIndex(sortP, RENDER_LAYER_2));
 
@@ -116,6 +116,7 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 }
 
 void drawAllSectionHovers(GameState *gameState, Renderer *renderer, float dt, float3 worldMouseP) {
+	gameState->selectHoverTimer += dt;
 	if(gameState->selectedEntityCount == 0) {
 		drawSelectionHover(gameState, renderer, dt, worldMouseP, 0);
 	} else {
@@ -153,8 +154,6 @@ void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent 
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
 	DEBUG_TIME_BLOCK();
 
-	//NOTE: reset the selected color, becuase we change it in the update entity loop
-	gameState->selectedColor = make_float4(1, 1, 1, 1);
 	gameState->selectedMoveCount = 0; //NOTE: The count of how many entities are able to move
 
     //NOTE: Push all lights for the renderer to use
@@ -173,17 +172,20 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	float3 worldMouseP = getMouseWorldP(gameState, windowWidth, windowHeight);
 	float2 worldMousePLvl0 = getMouseWorldPLvl0(gameState, windowWidth, windowHeight);
 
-	bool endMove = updateEntitySelection(renderer, gameState, worldMouseP.xy);
+	//updateEntitySelection(renderer, gameState, worldMouseP.xy);
 
 	//NOTE: Gameplay code
 	for(int i = 0; i < gameState->entityCount; ++i) {
 		Entity *e = &gameState->entities[i];
 
 		if(e->flags & ENTITY_ACTIVE) {
-			updateEntity(gameState, renderer, e, dt, worldMouseP, endMove);
+			updateEntity(gameState, renderer, e, dt, worldMouseP);
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
+
+	bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+	bool endMove = gameState->selectedEntityCount > 0 && clicked;
 
 	if(gameState->selectedMoveCount == gameState->selectedEntityCount) {
 		for(int i = 0; i < gameState->selectedEntityCount; ++i) {
@@ -195,16 +197,10 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	updateParticlers(renderer, gameState, &gameState->particlers, dt);
 
-	if(endMove) {
-		//NOTE: Clear the selected entities
-		gameState->selectedEntityCount = 0;
-        gameState->selectHoverTimer = 0;
-	}
-
 	{
 		pushShader(renderer, &lineShader);
 
-		bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+		
 
 		if(clicked) {
 			gameState->startDragPForSelect = worldMousePLvl0;
@@ -212,6 +208,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 		}
 		
 		if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown) {
+			gameState->selectedEntityCount = 0;
 			float2 a = worldMousePLvl0;
 			float2 b = gameState->startDragPForSelect;
 
@@ -248,6 +245,27 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 				posB.y -= gameState->cameraPos.y;
 				pushLine(renderer, posA, posB, make_float4(1, 1, 1, 1));
 			}
+
+			//NOTE: See if entities are selected 
+			for(int i = 0; i < gameState->entityCount; ++i) {
+				Entity *e = gameState->entities + i;
+
+				if(e->flags & ENTITY_CAN_WALK) {
+
+					float2 renderP = getRenderWorldP(e->pos).xy;
+
+					if(in_rect2f_bounds(make_rect2f_min_max(a.x, a.y, b.x, b.y), renderP)) {
+						assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
+						if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
+							SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
+							data->id = e->id;
+							data->e = e;
+							data->worldPos = e->pos;
+						}
+					}
+				}
+			}
+			
 		} else {
 			gameState->holdingSelect = false;
 		}

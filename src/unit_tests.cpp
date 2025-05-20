@@ -1,6 +1,15 @@
 void DEBUG_runUnitTests(GameState *state) {
     EditorGui *gui = &state->editorGuiState;
 
+    {
+        float3 p = getChunkLocalPos(18, 19, 4);
+        assert(p.x == 2 && p.y == 3 && p.z == 4);
+    }
+    {
+        float3 p = getChunkLocalPos(-18, -19, -4);
+        assert(p.x == 14 && p.y == 13 && p.z == 12);
+    }
+
     assert(0b1 == 1);
     assert(0b11 == 3);
 

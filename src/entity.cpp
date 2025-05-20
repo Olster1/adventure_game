@@ -382,11 +382,12 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
                 //NOTE: Generate the clouds
                 if(c->cloudCount == 0) {
                     DEBUG_TIME_BLOCK_NAMED("CREATE CLOUDS");
+                    int margin = 1;
                     for(int i = 0; i < MAX_CLOUD_DIM; i++) {
                         for(int j = 0; j < MAX_CLOUD_DIM; j++) {
                             float2 p = {};
-                            p.x += random_between_float(-1, CHUNK_DIM + 1);
-                            p.y += random_between_float(-1, CHUNK_DIM + 1);
+                            p.x += random_between_float(margin, CHUNK_DIM - margin);
+                            p.y += random_between_float(margin, CHUNK_DIM - margin);
                             assert(c->cloudCount < arrayCount(c->clouds));
                             CloudData *d = &c->clouds[c->cloudCount++];
                             d->pos = p;
@@ -926,7 +927,7 @@ float3 getOriginSelection(GameState *gameState) {
     return p;
 }
 
-void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool endMove) {
+void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
     DEBUG_TIME_BLOCK();
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
@@ -936,13 +937,15 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         float2 chunkP =  getChunkPosForWorldP(p.xy);
         float3 localP = getChunkLocalPos(p.x, p.y, p.z);
 
-        int margin = 1;
+        int margin = CHUNK_REVEAL_MARGIN;
 
         if(localP.x < margin) {
             Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x - 1, chunkP.y, 0, true, true);
             assert(c);
         }
         if(localP.x >= (CHUNK_DIM - margin)) {
+            // float2 chunkP =  getChunkPosForWorldP(p.xy);
+            // float3 localP = getChunkLocalPos(p.x, p.y, p.z);
             Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x + 1, chunkP.y, 0, true, true);
             assert(c);
         }
@@ -1105,7 +1108,6 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
         }
     } 
 
-    
     float3 renderWorldP = getRenderWorldP(e->pos);
     renderWorldP.x += e->offsetP.x * e->scale.x;
     renderWorldP.y += e->offsetP.y * e->scale.y;
@@ -1117,7 +1119,7 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
 
     // NOTE: color the entity that you have selected
     if(isEntitySelected(gameState, e) >= 0) {
-        color.y = 0;
+        color = make_float4(1, 0.8f, 0, 1);
 
         entityRenderSelected(gameState, e);
     } else {

@@ -274,6 +274,18 @@ static Rect2f make_rect2f_min_dim(float minX, float minY, float dimX, float dimY
 
 	return result; 
 }
+
+static Rect2f make_rect2f_min_max(float minX, float minY, float maxX, float maxY) {
+	Rect2f result = {};
+
+	result.minX = minX;
+	result.minY = minY;
+	result.maxX = maxX;
+	result.maxY = maxY;
+
+	return result; 
+}
+
 static float2 get_centre_rect2f(Rect2f r) {
 	float2 result = {};
 
