@@ -746,6 +746,24 @@ static bool in_rect2f_bounds(Rect2f bounds, float2 point) {
 	return result;
 }
 
+static bool does_rect2f_overlap(Rect2f a, Rect2f b) {
+    gjk_v2 pointsA[4] = { 
+        gjk_V2(a.minX, a.minY), 
+        gjk_V2(a.minX, a.maxY), 
+        gjk_V2(a.maxX, a.maxY),  
+        gjk_V2(a.maxX, a.minY), 
+    };
+
+    gjk_v2 pointsB[4] = { 
+        gjk_V2(b.minX, b.minY), 
+        gjk_V2(b.minX, b.maxY), 
+        gjk_V2(b.maxX, b.maxY),  
+        gjk_V2(b.maxX, b.minY), 
+    };
+
+    return gjk_objectsCollide_withEPA(pointsA, 4, pointsB, 4).collided;
+}
+
 static bool in_rect3f_bounds(Rect3f bounds, float3 point) {
 	bool result = false;
 

@@ -145,7 +145,6 @@ struct Entity {
 
     DefaultEntityAnimations *animations; //NOTE: This points to animations stored on the gameState
     EasyAnimation_Controller animationController;
-    EasyAiController *aStarController;
 };
 
 

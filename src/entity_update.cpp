@@ -151,6 +151,113 @@ void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent 
 	}
 }
 
+void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool clicked, float2 worldMousePLvl0, float3 mouseWorldP) {
+	bool released = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].releasedCount > 0;
+	pushShader(renderer, &lineShader);
+
+	if(clicked) {
+		gameState->startDragPForSelect = worldMousePLvl0;
+		gameState->holdingSelect = true;
+	}
+	
+	if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || released) {
+		gameState->selectedEntityCount = 0;
+		float2 a = worldMousePLvl0;
+		float2 b = gameState->startDragPForSelect;
+
+		if(a.x > b.x) {
+			float t = a.x;
+			a.x = b.x;
+			b.x = t;
+		}
+		if(a.y > b.y) {
+			float t = a.y;
+			a.y = b.y;
+			b.y = t;
+		}
+
+		float2 rects[] = {
+			a,
+			make_float2(a.x, b.y),
+			make_float2(a.x, a.y),
+			make_float2(b.x, a.y),
+			make_float2(b.x, a.y),
+			b,
+			make_float2(a.x, b.y),
+			b,
+		};
+
+		for(int i = 0; i < 4; ++i) {
+			int index = i*2;
+			float3 posA = make_float3(rects[index].x, rects[index].y, RENDER_Z);
+			posA.x -= gameState->cameraPos.x;
+			posA.y -= gameState->cameraPos.y;
+
+			float3 posB = make_float3(rects[index + 1].x, rects[index + 1].y, RENDER_Z);
+			posB.x -= gameState->cameraPos.x;
+			posB.y -= gameState->cameraPos.y;
+			pushLine(renderer, posA, posB, make_float4(1, 1, 1, 1));
+		}
+
+		// pushShader(renderer, &terrainLightingShader);
+
+		//NOTE: See if entities are selected 
+		for(int i = 0; i < gameState->entityCount; ++i) {
+			Entity *e = gameState->entities + i;
+
+			// {
+			// 	float3 a = e->pos;
+			// 	a.y += a.z;
+			// 	a.z = 2;
+			// 	a.x -= gameState->cameraPos.x;
+			// 	a.y -= gameState->cameraPos.y;
+			// 	pushRect(renderer, a, make_float2(0.3f, 0.3f), make_float4(1, 0, 0, 1));
+			// }
+
+			if((e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_ACTIVE)) {
+				bool added = false;
+				{
+					//NOTE: This is the drag selection 
+					float3 renderP = getRenderWorldP(e->pos);
+					
+
+					if(does_rect2f_overlap(make_rect2f_min_max(a.x, a.y, b.x, b.y), make_rect2f_center_dim(renderP.xy, make_float2(1, 1)))) {
+						assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
+						if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
+							SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
+							data->id = e->id;
+							data->e = e;
+							data->worldPos = e->pos;
+							added = true;
+						}
+					}
+				}
+
+				if(!added) {
+					//NOTE: This is the single selection of entities
+					float3 entityWorldPos = getWorldPosition(e);
+					bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(entityWorldPos.xy, scale_float2(0.5f, e->scale.xy)), mouseWorldP.xy);
+
+					if(released) {
+						if(inSelectionBounds) {
+							assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
+							if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
+								SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
+								data->id = e->id;
+								data->e = e;
+								data->worldPos = e->pos;
+							}
+						}
+					} 
+				}
+			}
+		}
+		
+	} else {
+		gameState->holdingSelect = false;
+	}
+}
+
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
 	DEBUG_TIME_BLOCK();
 
@@ -171,8 +278,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	float3 worldMouseP = getMouseWorldP(gameState, windowWidth, windowHeight);
 	float2 worldMousePLvl0 = getMouseWorldPLvl0(gameState, windowWidth, windowHeight);
-
-	//updateEntitySelection(renderer, gameState, worldMouseP.xy);
 
 	//NOTE: Gameplay code
 	for(int i = 0; i < gameState->entityCount; ++i) {
@@ -197,79 +302,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	updateParticlers(renderer, gameState, &gameState->particlers, dt);
 
-	{
-		pushShader(renderer, &lineShader);
-
-		
-
-		if(clicked) {
-			gameState->startDragPForSelect = worldMousePLvl0;
-			gameState->holdingSelect = true;
-		}
-		
-		if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown) {
-			gameState->selectedEntityCount = 0;
-			float2 a = worldMousePLvl0;
-			float2 b = gameState->startDragPForSelect;
-
-			if(a.x > b.x) {
-				float t = a.x;
-				a.x = b.x;
-				b.x = t;
-			}
-			if(a.y > b.y) {
-				float t = a.y;
-				a.y = b.y;
-				b.y = t;
-			}
-
-			float2 rects[] = {
-				a,
-				make_float2(a.x, b.y),
-				make_float2(a.x, a.y),
-				make_float2(b.x, a.y),
-				make_float2(b.x, a.y),
-				b,
-				make_float2(a.x, b.y),
-				b,
-			};
-
-			for(int i = 0; i < 4; ++i) {
-				int index = i*2;
-				float3 posA = make_float3(rects[index].x, rects[index].y, RENDER_Z);
-				posA.x -= gameState->cameraPos.x;
-				posA.y -= gameState->cameraPos.y;
-
-				float3 posB = make_float3(rects[index + 1].x, rects[index + 1].y, RENDER_Z);
-				posB.x -= gameState->cameraPos.x;
-				posB.y -= gameState->cameraPos.y;
-				pushLine(renderer, posA, posB, make_float4(1, 1, 1, 1));
-			}
-
-			//NOTE: See if entities are selected 
-			for(int i = 0; i < gameState->entityCount; ++i) {
-				Entity *e = gameState->entities + i;
-
-				if(e->flags & ENTITY_CAN_WALK) {
-
-					float2 renderP = getRenderWorldP(e->pos).xy;
-
-					if(in_rect2f_bounds(make_rect2f_min_max(a.x, a.y, b.x, b.y), renderP)) {
-						assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
-						if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
-							SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
-							data->id = e->id;
-							data->e = e;
-							data->worldPos = e->pos;
-						}
-					}
-				}
-			}
-			
-		} else {
-			gameState->holdingSelect = false;
-		}
-	}
+	updateAndDrawEntitySelection(gameState, renderer, clicked, worldMousePLvl0, worldMouseP);
 
 	drawAllSectionHovers(gameState, renderer, dt, worldMouseP);
 

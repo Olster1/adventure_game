@@ -41,7 +41,8 @@ struct Particler {
     PariclePattern pattern;
     bool warmStart;
 
-    Rect3f spawnBox;
+    float3 spawnBox;
+    float3 worldP;
     TextureHandle *imageHandle;
     float4 uvCoords;
 
@@ -61,7 +62,11 @@ void resetParticlerLife(Particler *p) {
     p->lifeAt = 0;
 }
 
-Particler initParticler(float lifespan, float spawnRate, Rect3f spawnBox, TextureHandle *imageHandle, float4 uvCoords, ParticlerId id) {
+void updateParticlerWorldPosition(Particler *p, float3 worldP) {
+    p->worldP = worldP;
+}
+
+Particler initParticler(float lifespan, float spawnRate, float3 pos, float3 spawnBox, TextureHandle *imageHandle, float4 uvCoords, ParticlerId id) {
     Particler p = {};
 
     p.count = 0;
@@ -72,6 +77,7 @@ Particler initParticler(float lifespan, float spawnRate, Rect3f spawnBox, Textur
     p.tAt = 0;
     p.lifeAt = 0;
     p.indexAt = 0;
+    p.worldP = pos;
     p.spawnBox = spawnBox;
     p.imageHandle = imageHandle;
     p.uvCoords = uvCoords;
@@ -132,9 +138,10 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
 
             assert(p);
 
-            float x = lerp(particler->spawnBox.minX, particler->spawnBox.maxX, make_lerpTValue((float)rand() / RAND_MAX));
-            float y = lerp(particler->spawnBox.minY, particler->spawnBox.maxY, make_lerpTValue((float)rand() / RAND_MAX));
-            float z = lerp(particler->spawnBox.minZ, particler->spawnBox.maxZ, make_lerpTValue((float)rand() / RAND_MAX));
+            Rect3f spawnBox = make_rect3f_center_dim(particler->worldP, particler->spawnBox);
+            float x = lerp(spawnBox.minX, spawnBox.maxX, make_lerpTValue((float)rand() / RAND_MAX));
+            float y = lerp(spawnBox.minY, spawnBox.maxY, make_lerpTValue((float)rand() / RAND_MAX));
+            float z = lerp(spawnBox.minZ, spawnBox.maxZ, make_lerpTValue((float)rand() / RAND_MAX));
             p->T.pos = make_float3(x, y, z);
             p->T.scale = make_float3(random_between_float(pattern.randomSize.x, pattern.randomSize.y), random_between_float(pattern.randomSize.x, pattern.randomSize.y), 0.1f);
 
@@ -224,12 +231,12 @@ struct ParticlerParent {
     Particler particlers[1024];
 };
 
-Particler *getNewParticleSystem(ParticlerParent *parent, float3 startP, TextureHandle *imageHandle, float2 spawnArea, float4 uvCoords, float spawnRatePerSecond) {
+Particler *getNewParticleSystem(ParticlerParent *parent, float3 startP, TextureHandle *imageHandle, float3 spawnArea, float4 uvCoords, float spawnRatePerSecond) {
     Particler *p = 0;
     assert(parent->particlerCount < arrayCount(parent->particlers));
     if(parent->particlerCount < arrayCount(parent->particlers)) {
         float lifespan = 0.1f; //NOTE: Seconds for the _particler_ not particles. Particle lifespan is set by MAX_PARTICLE_LIFESPAN
-        parent->particlers[parent->particlerCount++] = initParticler(lifespan, spawnRatePerSecond, make_rect3f_center_dim(startP, make_float3(spawnArea.x, spawnArea.y, 1)), imageHandle, uvCoords, makeParticlerId(global_particleId++));
+        parent->particlers[parent->particlerCount++] = initParticler(lifespan, spawnRatePerSecond, startP, spawnArea, imageHandle, uvCoords, makeParticlerId(global_particleId++));
         p = &parent->particlers[parent->particlerCount - 1];
         
     }

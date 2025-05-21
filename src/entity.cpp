@@ -157,7 +157,7 @@ int getNewOrReuseParticler(Entity *e, EntityFlag type, ParticlerParent *parent) 
     return index;
 }
 
-void entityCatchFire(GameState *state, Entity *e, float2 spawnArea) {
+void entityCatchFire(GameState *state, Entity *e, float3 spawnArea) {
     if(e->fireTimer) {
         int pEntIndex = getNewOrReuseParticler(e, ENTITY_ON_FIRE, &state->particlers);
         if(pEntIndex >= 0) {
@@ -193,7 +193,7 @@ void entityRenderSelected(GameState *state, Entity *e) {
         if(pEntIndex >= 0) {
             float3 particleP = e->pos;
 
-            float2 spawnMargin = make_float2(0.6f, 0.6f);
+            float3 spawnMargin = make_float3(0.6f, 0.6f, 1);
             Particler *p = getNewParticleSystem(&state->particlers, particleP, (TextureHandle *)global_white_texture, spawnMargin, make_float4(0, 0, 1, 1), 3);
             if(p) {
                 addColorToParticler(p, make_float4(1.0, 0.843, 0.0, 1.0));
@@ -978,6 +978,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         if(p) {
             //NOTE: Reset the lifespan so it keeps going
             resetParticlerLife(p);
+            updateParticlerWorldPosition(p, e->pos);
         }
     }
     
@@ -1000,6 +1001,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         if(p) {
             //NOTE: Reset the lifespan so it keeps going
             resetParticlerLife(p);
+            updateParticlerWorldPosition(p, e->pos);
         }
 
         float burnTime = 0;
@@ -1176,42 +1178,5 @@ void pushAllEntityLights(GameState *gameState, float dt) {
             pushGameLight(gameState, worldPos, make_float4(1, 0.5f, 0, 1), value);
 		}
 	}
-}
-
-bool updateEntitySelection(Renderer *renderer, GameState *gameState, float2 mouseWorldP) {
-    bool endMove = false;
-    //NOTE: Update entity selection
-    bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
-    bool released = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].releasedCount > 0;
-
-    int entityClickCount = 0;
-    for(int i = 0; i < gameState->entityCount; ++i) {
-		Entity *e = &gameState->entities[i];
-
-		if(e->flags & ENTITY_ACTIVE) {
-          
-            float3 entityWorldPos = getWorldPosition(e);
-            bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(entityWorldPos.xy, scale_float2(0.5f, e->scale.xy)), mouseWorldP);
-
-            if(clicked) {
-                if(inSelectionBounds) {
-                    assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
-                    if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
-                        SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
-                        data->id = e->id;
-                        data->e = e;
-                        data->worldPos = e->pos;
-                    }
-                    entityClickCount++;
-                }
-            } 
-		}
-	}
-
-    if(clicked && entityClickCount == 0 && gameState->selectedEntityCount > 0) {
-        endMove = true;
-    }
-
-    return endMove;
 }
 
