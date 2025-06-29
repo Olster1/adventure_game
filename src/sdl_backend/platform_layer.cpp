@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <SDL2/SDL.h>
-#include <SDL2_image/SDL_image.h>
+// #include <SDL2_image/SDL_image.h>
 #include <cstdio>
 #include <map>
 #include <cstdio>
@@ -61,16 +61,6 @@ static void platform_free_memory(void *data)
 static u64 platform_get_memory_page_size() {
     long pagesize = sysconf(_SC_PAGE_SIZE);
     return pagesize;
-}
-
-static bool win32_isValidText(u16 wparam) {
-    bool result = true;
-    if(wparam < 9 || (14 <= wparam && wparam <= 27)) {
-        
-        result = false;
-    }
-
-     return result;
 }
 
 static char *platform_openFileDialog() {
