@@ -15,6 +15,7 @@
 !/res/img/fantasy_sprites
 !/res/img/temp_images
 !/res/img/environment_splats
+.DS_Store
 
 
 #/SDL2/*
