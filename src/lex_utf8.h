@@ -23,6 +23,11 @@ bool lexMatchString(char *A, char *B) {
         res = (*A++ == *B++);
         if(!res) break;
     } 
+
+    if((!A[0] && B[0]) || (A[0] && !B[0])) {
+        res = false;
+    }
+
     return res;
 }
 
@@ -680,6 +685,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
             at++;
         } break;
         case '\0': {
+            tokenizer->parsing = false;
             token = lexInitToken(TOKEN_NULL_TERMINATOR, at, 1, *lineNumber);
             at++;
         } break;

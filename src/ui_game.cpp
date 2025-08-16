@@ -62,27 +62,25 @@ float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos
 
 void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution) {
     DEBUG_TIME_BLOCK();
-	pushShader(renderer, &pixelArtShader);
+	Rect2f bounds = getTextBounds(renderer, &gameState->pixelFont, text, 0, 0, 0.1); 
     float ar = gameState->bannerTexture.aspectRatio_h_over_w;
     float scalef = 25;
     float2 scale = make_float2(scalef, ar*scalef);
-
-    Rect2f bounds = getTextBounds(renderer, &gameState->pixelFont, text, 0, 0, 0.1); 
     float2 bScale = get_scale_rect2f(bounds);
 
     scale.x = math3d_maxfloat(1.1f*bScale.x, scale.x);
     scale.y = math3d_maxfloat(bScale.y, scale.y);
-
-    float2 pos = make_float2(0.5f*scale.x, 0.5f*scale.y);
-
-    pos = getUiPosition(percentOffset, anchorPoint, pos, resolution);
     
-    float sOffset = 0;
-    pushTexture(renderer, gameState->shadowUiTexture.handle, make_float3(pos.x + sOffset, pos.y - sOffset, UI_Z_POS), scale, make_float4(1, 1, 1, 0.3), gameState->shadowUiTexture.uvCoords);
-    pushTexture(renderer, gameState->bannerTexture.handle, make_float3(pos.x, pos.y, UI_Z_POS), scale, make_float4(1, 1, 1, 1), gameState->bannerTexture.uvCoords);
+    float2 pos = make_float2(0.5f*scale.x, 0.5f*scale.y);
+    float fontSize = 0.1;
 
+    float2 pos1 = getUiPosition(percentOffset, anchorPoint, pos, resolution);
+    pushShader(renderer, &pixelArtShader);
+    pushTexture(renderer, gameState->shadowUiTexture.handle, make_float3(pos1.x, pos1.y, UI_Z_POS), scale, make_float4(1, 1, 1, 0.3), gameState->shadowUiTexture.uvCoords);
+    pushTexture(renderer, gameState->bannerTexture.handle, make_float3(pos1.x, pos1.y, UI_Z_POS), scale, make_float4(1, 1, 1, 1), gameState->bannerTexture.uvCoords);
+    pos = getUiPosition(make_float2(0, 0), anchorPoint, pos, resolution);
     pushShader(renderer, &sdfFontShader);
-    draw_text(renderer, &gameState->pixelFont, text, pos.x - bScale.x*0.5f, pos.y + bScale.y*0.5f, 0.1, make_float4(0, 0, 0, 1)); 
+    draw_text(renderer, &gameState->pixelFont, text, pos1.x - 0.5f*bScale.x, pos1.y + 0.5f*bScale.y, fontSize, make_float4(0, 0, 0, 1)); 
 }
 
 void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float windowWidth, float windowHeight){

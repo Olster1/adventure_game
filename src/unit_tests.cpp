@@ -13,6 +13,17 @@ void DEBUG_runUnitTests(GameState *state) {
     assert(0b1 == 1);
     assert(0b11 == 3);
 
+    {   
+        char *str = "/";
+        EasyTokenizer tokenizer = lexBeginParsing(str, EASY_LEX_OPTION_NONE);
+
+        while(tokenizer.parsing) {
+            EasyToken token = lexGetNextToken(&tokenizer);
+
+            assert(token.size == 1);
+        }
+    }
+
     //NOTE: Make sure array is power of two
     assert((arrayCount(gui->undoRedoBlocks) & (arrayCount(gui->undoRedoBlocks) - 1)) == 0);
 
