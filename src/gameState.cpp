@@ -119,10 +119,6 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		initBuildingTextures(gameState);
 		loadImageStripFromAtlas(&gameState->goblinTowerAnimation, backendRenderer, &gameState->textureAtlas, textureAtlas_getItem(&gameState->textureAtlas, "goblinTower.png"), 256);
 
-		DefaultEntityAnimations knightAnimations;
-		DefaultEntityAnimations peasantAnimations;
-		DefaultEntityAnimations archerAnimations;
-
 		gameState->selectedColor = make_float4(1, 1, 1, 1);
 		createAOOffsets(gameState);
 		gameState->gameMode = PLAY_MODE;
@@ -160,10 +156,10 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadImageStripXY(&gameState->knightAnimations.attackUp, backendRenderer, "../src/images/factions/knight.png", 192, 192, 12, 6, 0);
 
 		loadImageStripXY(&gameState->peasantAnimations.idle, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 0, 0);
-		loadImageStripXY(&gameState->peasantAnimations.run, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 1, 0);
-		loadImageStripXY(&gameState->peasantAnimations.work, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 2, 0);
-		loadImageStripXY(&gameState->peasantAnimations.attackSide, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 3, 0);
-		loadImageStripXY(&gameState->peasantAnimations.scared, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 4, 0);
+		loadImageStripXY(&gameState->peasantAnimations.run, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 0, 1);
+		loadImageStripXY(&gameState->peasantAnimations.work, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 0, 2);
+		loadImageStripXY(&gameState->peasantAnimations.attackSide, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 0, 3);
+		loadImageStripXY(&gameState->peasantAnimations.scared, backendRenderer, "../src/images/factions/peasant.png", 192, 192, 6, 0, 4);
 
 		loadImageStripXY(&gameState->archerAnimations.idle, backendRenderer, "../src/images/factions/archer.png", 192, 192, 6, 0, 0);
 		loadImageStripXY(&gameState->archerAnimations.run, backendRenderer, "../src/images/factions/archer.png", 192, 192, 6, 1, 0);

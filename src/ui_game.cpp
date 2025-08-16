@@ -67,7 +67,6 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     float scalef = 25;
     float2 scale = make_float2(scalef, ar*scalef);
 
-
     Rect2f bounds = getTextBounds(renderer, &gameState->pixelFont, text, 0, 0, 0.1); 
     float2 bScale = get_scale_rect2f(bounds);
 

@@ -75,6 +75,17 @@ float16 getModelToViewTransform(Entity *e_, float3 cameraPos) {
 
 }
 
+Tile *getTileFromWorldP(GameState *gameState, float3 worldP) {
+    Tile *tile = 0;
+    float2 chunkP = getChunkPosForWorldP(worldP.xy);
+    Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, false);
+    if(c) {
+        float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
+        tile = c->getTile(localP.x, localP.y, localP.z);
+    }
+    return tile;
+}
+
 void markBoardAsEntityOccupied(GameState *gameState, float3 worldP) {
     float2 chunkP = getChunkPosForWorldP(worldP.xy);
     Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
@@ -927,6 +938,23 @@ float3 getOriginSelection(GameState *gameState) {
     return p;
 }
 
+void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, float3 offset) {
+    float3 p = convertRealWorldToBlockCoords(e->pos);
+    if(clicked && mouseP.x == (p.x + offset.x) && mouseP.y == (p.y + offset.y) && mouseP.z == (p.z + offset.z)) {
+        float3 checkP = p;
+        checkP.x += offset.x;
+        checkP.y += offset.y;
+        checkP.z += offset.z;
+        Tile *tile = getTileFromWorldP(gameState, checkP);
+
+        if(tile->flags & TILE_FLAG_TREE) {
+            easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+            easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide,0.08f);
+            easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
+        }
+    }
+}
+
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
     DEBUG_TIME_BLOCK();
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
@@ -979,6 +1007,19 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             //NOTE: Reset the lifespan so it keeps going
             resetParticlerLife(p);
             updateParticlerWorldPosition(p, e->pos);
+        }
+
+
+        if(e->type == ENTITY_PEASANT) {
+            
+            float3 mouseP = convertRealWorldToBlockCoords(mouseWorldP);
+            bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+
+            checkCutTree(gameState, clicked, mouseP, e, make_float3(0, 1, 0));
+            checkCutTree(gameState, clicked, mouseP, e, make_float3(0, -1, 0));
+            checkCutTree(gameState, clicked, mouseP, e, make_float3(1, 0, 0));
+            checkCutTree(gameState, clicked, mouseP, e, make_float3(-1, 0, 0));
+            
         }
     }
     

@@ -220,7 +220,6 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 					//NOTE: This is the drag selection 
 					float3 renderP = getRenderWorldP(e->pos);
 					
-
 					if(does_rect2f_overlap(make_rect2f_min_max(a.x, a.y, b.x, b.y), make_rect2f_center_dim(renderP.xy, make_float2(1, 1)))) {
 						assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
 						if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {

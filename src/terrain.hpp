@@ -33,7 +33,6 @@ enum TileType {
     TILE_TYPE_ROCK,
     TILE_TYPE_SOLID,
     TILE_TYPE_WATER_ROCK,
-
 };
 
 struct TileMapCoords {
