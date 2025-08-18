@@ -71,6 +71,11 @@ struct SelectedEntityData {
 	Entity *e;
 };
 
+struct UiOnScreenItem {
+	float2 startP;
+	float tAt;
+};
+
 typedef struct {
 	bool initialized;
 
@@ -128,6 +133,9 @@ typedef struct {
 	Texture treeTexture;
 	Texture stumpTexture;
 	Texture logTexture;
+
+	int uiOnScreenItemCount;
+	UiOnScreenItem uiOnScreenItems[8];
 	
 	TextureAtlas textureAtlas;
 

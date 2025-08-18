@@ -62,7 +62,7 @@ float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos
 
 void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution) {
     DEBUG_TIME_BLOCK();
-	Rect2f bounds = getTextBounds(renderer, &gameState->pixelFont, text, 0, 0, 0.1); 
+	Rect2f bounds = getTextBounds(renderer, &gameState->font, text, 0, 0, 0.1); 
     float ar = gameState->bannerTexture.aspectRatio_h_over_w;
     float scalef = 25;
     float2 scale = make_float2(scalef, ar*scalef);
@@ -80,8 +80,48 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     pushTexture(renderer, gameState->bannerTexture.handle, make_float3(pos1.x, pos1.y, UI_Z_POS), scale, make_float4(1, 1, 1, 1), gameState->bannerTexture.uvCoords);
     pos = getUiPosition(make_float2(0, 0), anchorPoint, pos, resolution);
     pushShader(renderer, &sdfFontShader);
-    draw_text(renderer, &gameState->pixelFont, text, pos1.x - 0.5f*bScale.x, pos1.y + 0.5f*bScale.y, fontSize, make_float4(0, 0, 0, 1)); 
+    draw_text(renderer, &gameState->font, text, pos1.x - 0.5f*bScale.x, pos1.y + 0.5f*bScale.y, fontSize, make_float4(0, 0, 0, 1)); 
 }
+
+void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, float dt) {
+        float fontSize = 0.1;
+        
+        Texture *b = &gameState->logTexture;
+        float2 s = make_float2(10, 10);
+        float2 s1 = make_float2(5, 5);
+        float2 p = getUiPosition(make_float2(0, 1), UI_ANCHOR_CENTER_LEFT, make_float2(0.5f*s.x, 0), resolution);
+
+        pushShader(renderer, &pixelArtShader);
+        pushTexture(renderer, gameState->bannerTexture.handle, make_float3(p.x, p.y, UI_Z_POS), s, make_float4(1, 1, 1, 1), gameState->bannerTexture.uvCoords);
+        pushTexture(renderer, b->handle, make_float3(p.x, p.y, UI_Z_POS), s1, make_float4(1, 1, 1, 1), b->uvCoords);
+
+         for(int i = 0; i < gameState->uiOnScreenItemCount; ) {
+            UiOnScreenItem *ui = gameState->uiOnScreenItems + i;
+
+            ui->tAt += 0.8f*dt;
+
+            bool end = false;
+            if(ui->tAt >= 1) {
+                ui->tAt = 1;
+                end = true;
+            }
+
+            float2 itemP = lerp_float2(ui->startP, make_float2(p.x/resolution.x, p.y/resolution.y), ui->tAt);
+            pushTexture(renderer, b->handle, make_float3(itemP.x*resolution.x, itemP.y*resolution.y, UI_Z_POS), s1, make_float4(1, 1, 1, 1.0f - ui->tAt), b->uvCoords);
+
+            if(end) {
+                gameState->uiOnScreenItems[i] = gameState->uiOnScreenItems[--gameState->uiOnScreenItemCount];
+
+            } else {
+                i++;
+            }
+        }
+
+        pushShader(renderer, &sdfFontShader);
+        char *str = easy_createString_printf(&globalPerFrameArena, "%d", gameState->gamePlay.treeCount);
+        draw_text(renderer, &gameState->font, str, p.x, p.y, fontSize, make_float4(0, 0, 0, 1)); 
+
+    }
 
 void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float windowWidth, float windowHeight){
 	DEBUG_TIME_BLOCK();
@@ -109,6 +149,8 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
     //     str = easy_createString_printf(&globalPerFrameArena, "Time Left: %d:%d", min, sec);
     //     drawScrollText(str, gameState, renderer, make_float2(1, 1), UI_ANCHOR_TOP_LEFT, resolution);
     // }
+
+    drawResources(gameState, renderer, resolution, dt);
 
     //NOTE: Draw the player logo
     {

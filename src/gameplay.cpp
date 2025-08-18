@@ -20,6 +20,8 @@ struct GamePlay {
     int maxTurnCount;
     GameTurnPhase phase;
     bool boardInited;
+
+    int treeCount;
 };
 
 GamePlay init_gameplay() {
@@ -33,6 +35,7 @@ GamePlay init_gameplay() {
     gamePlay.maxTurnTime = 60*5; //NOTE: 5 mintues
     gamePlay.maxTurnCount = 10;
     gamePlay.turnCount = 0;
+    gamePlay.treeCount = 0;
 
     return gamePlay;
 }

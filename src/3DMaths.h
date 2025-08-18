@@ -73,6 +73,17 @@ static float lerp(float a, float b, LerpTValue t) {
 	return (b - a)*t.value + a;
 }
 
+static float inverse_lerp(float a, float b, LerpTValue t) {
+	float result = 0;
+	float dividend = (b - a);
+
+	if(dividend != 0) {
+		result = (t.value - a) / (dividend);
+	}
+	
+	return result;
+}
+
 static float math3d_maxfloat(float a, float b) {
 	if(a > b) {
 		return a;

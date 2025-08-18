@@ -972,6 +972,12 @@ void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, 
     }
 }
 
+float2 worldCameraToScreen01(GameState *state, float2 p) {
+    p.x = inverse_lerp(-0.5f*state->planeSizeX*state->zoomLevel, 0.5f*state->planeSizeX*state->zoomLevel, make_lerpTValue(p.x));
+    p.y = inverse_lerp(-0.5f*state->planeSizeY*state->zoomLevel, 0.5f*state->planeSizeY*state->zoomLevel, make_lerpTValue(p.y));
+    return p;
+}
+
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
     DEBUG_TIME_BLOCK();
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
@@ -1049,6 +1055,23 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
             tile->flags &= ~TILE_FLAG_TREE;
             tile->flags |= TILE_FLAG_TREE_CUT;
+
+            gameState->gamePlay.treeCount += 3;
+
+            if(gameState->uiOnScreenItemCount < arrayCount(gameState->uiOnScreenItems)) {
+                UiOnScreenItem *ui = gameState->uiOnScreenItems + gameState->uiOnScreenItemCount++;
+                ui->startP = e->peasantTreeCut.xy;
+
+                ui->startP.x -= gameState->cameraPos.x;
+                ui->startP.y -= gameState->cameraPos.y;
+
+                ui->startP = worldCameraToScreen01(gameState, ui->startP);
+                ui->tAt = 0;
+
+            } else {
+                assert(false);
+            }
+	        
         }
     }
     

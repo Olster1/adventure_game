@@ -62,9 +62,9 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
     font->originalScaleFactor = scale;
     
     //NOTE(ollie): Scale the padding around the glyph proportional to the size of the glyph
-    s32 padding = (s32)(maxHeightForFontInPixels / 3);
+    s32 padding = (s32)(maxHeightForFontInPixels / 1.5f);
     //NOTE(ollie): The distance from the glyph center that determines the edge (i.e. all the 'in' pixels)
-    u8 onedge_value = (u8)(0.8f*255); 
+    u8 onedge_value = (u8)(0.5f*255); 
     //NOTE(ollie): The rate at which the distance from the center should increase
     float pixel_dist_scale = (float)onedge_value/(float)padding;
 

@@ -270,13 +270,13 @@ static char *sdfFragShader =
 "uniform sampler2D diffuse;"
 "out vec4 colorOut;"
 "void main() {"
-    "float smoothing = 0.2f;"
-    "float boldness = 0.3f;"
+    "float smoothing = 0.01f;"
+    "float boldness = 0.01f;"
     "vec4 sample = texture(diffuse, uv_frag); "
 
     "float distance = sample.a;"
 
-    "float alpha = smoothstep(1.0f - boldness, (1.0f - boldness) + smoothing, distance);"
+    "float alpha = smoothstep(0.5 - boldness, 0.5 + smoothing, distance);"
 
     "vec4 color = alpha * color_frag;"
 
