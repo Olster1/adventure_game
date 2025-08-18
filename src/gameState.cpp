@@ -107,6 +107,9 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->cloudText[1] = textureAtlas_getItem(&gameState->textureAtlas, "cloud2.png");
 		gameState->cloudText[2] = textureAtlas_getItem(&gameState->textureAtlas, "cloud3.png");
 		gameState->treeTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "tree.png");
+		gameState->stumpTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "stump.png");
+		gameState->logTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "log.png");
+		
 		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
 
 		gameState->arrows[0] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowRight.png");

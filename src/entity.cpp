@@ -464,31 +464,47 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
 
         float3 sortP = worldP;
 
-        float alpha = 1.0f;
+        float alpha = 1.0f; 
 
-        float3 posToCheck = worldP;
-        posToCheck.y += 1; //NOTE For behind the tree
-        float3 tileP = getChunkLocalPos(posToCheck.x, posToCheck.y, posToCheck.z);
+        bool isStump = false;
 
-        Tile *tile = 0;
+        Texture *treeTexture = &gameState->treeTexture;
+        {
+            //NOTE: See if it's cut down
+            float3 tileP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
+            Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
 
-        if((posToCheck.y / CHUNK_DIM) != c->y) {
-            //NOTE: See if it is on a different chunk
-            float2 chunkP = getChunkPosForWorldP(posToCheck.xy);
-            Chunk *chunkToCheck = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, false, false);
-            if(chunkToCheck) {
-                tile = chunkToCheck->getTile(tileP.x, tileP.y, tileP.z);
+            if(tile && (tile->flags & TILE_FLAG_TREE_CUT)) {
+                treeTexture = &gameState->stumpTexture;
+                isStump = true;
+            }
+        }
+
+        if(!isStump) {
+            float3 posToCheck = worldP;
+            posToCheck.y += 1; //NOTE For behind the tree
+            float3 tileP = getChunkLocalPos(posToCheck.x, posToCheck.y, posToCheck.z);
+
+            Tile *tile = 0;
+
+            if((posToCheck.y / CHUNK_DIM) != c->y) {
+                //NOTE: See if it is on a different chunk
+                float2 chunkP = getChunkPosForWorldP(posToCheck.xy);
+                Chunk *chunkToCheck = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, false, false);
+                if(chunkToCheck) {
+                    tile = chunkToCheck->getTile(tileP.x, tileP.y, tileP.z);
+                }
+                
+            } else {
+                tile = c->getTile(tileP.x, tileP.y, tileP.z);
             }
             
-        } else {
-            tile = c->getTile(tileP.x, tileP.y, tileP.z);
-        }
-        
-        if(tile && (tile->entityOccupation > 0)) {
-            alpha = 0.5f;
+            if(tile && (tile->entityOccupation > 0)) {
+                alpha = 0.5f;
+            }
         }
 
-        pushEntityTexture(renderer, gameState->treeTexture.handle, renderP, make_float2(3, 3), make_float4(1, 1, 1, alpha), gameState->treeTexture.uvCoords, getSortIndex(sortP, RENDER_LAYER_4));
+        pushEntityTexture(renderer, treeTexture->handle, renderP, make_float2(3, 3), make_float4(1, 1, 1, alpha), treeTexture->uvCoords, getSortIndex(sortP, RENDER_LAYER_4));
     }
 
      //NOTE: Render stones and bushes
@@ -948,6 +964,7 @@ void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, 
         Tile *tile = getTileFromWorldP(gameState, checkP);
 
         if(tile->flags & TILE_FLAG_TREE) {
+            e->peasantTreeCut = checkP;
             easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
             easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide,0.08f);
             easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
@@ -1010,7 +1027,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         }
 
 
-        if(e->type == ENTITY_PEASANT) {
+        if(e->type == ENTITY_PEASANT && !easyAnimation_getCurrentAnimation(&e->animationController, &gameState->peasantAnimations.attackSide)) {
             
             float3 mouseP = convertRealWorldToBlockCoords(mouseWorldP);
             bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
@@ -1020,6 +1037,18 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             checkCutTree(gameState, clicked, mouseP, e, make_float3(1, 0, 0));
             checkCutTree(gameState, clicked, mouseP, e, make_float3(-1, 0, 0));
             
+        }
+    }
+
+    if(e->type == ENTITY_PEASANT) {
+        if(e->animationController.lastAnimationOn == &gameState->peasantAnimations.attackSide && e->animationController.finishedAnimationLastUpdate) {
+            //NOTE: Finished cutting tree so chop it down
+            Tile *tile = getTileFromWorldP(gameState, e->peasantTreeCut);
+
+            assert(tile->flags & TILE_FLAG_TREE);
+
+            tile->flags &= ~TILE_FLAG_TREE;
+            tile->flags |= TILE_FLAG_TREE_CUT;
         }
     }
     

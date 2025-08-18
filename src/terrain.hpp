@@ -47,7 +47,8 @@ enum TileFlags {
     TILE_FLAG_FRONT_GRASS = 1 << 3, 
     TILE_FLAG_FRONT_BEACH = 1 << 4, 
     TILE_FLAG_TREE = 1 << 5,  //NOTE: Wether this tile has a tree
-    TILE_FLAG_WALKABLE = 1 << 6,  //NOTE: Wether we can walk on this tile
+    TILE_FLAG_TREE_CUT = 1 << 6,  //NOTE: Wether this tile has a cut tree
+    TILE_FLAG_WALKABLE = 1 << 7,  //NOTE: Wether we can walk on this tile
 };
 
 struct Tile {

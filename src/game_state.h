@@ -126,6 +126,9 @@ typedef struct {
 	Texture selectImage;
 	AtlasAsset *cloudText[3];
 	Texture treeTexture;
+	Texture stumpTexture;
+	Texture logTexture;
+	
 	TextureAtlas textureAtlas;
 
 	EntityMove *freeEntityMoves;
