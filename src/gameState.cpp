@@ -177,9 +177,12 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadImageStripXY(&gameState->tntAnimations.idle, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 6, 0, 0);
 		loadImageStripXY(&gameState->tntAnimations.run, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 6, 1, 0);
 		loadImageStripXY(&gameState->tntAnimations.attackSide, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 7, 2, 0);
-		
-	// DefaultEntityAnimations barrellAnimations;
 
+		initAudioSpec(&gameState->audioSpec, 44100);
+		initAudio(&gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.woodChopSounds[0], "../sounds/woodChop1.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.woodChopSounds[1], "../sounds/woodChop2.ogg", &gameState->audioSpec);
+		
 		/////////////
 		{
 			int tileCount = 0;

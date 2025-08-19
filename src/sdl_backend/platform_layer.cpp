@@ -360,6 +360,7 @@ static bool Platform_LoadEntireFile_utf8(char *filename_utf8, void **data, size_
 #include "../3DMaths.h"
 #include "../render.c"
 #include "../render_backend/opengl_render.cpp"
+#include "./sdl_sound.cpp"
 #include "../main.cpp"
 
 int GetDpiForWindow() {

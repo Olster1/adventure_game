@@ -76,10 +76,17 @@ struct UiOnScreenItem {
 	float tAt;
 };
 
+struct SoundAssets {
+	GameSoundAsset woodChopSounds[2];
+};
+
 typedef struct {
 	bool initialized;
 
 	GameMode gameMode;
+	PlatformAudioSpec audioSpec;
+
+	SoundAssets soundAssets;
 
 	float2 startDragPForSelect;
 	bool holdingSelect;

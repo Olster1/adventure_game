@@ -21,10 +21,19 @@ typedef struct {
     char *name;
 }  Animation;
 
+struct EasyAnimationAction {
+    int actionId; //NOTE: Callback id to perform an action when this animation finishes
+    int actionFrame; //NOTE: The frame to run the action
+    bool hasRunActionForLoop; //NOTE: Wether the action has been called for this loop. Get's reset at the end of the loop
+};
+
 typedef struct EasyAnimation_ListItem EasyAnimation_ListItem;
 typedef struct EasyAnimation_ListItem {
     float timerAt;
     float timerPeriod;
+
+    int actionCount;
+    EasyAnimationAction actions[4];
 
     int frameIndex;
     
@@ -35,7 +44,7 @@ typedef struct EasyAnimation_ListItem {
 } EasyAnimation_ListItem;
 
 typedef struct {
-    EasyAnimation_ListItem parent;
+    EasyAnimation_ListItem parent; //NOTE: This is a dummy sentinel
 
     Animation *lastAnimationOn;
     bool finishedAnimationLastUpdate; //goes to true if it finished an animation in the last update so you can change it if you need to
@@ -69,6 +78,11 @@ static char *easyAnimation2d_copyString(char *str) {
 static bool easyAnimation_isControllerValid(EasyAnimation_Controller *controller) {
     return (controller->parent.next != 0);
 }
+
+static EasyAnimation_ListItem *easyAnimation_getCurrentAnimationItem(EasyAnimation_Controller *controller) {
+    return controller->parent.next;
+}
+
 
 static void easyAnimation_initController(EasyAnimation_Controller *controller) {
     controller->parent.next = controller->parent.prev = &controller->parent;
@@ -141,6 +155,8 @@ static EasyAnimation_ListItem *easyAnimation_addAnimationToController(EasyAnimat
     
     Item->frameIndex = 0;
     
+    Item->actionCount = 0;
+    
     Item->animation = animation;
         
     EasyAnimation_ListItem *AnimationListSentintel = &controller->parent;
@@ -184,6 +200,19 @@ static void easyAnimation_randomStart(EasyAnimation_ListItem *item) {
     }
 }
 
+static void easyAnimation_addActionForFrame(EasyAnimation_ListItem *item, int actionId, int frame) {
+     if(item) {
+        if(item->actionCount < arrayCount(item->actions)) {
+            EasyAnimationAction *action = item->actions + item->actionCount++;
+            action->actionFrame = frame;
+            action->hasRunActionForLoop = false;
+            action->actionId = actionId;
+        } else {
+            assert(false);
+        }
+    }
+}
+
 static char *easyAnimation_updateAnimation(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, float dt) {
     EasyAnimation_ListItem *AnimationListSentintel = &controller->parent;
 
@@ -221,6 +250,9 @@ static char *easyAnimation_updateAnimation(EasyAnimation_Controller *controller,
 
                 controller->currentLoopCount = 0;
             } else {
+                for(int i = 0; i < Item->actionCount; ++i) {
+                    Item->actions[i].hasRunActionForLoop = false;
+                }
                 controller->currentLoopCount++;
             }
 

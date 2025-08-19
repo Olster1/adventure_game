@@ -1,0 +1,4 @@
+enum AnimationActionEnums {
+    ANIMATION_ACTION_CUT_TREE,
+    ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND,
+};

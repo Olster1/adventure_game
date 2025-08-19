@@ -954,6 +954,12 @@ float3 getOriginSelection(GameState *gameState) {
     return p;
 }
 
+void playCutWoodSound(GameState *gameState) {
+    int soundIndex = random_between_int(0, arrayCount(gameState->soundAssets.woodChopSounds));
+    assert(soundIndex < arrayCount(gameState->soundAssets.woodChopSounds));
+    playSound(&gameState->soundAssets.woodChopSounds[soundIndex]);
+}
+
 void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, float3 offset) {
     float3 p = convertRealWorldToBlockCoords(e->pos);
     if(clicked && mouseP.x == (p.x + offset.x) && mouseP.y == (p.y + offset.y) && mouseP.z == (p.z + offset.z)) {
@@ -966,7 +972,14 @@ void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, 
         if(tile->flags & TILE_FLAG_TREE) {
             e->peasantTreeCut = checkP;
             easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-            easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide,0.08f);
+            
+            EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+            easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item0->animation->frameCount / 2);
+            EasyAnimation_ListItem *item1 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+            easyAnimation_addActionForFrame(item1, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item1->animation->frameCount / 2);
+            EasyAnimation_ListItem *item2 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+            easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item2->animation->frameCount / 2);
+            easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_CUT_TREE, (item2->animation->frameCount / 2) + 1);
             easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
         }
     }
@@ -976,6 +989,49 @@ float2 worldCameraToScreen01(GameState *state, float2 p) {
     p.x = inverse_lerp(-0.5f*state->planeSizeX*state->zoomLevel, 0.5f*state->planeSizeX*state->zoomLevel, make_lerpTValue(p.x));
     p.y = inverse_lerp(-0.5f*state->planeSizeY*state->zoomLevel, 0.5f*state->planeSizeY*state->zoomLevel, make_lerpTValue(p.y));
     return p;
+}
+
+void updateAnimationActions(GameState *gameState, Entity *e) {
+     EasyAnimation_ListItem *listItem = easyAnimation_getCurrentAnimationItem(&e->animationController);
+    if(listItem) {
+        //NOTE: Process any actions that the animation controller has
+        for(int i = 0; i < listItem->actionCount; ++i) {
+            EasyAnimationAction *action = listItem->actions + i;
+
+            if(!action->hasRunActionForLoop && listItem->frameIndex == action->actionFrame) {
+                action->hasRunActionForLoop = true;
+                //NOTE: See which action it was
+
+                if(action->actionId == ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND) {
+                    playCutWoodSound(gameState);
+                } else if(action->actionId == ANIMATION_ACTION_CUT_TREE) {
+                    //NOTE: Finished cutting tree so chop it down
+                    Tile *tile = getTileFromWorldP(gameState, e->peasantTreeCut);
+
+                    assert(tile->flags & TILE_FLAG_TREE);
+
+                    tile->flags &= ~TILE_FLAG_TREE;
+                    tile->flags |= TILE_FLAG_TREE_CUT;
+
+                    gameState->gamePlay.treeCount += 3;
+
+                    if(gameState->uiOnScreenItemCount < arrayCount(gameState->uiOnScreenItems)) {
+                        UiOnScreenItem *ui = gameState->uiOnScreenItems + gameState->uiOnScreenItemCount++;
+                        ui->startP = e->peasantTreeCut.xy;
+
+                        ui->startP.x -= gameState->cameraPos.x;
+                        ui->startP.y -= gameState->cameraPos.y;
+
+                        ui->startP = worldCameraToScreen01(gameState, ui->startP);
+                        ui->tAt = 0;
+
+                    } else {
+                        assert(false);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
@@ -1034,7 +1090,6 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
 
         if(e->type == ENTITY_PEASANT && !easyAnimation_getCurrentAnimation(&e->animationController, &gameState->peasantAnimations.attackSide)) {
-            
             float3 mouseP = convertRealWorldToBlockCoords(mouseWorldP);
             bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
@@ -1046,34 +1101,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         }
     }
 
-    if(e->type == ENTITY_PEASANT) {
-        if(e->animationController.lastAnimationOn == &gameState->peasantAnimations.attackSide && e->animationController.finishedAnimationLastUpdate) {
-            //NOTE: Finished cutting tree so chop it down
-            Tile *tile = getTileFromWorldP(gameState, e->peasantTreeCut);
-
-            assert(tile->flags & TILE_FLAG_TREE);
-
-            tile->flags &= ~TILE_FLAG_TREE;
-            tile->flags |= TILE_FLAG_TREE_CUT;
-
-            gameState->gamePlay.treeCount += 3;
-
-            if(gameState->uiOnScreenItemCount < arrayCount(gameState->uiOnScreenItems)) {
-                UiOnScreenItem *ui = gameState->uiOnScreenItems + gameState->uiOnScreenItemCount++;
-                ui->startP = e->peasantTreeCut.xy;
-
-                ui->startP.x -= gameState->cameraPos.x;
-                ui->startP.y -= gameState->cameraPos.y;
-
-                ui->startP = worldCameraToScreen01(gameState, ui->startP);
-                ui->tAt = 0;
-
-            } else {
-                assert(false);
-            }
-	        
-        }
-    }
+    updateAnimationActions(gameState, e);
     
     if(e->fireTimer >= 0) {
         e->fireTimer += dt;

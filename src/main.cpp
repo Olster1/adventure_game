@@ -13,6 +13,7 @@
 #include "animation.cpp"
 #include "resize_array.cpp"
 #include "particles.cpp"
+#include "animation_action_enums.h"
 #include "entity.h"
 #include "tileMap.h"
 #include "editor_gui.h"
