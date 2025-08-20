@@ -130,6 +130,7 @@ struct Entity {
     float targetRotation;
 
     float3 peasantTreeCut; //NOTE: For the location of the tree the peasant is cutting
+    int movementAction;
     
     int maxMoveDistance;
     EntityMove *moves;

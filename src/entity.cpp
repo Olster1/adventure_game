@@ -958,6 +958,26 @@ void playCutWoodSound(GameState *gameState) {
     int soundIndex = random_between_int(0, arrayCount(gameState->soundAssets.woodChopSounds));
     assert(soundIndex < arrayCount(gameState->soundAssets.woodChopSounds));
     playSound(&gameState->soundAssets.woodChopSounds[soundIndex]);
+    
+}
+
+void playFootstepSound(GameState *gameState) {
+    int soundIndex = random_between_int(0, arrayCount(gameState->soundAssets.footsteps));
+    assert(soundIndex < arrayCount(gameState->soundAssets.footsteps));
+    playSound(&gameState->soundAssets.footsteps[soundIndex])->volume = 0.3f;
+    
+}
+
+void startCuttingTree(GameState *gameState, Entity *e) {
+    easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+    easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item0->animation->frameCount / 2);
+    EasyAnimation_ListItem *item1 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+    easyAnimation_addActionForFrame(item1, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item1->animation->frameCount / 2);
+    EasyAnimation_ListItem *item2 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+    easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item2->animation->frameCount / 2);
+    easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_CUT_TREE, (item2->animation->frameCount / 2) + 1);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
 }
 
 void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, float3 offset) {
@@ -971,16 +991,7 @@ void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, 
 
         if(tile->flags & TILE_FLAG_TREE) {
             e->peasantTreeCut = checkP;
-            easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-            
-            EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
-            easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item0->animation->frameCount / 2);
-            EasyAnimation_ListItem *item1 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
-            easyAnimation_addActionForFrame(item1, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item1->animation->frameCount / 2);
-            EasyAnimation_ListItem *item2 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
-            easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item2->animation->frameCount / 2);
-            easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_CUT_TREE, (item2->animation->frameCount / 2) + 1);
-            easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
+            startCuttingTree(gameState, e);
         }
     }
 }
@@ -1004,6 +1015,8 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
 
                 if(action->actionId == ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND) {
                     playCutWoodSound(gameState);
+                } else if(action->actionId == ANIMATION_ACTION_PLAY_FOOTSTEPS) {
+                    playFootstepSound(gameState);
                 } else if(action->actionId == ANIMATION_ACTION_CUT_TREE) {
                     //NOTE: Finished cutting tree so chop it down
                     Tile *tile = getTileFromWorldP(gameState, e->peasantTreeCut);
@@ -1163,15 +1176,36 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
             float3 offset = minus_float3(gameState->selectedEntityIds[selectedEntityIndex].worldPos, getOriginSelection(gameState));
             float3 targetP = plus_float3(mouseWorldP, offset);
+            float3 targetRounded = convertRealWorldToBlockCoords(targetP);
 
-            FloodFillResult searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), convertRealWorldToBlockCoords(targetP), e->maxMoveDistance);
+            int movementAction = MOVEMENT_ACTION_NONE;
+            FloodFillResult searchResult;
+            Tile *tile = getTileFromWorldP(gameState, targetRounded);
+            if(tile) {
+                if((tile->flags & TILE_FLAG_TREE)) {
+                    float3 offsets[4] = {make_float3(1, 0, 0), make_float3(-1, 0, 0), make_float3(0, -1, 0), make_float3(0, 1, 0)};
+                    
+                    for(int i = 0; i < arrayCount(offsets) && !searchResult.foundNode; ++i) {
+                        float3 t = plus_float3(targetRounded, offsets[i]);
+                        searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), t, e->maxMoveDistance);
+                        if(searchResult.foundNode && e->type == ENTITY_PEASANT) {
+                            movementAction = MOVEMENT_ACTION_CUT_TREE;
+                        }
+                    }
+                } else {
+                    //NOTE: Just walking, no actions
+                    searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), targetRounded, e->maxMoveDistance);
+                } 
 
-            if(searchResult.foundNode) {
-                gameState->selectedMoveCount++;
-                gameState->selectedEntityIds[selectedEntityIndex].isValidPos = true;
-                gameState->selectedEntityIds[selectedEntityIndex].floodFillResult = searchResult;
-                // addMovePositionsFromBoardAstar(gameState, searchResult, e, endMove);
-            } 
+                if(searchResult.foundNode) {
+                    gameState->selectedMoveCount++;
+                    gameState->selectedEntityIds[selectedEntityIndex].isValidPos = true;
+                    gameState->selectedEntityIds[selectedEntityIndex].floodFillResult = searchResult;
+                    gameState->selectedEntityIds[selectedEntityIndex].movementAction = movementAction;
+                    gameState->selectedEntityIds[selectedEntityIndex].targetPosition = targetRounded;
+                    // addMovePositionsFromBoardAstar(gameState, searchResult, e, endMove);
+                } 
+            }
             
             // releaseMemoryMark(&mark);
         
@@ -1187,14 +1221,27 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         float speed = e->speed*dt;
         e->pos = plus_float3(scale_float3(speed, dir), e->pos);
 
-        
+        if(e->type == ENTITY_PEASANT && !easyAnimation_getCurrentAnimation(&e->animationController, &gameState->peasantAnimations.run)) {
+            easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+            EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.run, 0.08f);
+            easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_FOOTSTEPS, 0);
+        }
 
         if(float3_magnitude(minus_float3(target, e->pos)) < 0.1f) {
             e->pos = target;
             EntityMove *move = e->moves;
             //NOTE: Move to the next in the list
             e->moves = move->next;
-            
+
+            if(!e->moves) {
+                
+                if(e->movementAction == MOVEMENT_ACTION_CUT_TREE) {
+                    startCuttingTree(gameState, e);
+                } else if(e->type == ENTITY_PEASANT) {
+                    easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+                    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
+                }
+            }
 
             //NOTE: Add to the free list
             move->next = gameState->freeEntityMoves;

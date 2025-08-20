@@ -182,6 +182,11 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		initAudio(&gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.woodChopSounds[0], "../sounds/woodChop1.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.woodChopSounds[1], "../sounds/woodChop2.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.medieval1, "../sounds/Medieval2.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.footsteps[0], "../sounds/footstep_1.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.footsteps[1], "../sounds/footstep_2.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.footsteps[2], "../sounds/footstep_3.ogg", &gameState->audioSpec);
+		playSound(&gameState->soundAssets.medieval1)->volume = 0.1f;
 		
 		/////////////
 		{

@@ -68,6 +68,8 @@ struct SelectedEntityData {
 	float3 worldPos;
 	bool isValidPos; //NOTE: If this selected entity is allowed to move
 	FloodFillResult floodFillResult; //NOTE: Allocated on the perframe arena, so is rubbish across frame boundaries
+	int movementAction; 
+	float3 targetPosition;
 	Entity *e;
 };
 
@@ -78,6 +80,8 @@ struct UiOnScreenItem {
 
 struct SoundAssets {
 	GameSoundAsset woodChopSounds[2];
+	GameSoundAsset footsteps[3];
+	GameSoundAsset medieval1;
 };
 
 typedef struct {

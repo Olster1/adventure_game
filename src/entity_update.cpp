@@ -295,6 +295,13 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 		for(int i = 0; i < gameState->selectedEntityCount; ++i) {
 			SelectedEntityData *data = gameState->selectedEntityIds + i;
 			assert(data->isValidPos);
+			if(endMove) {
+				data->e->movementAction = data->movementAction;
+				if(data->e->movementAction == MOVEMENT_ACTION_CUT_TREE) {
+					data->e->peasantTreeCut = data->targetPosition;
+				}
+			}
+
 			addMovePositionsFromBoardAstar(gameState, data->floodFillResult, data->e, endMove);
 		}
 	}
