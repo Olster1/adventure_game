@@ -257,6 +257,24 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 	}
 }
 
+
+void renderAllDamageSplats(GameState *gameState) {
+    if(gameState->perFrameDamageSplatArray) {
+        for(int i = 0; i < getArrayLength(gameState->perFrameDamageSplatArray); ++i) {
+            RenderDamageSplatItem *item = gameState->perFrameDamageSplatArray + i;
+
+            float scale = 1.3f;
+            float3 p = item->p;
+            pushShader(&gameState->renderer, &pixelArtShader);
+            pushTexture(&gameState->renderer, gameState->splatTexture.handle, plus_float3(make_float3(0.4, -0.4, 0), p), make_float2(scale, scale), make_float4(0.4, 0, 0, 1), gameState->splatTexture.uvCoords);
+            
+            pushShader(&gameState->renderer, &sdfFontShader);
+            draw_text(&gameState->renderer, &gameState->font, item->string, p.x, p.y, 0.02, make_float4(1, 1, 1, 1)); 
+        }
+        gameState->perFrameDamageSplatArray = 0;
+    }
+}
+
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
 	DEBUG_TIME_BLOCK();
 
@@ -289,20 +307,24 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	}
 
 	bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
-	bool endMove = gameState->selectedEntityCount > 0 && clicked;
+	bool submitMove = gameState->selectedEntityCount > 0 && clicked;
 
 	if(gameState->selectedMoveCount == gameState->selectedEntityCount) {
 		for(int i = 0; i < gameState->selectedEntityCount; ++i) {
 			SelectedEntityData *data = gameState->selectedEntityIds + i;
 			assert(data->isValidPos);
-			if(endMove) {
+			if(submitMove) {
 				data->e->movementAction = data->movementAction;
-				if(data->e->movementAction == MOVEMENT_ACTION_CUT_TREE) {
-					data->e->peasantTreeCut = data->targetPosition;
+				if(data->e->movementAction != MOVEMENT_ACTION_NONE) {
+					data->e->movementTargetPosition = data->targetPosition;
+					Tile *t = getTileFromWorldP(gameState, data->targetPosition);
+					if(t) {
+						data->e->movementTargetEntityId = getFirstEntityIdFromTile(t);
+					}
 				}
 			}
 
-			addMovePositionsFromBoardAstar(gameState, data->floodFillResult, data->e, endMove);
+			addMovePositionsFromBoardAstar(gameState, data->floodFillResult, data->e, submitMove);
 		}
 	}
 
@@ -313,6 +335,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	drawAllSectionHovers(gameState, renderer, dt, worldMouseP);
 
 	sortAndRenderEntityQueue(renderer);
+	renderAllDamageSplats(gameState);
 
 	drawClouds(gameState, renderer, dt);
 	// drawCloudsAsTexture(gameState, renderer, dt, fovMatrix, windowSize);

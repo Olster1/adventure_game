@@ -83,6 +83,10 @@ struct SoundAssets {
 	GameSoundAsset footsteps[3];
 	GameSoundAsset medieval1;
 };
+struct RenderDamageSplatItem {
+    char *string;
+    float3 p;
+};
 
 typedef struct {
 	bool initialized;
@@ -97,6 +101,10 @@ typedef struct {
 	int selectedMoveCount;
 	int selectedEntityCount;
 	SelectedEntityData selectedEntityIds[32];
+
+	EntityTileItem *freeListEntityTileItem;
+	DamageSplat *freeListDamageSplats;
+	RenderDamageSplatItem *perFrameDamageSplatArray;
 
 	//NOTE: For creating unique entity ids like MongoDb ObjectIds
 	int randomIdStartApp;
@@ -144,6 +152,7 @@ typedef struct {
 	Texture treeTexture;
 	Texture stumpTexture;
 	Texture logTexture;
+	Texture splatTexture;
 
 	int uiOnScreenItemCount;
 	UiOnScreenItem uiOnScreenItems[8];

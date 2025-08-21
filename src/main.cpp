@@ -30,6 +30,7 @@
 #include "save_load_level.h"
 #include "editor_gui.cpp"
 #include "board_astar.cpp"
+#include "damage_splats.cpp"
 #include "entity.cpp"
 #include "cloudAlt.cpp"
 #include "save_load_level.cpp"

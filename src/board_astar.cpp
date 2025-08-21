@@ -13,7 +13,7 @@ void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *vis
 		if(c) {
 			float3 tileP = getChunkLocalPos(x, y, z);
 			Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
-			if(tile && (tile->flags & TILE_FLAG_WALKABLE)) { //(tile->entityOccupation == 0 || sameFloat3(make_float3(x, y, z), startP))
+			if(tile && (tile->flags & TILE_FLAG_WALKABLE) && !(tile->flags & TILE_FLAG_ENEMY)) { //(tile->entityOccupation == 0 || sameFloat3(make_float3(x, y, z), startP))
 				
 				FloodFillEvent *node = pushStruct(&globalPerFrameArena, FloodFillEvent);
 				node->x = x;

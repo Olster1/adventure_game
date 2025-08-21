@@ -107,6 +107,12 @@ struct DefaultEntityAnimations {
     Animation scared;
 };
 
+struct DamageSplat {
+    int damage;
+    float timeAt;
+    DamageSplat *next;
+};
+
 struct EntityMove {
     float3 move;
     EntityMove *next;
@@ -118,6 +124,7 @@ struct Entity {
     Entity *parent; //TODO: Not sure if we need this
     EntityType type;
     u64 flags;
+    u64 boardFlags;
 
     //NOTE: TRANSFORM component
     float3 pos;
@@ -129,8 +136,14 @@ struct Entity {
     float rotation;
     float targetRotation;
 
-    float3 peasantTreeCut; //NOTE: For the location of the tree the peasant is cutting
+    DamageSplat *damageSplats;
+
+    int damage; //NOTE: How powerful the entity is
+    int health;
+
+    float3 movementTargetPosition; //NOTE: For the location of the tree the peasant is cutting
     int movementAction;
+    int movementTargetEntityId;
     
     int maxMoveDistance;
     EntityMove *moves;

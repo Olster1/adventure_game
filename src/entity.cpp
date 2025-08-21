@@ -86,25 +86,89 @@ Tile *getTileFromWorldP(GameState *gameState, float3 worldP) {
     return tile;
 }
 
-void markBoardAsEntityOccupied(GameState *gameState, float3 worldP) {
+u32 getFirstEntityIdFromTile(Tile *t) {
+    u32 result = 0;
+    EntityTileItem *item = t->entities;
+
+    if(item) {
+        result = item->e->id;
+    }
+    
+    return result;
+}
+
+Entity *findEntityFromTile(Tile *t, u32 entityId) {
+    Entity *result = 0;
+    EntityTileItem *item = t->entities;
+    while(item && !result) {
+        if(item->e->id == entityId) {
+            result = item->e;
+        }
+    }
+    assert(result);
+    return result;
+}
+
+void addEntityToTile(GameState *gameState, Tile *tile, Entity *e) {
+    EntityTileItem *item = 0;
+    if(gameState->freeListEntityTileItem) {
+        item = gameState->freeListEntityTileItem;
+        gameState->freeListEntityTileItem = gameState->freeListEntityTileItem->next;
+    } else {
+        item = pushStruct(&global_long_term_arena, EntityTileItem);
+    }
+
+    if(item) {
+        item->e = e;
+        item->next = tile->entities;
+        tile->entities = item;
+    } else {
+        assert(false);
+    }
+}
+
+void removeEntityFromTile(GameState *gameState, Tile *tile, Entity *e) {
+    EntityTileItem **item = &tile->entities;
+    bool found = false;
+    while(*item && !found) {
+        if((*item)->e == e) {
+            found = true;
+            EntityTileItem *temp = *item;
+
+            *item = ((*item)->next);
+
+            temp->next = gameState->freeListEntityTileItem;
+            gameState->freeListEntityTileItem = temp;
+        } else {
+            item = &(*item)->next;
+        }
+    } 
+    assert(found);
+}
+
+void markBoardAsEntityOccupied(GameState *gameState, float3 worldP, Entity *e) {
     float2 chunkP = getChunkPosForWorldP(worldP.xy);
     Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
     if(c) {
         float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
         Tile *tile = c->getTile(localP.x, localP.y, localP.z);
         if(tile) {
+            addEntityToTile(gameState, tile, e);
             tile->entityOccupation++;
+            tile->flags |= e->boardFlags;
         }
     }
 }
 
-void markBoardAsEntityUnOccupied(GameState *gameState, float3 worldP) {
+void markBoardAsEntityUnOccupied(GameState *gameState, float3 worldP, Entity *e) {
     float2 chunkP = getChunkPosForWorldP(worldP.xy);
     Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
     if(c) {
         float3 localP = getChunkLocalPos(worldP.x, worldP.y, worldP.z);
         Tile *tile = c->getTile(localP.x, localP.y, localP.z);
         if(tile) {
+            removeEntityFromTile(gameState, tile, e);
+            tile->flags &= ~(e->boardFlags);
             tile->entityOccupation--;
             assert(tile->entityOccupation >= 0);
         }
@@ -112,7 +176,7 @@ void markBoardAsEntityUnOccupied(GameState *gameState, float3 worldP) {
 }
 
 
-Entity *makeNewEntity(GameState *state, float3 worldP) {
+Entity *makeNewEntity(GameState *state, float3 worldP, u64 flagsToAddForBoard = 0) {
     Entity *e = 0;
     if(state->entityCount < arrayCount(state->entities)) {
         e = &state->entities[state->entityCount++];
@@ -131,10 +195,13 @@ Entity *makeNewEntity(GameState *state, float3 worldP) {
         e->scale = make_float3(4, 4, 1);
         e->speed = 5.0f;
         e->sortYOffset = 0;
+        e->boardFlags = flagsToAddForBoard;
+        e->damage = 2;
+        e->health = 6;
 
         assert(e->maxMoveDistance <= 0.5f*DOUBLE_MAX_MOVE_DISTANCE);
 
-        markBoardAsEntityOccupied(state, worldP);
+        markBoardAsEntityOccupied(state, worldP, e);
 
 
     }
@@ -340,7 +407,7 @@ Entity *addArcherEntity(GameState *state, float3 worldP) {
 } 
 
 Entity *addGoblinEntity(GameState *state, float3 worldP) {
-    Entity *e = makeNewEntity(state, worldP);
+    Entity *e = makeNewEntity(state, worldP, TILE_FLAG_ENEMY);
     if(e) {
         e->type = ENTITY_GOBLIN;
         e->flags |= ENTITY_CAN_WALK;
@@ -353,7 +420,7 @@ Entity *addGoblinEntity(GameState *state, float3 worldP) {
 } 
 
 Entity *addGoblinBarrelEntity(GameState *state, float3 worldP) {
-    Entity *e = makeNewEntity(state, worldP);
+    Entity *e = makeNewEntity(state, worldP, TILE_FLAG_ENEMY);
     if(e) {
         e->type = ENTITY_GOBLIN_BARREL;
         e->flags |= ENTITY_CAN_WALK;
@@ -365,7 +432,7 @@ Entity *addGoblinBarrelEntity(GameState *state, float3 worldP) {
 } 
 
 Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
-    Entity *e = makeNewEntity(state, worldP);
+    Entity *e = makeNewEntity(state, worldP, TILE_FLAG_ENEMY);
     if(e) {
         e->type = ENTITY_GOBLIN_TNT;
         e->flags |= ENTITY_CAN_WALK;
@@ -375,9 +442,6 @@ Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
     }
     return e;
 } 
-
-
-
 
 void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
     DEBUG_TIME_BLOCK();
@@ -968,6 +1032,13 @@ void playFootstepSound(GameState *gameState) {
     
 }
 
+void startAttackingEntity(GameState *gameState, Entity *e) {
+    easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->knightAnimations.attackSide, 0.08f);
+    easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_ATTACK_ENEMY, (item0->animation->frameCount / 2));
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->knightAnimations.idle, 0.08f);
+}
+
 void startCuttingTree(GameState *gameState, Entity *e) {
     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
     EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
@@ -990,7 +1061,7 @@ void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, 
         Tile *tile = getTileFromWorldP(gameState, checkP);
 
         if(tile->flags & TILE_FLAG_TREE) {
-            e->peasantTreeCut = checkP;
+            e->movementTargetPosition = checkP;
             startCuttingTree(gameState, e);
         }
     }
@@ -1000,6 +1071,21 @@ float2 worldCameraToScreen01(GameState *state, float2 p) {
     p.x = inverse_lerp(-0.5f*state->planeSizeX*state->zoomLevel, 0.5f*state->planeSizeX*state->zoomLevel, make_lerpTValue(p.x));
     p.y = inverse_lerp(-0.5f*state->planeSizeY*state->zoomLevel, 0.5f*state->planeSizeY*state->zoomLevel, make_lerpTValue(p.y));
     return p;
+}
+
+void hurtEntity(GameState *gameState, Entity *e, int damage) {
+    e->health -= damage;
+
+    DamageSplat *d = getDamageSplat(gameState, e);
+    if(d) {
+        d->damage = damage;
+    }
+
+    easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->goblinAnimations.attackSide, 0.08f);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->knightAnimations.idle, 0.08f);
+
+
 }
 
 void updateAnimationActions(GameState *gameState, Entity *e) {
@@ -1015,11 +1101,23 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
 
                 if(action->actionId == ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND) {
                     playCutWoodSound(gameState);
+                } else if(action->actionId == ANIMATION_ACTION_ATTACK_ENEMY) {
+                    Tile *tile = getTileFromWorldP(gameState, e->movementTargetPosition);
+
+                    if(tile->flags & TILE_FLAG_ENEMY) {
+                        assert(e->movementTargetEntityId > 0);
+                        Entity *attackEntity = findEntityFromTile(tile, e->movementTargetEntityId);
+                        if(attackEntity) {
+                            hurtEntity(gameState, attackEntity, e->damage);
+                        }
+                    } else {
+                        assert(false);
+                    }
                 } else if(action->actionId == ANIMATION_ACTION_PLAY_FOOTSTEPS) {
                     playFootstepSound(gameState);
                 } else if(action->actionId == ANIMATION_ACTION_CUT_TREE) {
                     //NOTE: Finished cutting tree so chop it down
-                    Tile *tile = getTileFromWorldP(gameState, e->peasantTreeCut);
+                    Tile *tile = getTileFromWorldP(gameState, e->movementTargetPosition);
 
                     assert(tile->flags & TILE_FLAG_TREE);
 
@@ -1030,7 +1128,7 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
 
                     if(gameState->uiOnScreenItemCount < arrayCount(gameState->uiOnScreenItems)) {
                         UiOnScreenItem *ui = gameState->uiOnScreenItems + gameState->uiOnScreenItemCount++;
-                        ui->startP = e->peasantTreeCut.xy;
+                        ui->startP = e->movementTargetPosition.xy;
 
                         ui->startP.x -= gameState->cameraPos.x;
                         ui->startP.y -= gameState->cameraPos.y;
@@ -1182,14 +1280,21 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             FloodFillResult searchResult;
             Tile *tile = getTileFromWorldP(gameState, targetRounded);
             if(tile) {
-                if((tile->flags & TILE_FLAG_TREE)) {
+                bool isTree = (tile->flags & TILE_FLAG_TREE) && e->type == ENTITY_PEASANT;
+                bool isAttackEnemy = (tile->flags & TILE_FLAG_ENEMY) && e->type == ENTITY_KNIGHT;
+                
+                if(isTree || isAttackEnemy) {
                     float3 offsets[4] = {make_float3(1, 0, 0), make_float3(-1, 0, 0), make_float3(0, -1, 0), make_float3(0, 1, 0)};
                     
                     for(int i = 0; i < arrayCount(offsets) && !searchResult.foundNode; ++i) {
                         float3 t = plus_float3(targetRounded, offsets[i]);
                         searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), t, e->maxMoveDistance);
-                        if(searchResult.foundNode && e->type == ENTITY_PEASANT) {
-                            movementAction = MOVEMENT_ACTION_CUT_TREE;
+                        if(searchResult.foundNode) {
+                            if(isTree) {
+                                movementAction = MOVEMENT_ACTION_CUT_TREE;
+                            } else if(isAttackEnemy) {
+                                movementAction = MOVEMENT_ACTION_FIGHT_ENEMY;
+                            }
                         }
                     }
                 } else {
@@ -1234,8 +1339,9 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             e->moves = move->next;
 
             if(!e->moves) {
-                
-                if(e->movementAction == MOVEMENT_ACTION_CUT_TREE) {
+                if(e->movementAction == MOVEMENT_ACTION_FIGHT_ENEMY) {
+                    startAttackingEntity(gameState, e);
+                } else if(e->movementAction == MOVEMENT_ACTION_CUT_TREE) {
                     startCuttingTree(gameState, e);
                 } else if(e->type == ENTITY_PEASANT) {
                     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
@@ -1251,8 +1357,8 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         float3 currentP = convertRealWorldToBlockCoords(e->pos); 
 
         if(!sameFloat3(currentP, lastP)) {
-            markBoardAsEntityOccupied(gameState, currentP);
-            markBoardAsEntityUnOccupied(gameState, lastP);
+            markBoardAsEntityOccupied(gameState, currentP, e);
+            markBoardAsEntityUnOccupied(gameState, lastP, e);
         }
 
         assert(tileIsOccupied(gameState, currentP));

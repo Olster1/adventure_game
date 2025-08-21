@@ -49,6 +49,13 @@ enum TileFlags {
     TILE_FLAG_TREE = 1 << 5,  //NOTE: Wether this tile has a tree
     TILE_FLAG_TREE_CUT = 1 << 6,  //NOTE: Wether this tile has a cut tree
     TILE_FLAG_WALKABLE = 1 << 7,  //NOTE: Wether we can walk on this tile
+    TILE_FLAG_ENEMY = 1 << 8,
+    
+};
+
+struct EntityTileItem {
+    Entity *e;
+    EntityTileItem *next;
 };
 
 struct Tile {
@@ -59,6 +66,7 @@ struct Tile {
     u32 flags = 0;
     u32 lightingMask = 0; //NOTE: Minecraft like lighting data bottom 8 bits are top surface, next 8 bits are the front facing surface 
     int entityOccupation = 0;
+    EntityTileItem *entities = 0;//NOTE: Pointer to the entity on the tile
 
     Tile() {
         this->entityOccupation = 0;
