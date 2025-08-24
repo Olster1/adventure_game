@@ -214,7 +214,7 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 			// 	pushRect(renderer, a, make_float2(0.3f, 0.3f), make_float4(1, 0, 0, 1));
 			// }
 
-			if((e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_ACTIVE)) {
+			if((e->flags & ENTITY_SELECTABLE) && (e->flags & ENTITY_ACTIVE)) {
 				bool added = false;
 				{
 					//NOTE: This is the drag selection 

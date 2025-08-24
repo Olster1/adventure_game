@@ -7,6 +7,8 @@ enum EntityFlag {
     ENTITY_ON_FIRE = 1 << 4, //NOTE: For buildings that catch fire
     ENTITY_CAN_WALK = 1 << 5, //NOTE: For entities that can walk around like the peasant, knight, etc.
     ENTITY_SELECTED = 1 << 6, //NOTE: Whether entity is selected
+    ENTITY_SELECTABLE = 1 << 7, //NOTE: Whether entity can be selected
+    
 };
 
 #define MY_ENTITY_TYPE(FUNC) \
@@ -94,6 +96,9 @@ Collider make_collider(float3 offset, float3 scale, u32 flags) {
 struct DefaultEntityAnimations {
     Animation idle;
 	Animation run;
+
+    Animation hurt;
+    Animation death;
 	
     //NOTE: ATTACK
 	Animation attackUp;

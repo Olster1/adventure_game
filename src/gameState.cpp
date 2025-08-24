@@ -174,6 +174,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadImageStripXY(&gameState->goblinAnimations.attackSide, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 6, 0, 2);
 		loadImageStripXY(&gameState->goblinAnimations.attackDown, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 6, 0, 3);
 		loadImageStripXY(&gameState->goblinAnimations.attackUp, backendRenderer, "../src/images/factions/goblin.png", 192, 192, 6, 0, 4);
+		loadImageStripXY(&gameState->goblinAnimations.hurt, backendRenderer, "../src/images/factions/goblin_hit.png", 192, 192, 4, 0, 0);
 
 		loadImageStripXY(&gameState->tntAnimations.idle, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 6, 0, 0);
 		loadImageStripXY(&gameState->tntAnimations.run, backendRenderer, "../src/images/factions/tnt.png", 192, 192, 6, 1, 0);
@@ -187,6 +188,9 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadOggVorbisFile(&gameState->soundAssets.footsteps[0], "../sounds/footstep_1.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.footsteps[1], "../sounds/footstep_2.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.footsteps[2], "../sounds/footstep_3.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.swordAttack[0], "../sounds/sword1.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.swordAttack[1], "../sounds/sword2.ogg", &gameState->audioSpec);
+		
 		playSound(&gameState->soundAssets.medieval1)->volume = 0.1f;
 		
 		/////////////

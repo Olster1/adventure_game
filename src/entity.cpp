@@ -295,11 +295,12 @@ Entity *addKnightEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_KNIGHT;
-        e->flags |= ENTITY_CAN_WALK;
+        e->flags |= ENTITY_CAN_WALK | ENTITY_SELECTABLE;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->knightAnimations.idle, 0.08f);
+        e->animations = &state->knightAnimations;
         
     }
     return e;
@@ -344,6 +345,7 @@ Entity *addGoblinHouseEntity(GameState *state, float3 worldP) {
         e->scale = make_float3(1.8, 2.7, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinHutAnimation, 0.08f);
+        
 
         // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
     }
@@ -385,11 +387,12 @@ Entity *addPeasantEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_PEASANT;
-        e->flags |= ENTITY_CAN_WALK;
+        e->flags |= ENTITY_CAN_WALK | ENTITY_SELECTABLE;
         e->offsetP.y = 0.12; //NOTE: Fraction of the scale
         e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->peasantAnimations.idle, 0.08f);
+        e->animations = &state->peasantAnimations;
     }
     return e;
 } 
@@ -398,10 +401,11 @@ Entity *addArcherEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_ARCHER;
-        e->flags |= ENTITY_CAN_WALK;
+        e->flags |= ENTITY_SELECTABLE;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->archerAnimations.idle, 0.08f);
+        e->animations = &state->archerAnimations;
     }
     return e;
 } 
@@ -415,6 +419,7 @@ Entity *addGoblinEntity(GameState *state, float3 worldP) {
         e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinAnimations.idle, 0.08f);
+        e->animations = &state->goblinAnimations;
     }
     return e;
 } 
@@ -427,6 +432,7 @@ Entity *addGoblinBarrelEntity(GameState *state, float3 worldP) {
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->barrellAnimations.idle, 0.08f);
+        e->animations = &state->barrellAnimations;
     }
     return e;
 } 
@@ -439,6 +445,7 @@ Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->tntAnimations.idle, 0.08f);
+        e->animations = &state->tntAnimations;
     }
     return e;
 } 
@@ -1025,6 +1032,16 @@ void playCutWoodSound(GameState *gameState) {
     
 }
 
+
+
+void playSwordAttackSound(GameState *gameState) {
+    int soundIndex = random_between_int(0, arrayCount(gameState->soundAssets.swordAttack));
+    assert(soundIndex < arrayCount(gameState->soundAssets.swordAttack));
+    playSound(&gameState->soundAssets.swordAttack[soundIndex])->volume = 0.3f;
+    
+}
+
+
 void playFootstepSound(GameState *gameState) {
     int soundIndex = random_between_int(0, arrayCount(gameState->soundAssets.footsteps));
     assert(soundIndex < arrayCount(gameState->soundAssets.footsteps));
@@ -1034,21 +1051,23 @@ void playFootstepSound(GameState *gameState) {
 
 void startAttackingEntity(GameState *gameState, Entity *e) {
     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->knightAnimations.attackSide, 0.08f);
+    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->attackSide, 0.08f);
     easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_ATTACK_ENEMY, (item0->animation->frameCount / 2));
-    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->knightAnimations.idle, 0.08f);
+    easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_SWORD_SOUND, 2);
+    easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_SWORD_SOUND, 8);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
 }
 
 void startCuttingTree(GameState *gameState, Entity *e) {
     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->attackSide, 0.08f);
     easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item0->animation->frameCount / 2);
-    EasyAnimation_ListItem *item1 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+    EasyAnimation_ListItem *item1 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->attackSide, 0.08f);
     easyAnimation_addActionForFrame(item1, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item1->animation->frameCount / 2);
-    EasyAnimation_ListItem *item2 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.attackSide, 0.08f);
+    EasyAnimation_ListItem *item2 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->attackSide, 0.08f);
     easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_PLAY_CUT_WOOD_SOUND, item2->animation->frameCount / 2);
     easyAnimation_addActionForFrame(item2, ANIMATION_ACTION_CUT_TREE, (item2->animation->frameCount / 2) + 1);
-    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
 }
 
 void checkCutTree(GameState *gameState, bool clicked, float3 mouseP, Entity *e, float3 offset) {
@@ -1082,8 +1101,9 @@ void hurtEntity(GameState *gameState, Entity *e, int damage) {
     }
 
     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->goblinAnimations.attackSide, 0.08f);
-    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->knightAnimations.idle, 0.08f);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
+    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
 
 
 }
@@ -1115,6 +1135,8 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
                     }
                 } else if(action->actionId == ANIMATION_ACTION_PLAY_FOOTSTEPS) {
                     playFootstepSound(gameState);
+                } else if(action->actionId == ANIMATION_ACTION_PLAY_SWORD_SOUND) {
+                    playSwordAttackSound(gameState);
                 } else if(action->actionId == ANIMATION_ACTION_CUT_TREE) {
                     //NOTE: Finished cutting tree so chop it down
                     Tile *tile = getTileFromWorldP(gameState, e->movementTargetPosition);
@@ -1200,7 +1222,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         }
 
 
-        if(e->type == ENTITY_PEASANT && !easyAnimation_getCurrentAnimation(&e->animationController, &gameState->peasantAnimations.attackSide)) {
+        if(e->type == ENTITY_PEASANT && !easyAnimation_getCurrentAnimation(&e->animationController, &e->animations->attackSide)) {
             float3 mouseP = convertRealWorldToBlockCoords(mouseWorldP);
             bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
 
@@ -1326,10 +1348,11 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         float speed = e->speed*dt;
         e->pos = plus_float3(scale_float3(speed, dir), e->pos);
 
-        if(e->type == ENTITY_PEASANT && !easyAnimation_getCurrentAnimation(&e->animationController, &gameState->peasantAnimations.run)) {
+        if(!easyAnimation_getCurrentAnimation(&e->animationController, &e->animations->run)) {
             easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-            EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.run, 0.08f);
+            EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->run, 0.08f);
             easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_FOOTSTEPS, 0);
+            
         }
 
         if(float3_magnitude(minus_float3(target, e->pos)) < 0.1f) {
@@ -1343,9 +1366,9 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                     startAttackingEntity(gameState, e);
                 } else if(e->movementAction == MOVEMENT_ACTION_CUT_TREE) {
                     startCuttingTree(gameState, e);
-                } else if(e->type == ENTITY_PEASANT) {
+                } else {
                     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-                    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->peasantAnimations.idle, 0.08f);
+                    EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
                 }
             }
 

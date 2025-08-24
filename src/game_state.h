@@ -81,6 +81,7 @@ struct UiOnScreenItem {
 struct SoundAssets {
 	GameSoundAsset woodChopSounds[2];
 	GameSoundAsset footsteps[3];
+	GameSoundAsset swordAttack[2];
 	GameSoundAsset medieval1;
 };
 struct RenderDamageSplatItem {
