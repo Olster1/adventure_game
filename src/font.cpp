@@ -243,7 +243,7 @@ Font initFont(char *fileName) {
 
 static inline GlyphInfo easyFont_getGlyph(Font *font, u32 unicodePoint) {
     GlyphInfo glyph = {};
-    glyph.xadvance = NAN;
+    glyph.xadvance = 0;
 
     if(unicodePoint != '\n') {
         FontSheet *sheet = findFontSheet(font, unicodePoint);

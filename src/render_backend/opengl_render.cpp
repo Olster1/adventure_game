@@ -547,15 +547,9 @@ static uint backendRender_init(BackendRenderer *r, SDL_Window *hwnd) {
     r->quadModel = generateVertexBuffer(global_quadData, 4, global_quadIndices, 6, ATTRIB_INSTANCE_TYPE_DEFAULT);
     r->lineModel = generateVertexBuffer(global_lineData, 2, global_lineIndices, 2, ATTRIB_INSTANCE_TYPE_LINE);
 
-#if DEBUG_BUILD
 	if(!global_white_texture) {
-		global_white_texture = platform_loadFromFileToGPU("./images/white_texture.png").handle;
+		global_white_texture = platform_loadFromFileToGPU("../images/white_texture.png").handle;
 	}
-#else 
-	if(!global_white_texture) {
-		global_white_texture = platform_loadFromFileToGPU("./white_texture.png").handle;
-	}
-#endif
 
     return 0;
 }

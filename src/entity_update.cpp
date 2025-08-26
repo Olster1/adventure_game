@@ -71,27 +71,22 @@ float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
 
 }
 
+void drawUIActionImage(GameState *gameState, Texture *t, float3 p, float3 sortP) {
+    p.z = RENDER_Z;
+    float scale = 1.0f;
+    pushEntityTexture(&gameState->renderer, t->handle, p, make_float2(scale, scale), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(sortP, RENDER_LAYER_3));
+}
+
 void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, float3 worldMouseP, SelectedEntityData *selectedData) {
 	{
-		
 		float3 worldP = convertRealWorldToBlockCoords(worldMouseP);
 		float3 p = worldP;
-
-		// {
-		// 	//NOTE: See if the selection is on a tree tile
-		// 	float2 chunkP = getChunkPosForWorldP(worldMouseP.xy);
-		// 	Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, chunkP.x, chunkP.y, 0, true, true);
-		// 	float3 tileP = getChunkLocalPos(p.x, p.y, p.z);
-		// 	Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
-		// 	if(tile && !(tile->flags & TILE_FLAG_WALKABLE)) {
-		// 		gameState->selectedColor = make_float4(1, 0, 0, 1);
-		// 	}
-		// }
 
 		float4 color = make_float4(1, 1, 1, 1);
 
 		if(selectedData && !selectedData->isValidPos) {
 			color = make_float4(1, 0, 0, 1);
+			selectedData->movementAction = MOVEMENT_ACTION_NONE;
 		}
 
 		p = getRenderWorldP(worldP);
@@ -105,6 +100,18 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 		float scale = 1.0f;//lerp(0.9f, 1.1f, make_lerpTValue(sin01(gameState->selectHoverTimer)));
 		float3 sortP = worldP;
 		pushEntityTexture(renderer, gameState->selectImage.handle, p, make_float2(scale, scale), color, gameState->selectImage.uvCoords, getSortIndex(sortP, RENDER_LAYER_2));
+
+		if(selectedData) {
+			float3 sortP = convertRealWorldToBlockCoords(worldMouseP);
+			float3 mouseP = getRenderWorldP(worldMouseP);
+			mouseP.x -= gameState->cameraPos.x; //NOTE: Offset for middle of the tile
+			mouseP.y -= gameState->cameraPos.y; //NOTE: Offset for middle of the tile
+			if(selectedData->movementAction == MOVEMENT_ACTION_CUT_TREE) {
+				drawUIActionImage(gameState, &gameState->axeUiTexture, mouseP, sortP);
+			} else if(selectedData->movementAction == MOVEMENT_ACTION_FIGHT_ENEMY) {
+				drawUIActionImage(gameState, &gameState->swordUiTexture, mouseP, sortP);
+			}
+		}
 
 		float3 tileP = convertRealWorldToBlockCoords(make_float3(worldMouseP.x, worldMouseP.y, worldMouseP.z));
 		//NOTE: Draw position above player
@@ -160,7 +167,7 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 		gameState->holdingSelect = true;
 	}
 	
-	if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || released) {
+	if((global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || released) && !global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
 		gameState->selectedEntityCount = 0;
 		float2 a = worldMousePLvl0;
 		float2 b = gameState->startDragPForSelect;
@@ -322,9 +329,8 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 						data->e->movementTargetEntityId = getFirstEntityIdFromTile(t);
 					}
 				}
+				addMovePositionsFromBoardAstar(gameState, data->floodFillResult, data->e);
 			}
-
-			addMovePositionsFromBoardAstar(gameState, data->floodFillResult, data->e, submitMove);
 		}
 	}
 

@@ -534,6 +534,8 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
         renderP.z = RENDER_Z;
 
         float3 sortP = worldP;
+        sortP.y++;//NOTE: To get it in the middle
+        sortP = convertRealWorldToBlockCoords(sortP);
 
         float alpha = 1.0f; 
 
@@ -945,74 +947,33 @@ void refreshParticlers(GameState *gameState, Entity *e) {
     }
 }
 
-void addMovePositionsFromBoardAstar(GameState *gameState, FloodFillResult searchResult, Entity *e, bool endMove) {
+void addMovePositionsFromBoardAstar(GameState *gameState, FloodFillResult searchResult, Entity *e) {
     //NOTE: Path is a sentinel doubley linked list
     NodeDirection *d = searchResult.cameFrom;
     assert(d);
     while(d) {
         float3 worldP = d->p;
-
-        /* NOTE: Rendering code for the arrows 
-        float3 renderP = getRenderWorldP(worldP);
-        renderP.z = RENDER_Z;
-
-        int arrowIndex = 0;
-
-        {
-            //NOTE: Get the right texture to show the direction
-            if(d->next) {
-                
-                float3 p = d->next->p;
-                float3 diff = minus_float3(p, worldP);
-
-                if(diff.x < 0) {
-                    arrowIndex = 2;
-                } else if(diff.x > 0) {
-                    arrowIndex = 0;
-                } else if(diff.y > 0) {
-                    arrowIndex = 1;
-                } else if(diff.y < 0) {
-                    arrowIndex = 3;
-                }
-            } else {
-                //NOTE: No direction, so show the circle 
-                arrowIndex = 4;
-            }
-        }
-        */
-
-        if(endMove) {
-            //NOTE: Move the entities
-            EntityMove *move = 0;
-            if(gameState->freeEntityMoves) {
-                move = gameState->freeEntityMoves;
-                gameState->freeEntityMoves = move->next;
-                move->next = 0;
-            } else {
-                move = pushStruct(&global_long_term_arena, EntityMove);
-            }
-            move->move = worldP;
+        //NOTE: Move the entities
+        EntityMove *move = 0;
+        if(gameState->freeEntityMoves) {
+            move = gameState->freeEntityMoves;
+            gameState->freeEntityMoves = move->next;
             move->next = 0;
-
-            //NOTE: Add to the end of the list
-            {
-                EntityMove **lastMove = &e->moves;
-                while(*lastMove) {
-                    lastMove = &(*lastMove)->next;
-                }
-
-                *lastMove = move;
-            }
+        } else {
+            move = pushStruct(&global_long_term_arena, EntityMove);
         }
+        move->move = worldP;
+        move->next = 0;
 
-        /*
-        //NOTE: This draw the direction arrow images
-        Texture *t = &gameState->arrows[arrowIndex];
-        renderP.x -= gameState->cameraPos.x;
-        renderP.y -= gameState->cameraPos.y;
-        pushEntityTexture(renderer, t->handle, renderP, make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_2));
-        */
+        //NOTE: Add to the end of the list
+        {
+            EntityMove **lastMove = &e->moves;
+            while(*lastMove) {
+                lastMove = &(*lastMove)->next;
+            }
 
+            *lastMove = move;
+        }
         d = d->next;
     }
 }
@@ -1053,7 +1014,7 @@ void startAttackingEntity(GameState *gameState, Entity *e) {
     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
     EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->attackSide, 0.08f);
     easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_ATTACK_ENEMY, (item0->animation->frameCount / 2));
-    easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_SWORD_SOUND, 2);
+    easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_SWORD_SOUND, 1);
     easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_PLAY_SWORD_SOUND, 8);
     easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
 }
@@ -1166,6 +1127,7 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
         }
     }
 }
+
 
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
     DEBUG_TIME_BLOCK();
@@ -1299,7 +1261,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             float3 targetRounded = convertRealWorldToBlockCoords(targetP);
 
             int movementAction = MOVEMENT_ACTION_NONE;
-            FloodFillResult searchResult;
+            FloodFillResult searchResult = {};
             Tile *tile = getTileFromWorldP(gameState, targetRounded);
             if(tile) {
                 bool isTree = (tile->flags & TILE_FLAG_TREE) && e->type == ENTITY_PEASANT;
@@ -1307,30 +1269,34 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                 
                 if(isTree || isAttackEnemy) {
                     float3 offsets[4] = {make_float3(1, 0, 0), make_float3(-1, 0, 0), make_float3(0, -1, 0), make_float3(0, 1, 0)};
-                    
+
                     for(int i = 0; i < arrayCount(offsets) && !searchResult.foundNode; ++i) {
                         float3 t = plus_float3(targetRounded, offsets[i]);
                         searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), t, e->maxMoveDistance);
                         if(searchResult.foundNode) {
+                            assert(searchResult.cameFrom);
                             if(isTree) {
                                 movementAction = MOVEMENT_ACTION_CUT_TREE;
+                                
                             } else if(isAttackEnemy) {
                                 movementAction = MOVEMENT_ACTION_FIGHT_ENEMY;
+                                
                             }
                         }
                     }
                 } else {
                     //NOTE: Just walking, no actions
                     searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), targetRounded, e->maxMoveDistance);
+                    assert(searchResult.cameFrom);
                 } 
 
                 if(searchResult.foundNode) {
+                    assert(searchResult.cameFrom);
                     gameState->selectedMoveCount++;
                     gameState->selectedEntityIds[selectedEntityIndex].isValidPos = true;
                     gameState->selectedEntityIds[selectedEntityIndex].floodFillResult = searchResult;
                     gameState->selectedEntityIds[selectedEntityIndex].movementAction = movementAction;
                     gameState->selectedEntityIds[selectedEntityIndex].targetPosition = targetRounded;
-                    // addMovePositionsFromBoardAstar(gameState, searchResult, e, endMove);
                 } 
             }
             
@@ -1394,17 +1360,7 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
     Texture *t = 0;
 
     if(easyAnimation_isControllerValid(&e->animationController)) {
-
         t = easyAnimation_updateAnimation_getTexture(&e->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
-        if(e->animationController.finishedAnimationLastUpdate) {
-            //NOTE: Make not active anymore. Should Probably remove it from the list. 
-            // e->flags &= ~ENTITY_ACTIVE;
-
-            // if(e->animationController.lastAnimationOn == &gameState->playerAttackAnimation) {
-            //     //NOTE: Turn off attack collider when attack finishes
-            //     // e->colliders[ATTACK_COLLIDER_INDEX].flags &= ~COLLIDER_ACTIVE; 
-            // }
-        }
     } 
 
     float3 renderWorldP = getRenderWorldP(e->pos);
@@ -1418,8 +1374,7 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
 
     // NOTE: color the entity that you have selected
     if(isEntitySelected(gameState, e) >= 0) {
-        color = make_float4(1, 0.8f, 0, 1);
-
+        // color = make_float4(1, 1, 1, 1);
         entityRenderSelected(gameState, e);
     } else {
         e->flags &= ~(ENTITY_SELECTED);

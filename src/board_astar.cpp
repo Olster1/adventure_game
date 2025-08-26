@@ -113,6 +113,7 @@ FloodFillResult floodFillSearch(GameState *gameState, float3 startP, float3 goal
 				f->p = posAt;
 				f->next = result.cameFrom;
 				result.cameFrom = f;
+				assert(result.cameFrom);
 				pathCount++;
 			}
 

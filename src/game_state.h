@@ -209,6 +209,8 @@ typedef struct {
 	Animation houseBurntAnimation;
 	Texture castleBurntTexture;
 	Animation castleBurntAnimation;
+	Texture swordUiTexture;
+	Texture axeUiTexture;
 
 	AnimationState animationState;
 
