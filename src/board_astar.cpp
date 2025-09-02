@@ -94,9 +94,8 @@ FloodFillResult floodFillSearch(GameState *gameState, float3 startP, float3 goal
 	}
 
 	FloodFillResult result = {};
-	result.foundNode = foundNode;
-
 	if(foundNode) {
+		result.foundNode = foundNode;
 		bool building = true;
 		result.cameFrom = pushStruct(&globalPerFrameArena, NodeDirection);
 		result.cameFrom->p = goalP;

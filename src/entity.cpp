@@ -186,6 +186,7 @@ Entity *makeNewEntity(GameState *state, float3 worldP, u64 flagsToAddForBoard = 
         e->id = global_entityId++;
 
         e->fireTimer = -1;
+        e->movesLeftForTurn = 5;
 
         e->velocity = make_float3(0, 0, 0);
         e->offsetP = make_float3(0, 0, 0);
@@ -452,6 +453,7 @@ Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
 
 void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
     DEBUG_TIME_BLOCK();
+    pushShader(&gameState->renderer, &pixelArtShader);
 
     TextureHandle *atlasHandle = gameState->textureAtlas.texture.handle;
     int cloudDistance = 3;
@@ -1272,7 +1274,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
                     for(int i = 0; i < arrayCount(offsets) && !searchResult.foundNode; ++i) {
                         float3 t = plus_float3(targetRounded, offsets[i]);
-                        searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), t, e->maxMoveDistance);
+                        searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), t, e->movesLeftForTurn);
                         if(searchResult.foundNode) {
                             assert(searchResult.cameFrom);
                             if(isTree) {
@@ -1286,8 +1288,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                     }
                 } else {
                     //NOTE: Just walking, no actions
-                    searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), targetRounded, e->maxMoveDistance);
-                    assert(searchResult.cameFrom);
+                    searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), targetRounded, e->movesLeftForTurn);
                 } 
 
                 if(searchResult.foundNode) {
@@ -1327,6 +1328,12 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             //NOTE: Move to the next in the list
             e->moves = move->next;
 
+
+            if(e->movesLeftForTurn > 0) {
+                e->movesLeftForTurn--;
+            }
+            
+
             if(!e->moves) {
                 if(e->movementAction == MOVEMENT_ACTION_FIGHT_ENEMY) {
                     startAttackingEntity(gameState, e);
@@ -1354,6 +1361,26 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
     }
 }
 
+void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP, Entity *e,  float dt) {
+    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_SELECTABLE)) {
+         if(!gameState->perFrameDamageSplatArray) {
+            gameState->perFrameDamageSplatArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
+        }
+      
+        char *str = easy_createString_printf(&globalPerFrameArena, "%d", e->movesLeftForTurn);
+        float3 p = renderP;
+        p.y += 0.5f;
+        p.z = 1;
+        RenderDamageSplatItem r = {};
+        r.string = str;
+        r.p = p;
+        r.color = make_float4(1, 1, 1, 1);
+        if(e->movesLeftForTurn <= 0) {
+            r.color = make_float4(1, 1, 1, 0.5);
+        }
+        pushArrayItem(&gameState->perFrameDamageSplatArray, r, RenderDamageSplatItem);
+    }
+}
 
 void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {
 
@@ -1406,6 +1433,8 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
 
         pushEntityTexture(renderer, t->handle, renderWorldP, e->scale.xy, color, t->uvCoords, getSortIndex(sortPos, RENDER_LAYER_3));
     }
+    renderGameUILogic(renderer, gameState, renderWorldP, e, dt);
+    renderDamageSplats(gameState, e, dt);
 }
 
 

@@ -270,13 +270,13 @@ void renderAllDamageSplats(GameState *gameState) {
         for(int i = 0; i < getArrayLength(gameState->perFrameDamageSplatArray); ++i) {
             RenderDamageSplatItem *item = gameState->perFrameDamageSplatArray + i;
 
-            float scale = 1.3f;
+            float scale = 0.7f;
             float3 p = item->p;
             pushShader(&gameState->renderer, &pixelArtShader);
-            pushTexture(&gameState->renderer, gameState->splatTexture.handle, plus_float3(make_float3(0.4, -0.4, 0), p), make_float2(scale, scale), make_float4(0.4, 0, 0, 1), gameState->splatTexture.uvCoords);
+            pushTexture(&gameState->renderer, gameState->splatTexture.handle, p, make_float2(scale, scale), item->color, gameState->splatTexture.uvCoords);
             
             pushShader(&gameState->renderer, &sdfFontShader);
-            draw_text(&gameState->renderer, &gameState->font, item->string, p.x, p.y, 0.02, make_float4(1, 1, 1, 1)); 
+            draw_text(&gameState->renderer, &gameState->font, item->string, p.x - 0.4f, p.y + 0.5f, 0.02, make_float4(0, 0, 0, item->color.w)); 
         }
         gameState->perFrameDamageSplatArray = 0;
     }
@@ -343,6 +343,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	sortAndRenderEntityQueue(renderer);
 	renderAllDamageSplats(gameState);
 
+	
 	drawClouds(gameState, renderer, dt);
 	// drawCloudsAsTexture(gameState, renderer, dt, fovMatrix, windowSize);
 	

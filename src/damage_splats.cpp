@@ -15,7 +15,7 @@ DamageSplat *getDamageSplat(GameState *gameState, Entity *e) {
         DamageSplat temp = {};
         *result = temp;
 
-        result->timeAt = 1;
+        result->timeAt = MAX_TIME_DAMAGE_SPLAT;
         result->next = e->damageSplats;
         e->damageSplats = result;
     }
@@ -31,16 +31,21 @@ void renderDamageSplats(GameState *gameState, Entity *e, float dt) {
     }
 
     DamageSplat **d = &e->damageSplats;
-    float3 offsets[4] = {make_float3(0, 1, 0), make_float3(0, -1, 0), make_float3(1, 0, 0), make_float3(-1, 0, 0)};
-    int count = 0;
     while(*d) {
         ((*d)->timeAt) -= dt;
 
         {
+            (*d)->offsetP.y += dt*2;
             float3 p = getRenderWorldP(e->pos);
-            p = plus_float3(p, offsets[count % arrayCount(offsets)]);
-            p.y += 1;
+            p = plus_float3(p, (*d)->offsetP);
             p.z = 1;
+
+            float alpha = (*d)->timeAt;
+            if(alpha < 0) {
+                alpha = 0;
+            }
+
+            float4 color = make_float4(1, 1, 1, alpha / MAX_TIME_DAMAGE_SPLAT);
 
             p.x -= gameState->cameraPos.x; 
             p.y -= gameState->cameraPos.y;
@@ -48,6 +53,7 @@ void renderDamageSplats(GameState *gameState, Entity *e, float dt) {
             RenderDamageSplatItem r = {};
             r.string = str;
             r.p = p;
+            r.color = color;
             pushArrayItem(&gameState->perFrameDamageSplatArray, r, RenderDamageSplatItem);
         }
 
@@ -60,6 +66,5 @@ void renderDamageSplats(GameState *gameState, Entity *e, float dt) {
         } else {
             d = &((*d)->next);
         }
-        count++;
     }
 }

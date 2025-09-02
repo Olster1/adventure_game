@@ -7,7 +7,7 @@ enum EntityFlag {
     ENTITY_ON_FIRE = 1 << 4, //NOTE: For buildings that catch fire
     ENTITY_CAN_WALK = 1 << 5, //NOTE: For entities that can walk around like the peasant, knight, etc.
     ENTITY_SELECTED = 1 << 6, //NOTE: Whether entity is selected
-    ENTITY_SELECTABLE = 1 << 7, //NOTE: Whether entity can be selected
+    ENTITY_SELECTABLE = 1 << 7, //NOTE: Whether entity can be selected i.e. moved by the player
     
 };
 
@@ -115,6 +115,7 @@ struct DefaultEntityAnimations {
 struct DamageSplat {
     int damage;
     float timeAt;
+    float3 offsetP;
     DamageSplat *next;
 };
 
@@ -130,6 +131,8 @@ struct Entity {
     EntityType type;
     u64 flags;
     u64 boardFlags;
+
+    int movesLeftForTurn;
 
     //NOTE: TRANSFORM component
     float3 pos;

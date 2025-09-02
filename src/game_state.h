@@ -87,6 +87,7 @@ struct SoundAssets {
 struct RenderDamageSplatItem {
     char *string;
     float3 p;
+	float4 color;
 };
 
 typedef struct {

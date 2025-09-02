@@ -28,7 +28,7 @@ GamePlay init_gameplay() {
     GamePlay gamePlay = {};
 
     gamePlay.turnOn = GAME_TURN_PLAYER_KNIGHT;
-    gamePlay.phase = GAME_TURN_PHASE_COMMAND;
+    gamePlay.phase = GAME_TURN_PHASE_MOVE;
     gamePlay.boardInited = false;
 
     gamePlay.turnTime = 0;
