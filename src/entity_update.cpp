@@ -275,8 +275,8 @@ void renderAllDamageSplats(GameState *gameState) {
             pushShader(&gameState->renderer, &pixelArtShader);
             pushTexture(&gameState->renderer, gameState->splatTexture.handle, p, make_float2(scale, scale), item->color, gameState->splatTexture.uvCoords);
             
-            pushShader(&gameState->renderer, &sdfFontShader);
-            draw_text(&gameState->renderer, &gameState->font, item->string, p.x - 0.4f, p.y + 0.5f, 0.02, make_float4(0, 0, 0, item->color.w)); 
+            // pushShader(&gameState->renderer, &sdfFontShader);
+            // draw_text(&gameState->renderer, &gameState->font, item->string, p.x - 0.4f, p.y + 0.5f, 0.02, make_float4(0, 0, 0, item->color.w)); 
         }
         gameState->perFrameDamageSplatArray = 0;
     }

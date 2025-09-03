@@ -110,7 +110,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->stumpTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "stump.png");
 		gameState->logTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "log.png");
 
-		gameState->splatTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "splat.png");
+		gameState->splatTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation.png");
 		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
 
 		gameState->arrows[0] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowRight.png");

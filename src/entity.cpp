@@ -186,7 +186,7 @@ Entity *makeNewEntity(GameState *state, float3 worldP, u64 flagsToAddForBoard = 
         e->id = global_entityId++;
 
         e->fireTimer = -1;
-        e->movesLeftForTurn = 5;
+        
 
         e->velocity = make_float3(0, 0, 0);
         e->offsetP = make_float3(0, 0, 0);
@@ -1274,7 +1274,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
                     for(int i = 0; i < arrayCount(offsets) && !searchResult.foundNode; ++i) {
                         float3 t = plus_float3(targetRounded, offsets[i]);
-                        searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), t, e->movesLeftForTurn);
+                        searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), t, e->maxMoveDistance);
                         if(searchResult.foundNode) {
                             assert(searchResult.cameFrom);
                             if(isTree) {
@@ -1288,7 +1288,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                     }
                 } else {
                     //NOTE: Just walking, no actions
-                    searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), targetRounded, e->movesLeftForTurn);
+                    searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), targetRounded, e->maxMoveDistance);
                 } 
 
                 if(searchResult.foundNode) {
@@ -1327,11 +1327,6 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             EntityMove *move = e->moves;
             //NOTE: Move to the next in the list
             e->moves = move->next;
-
-
-            if(e->movesLeftForTurn > 0) {
-                e->movesLeftForTurn--;
-            }
             
 
             if(!e->moves) {
@@ -1367,7 +1362,7 @@ void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP,
             gameState->perFrameDamageSplatArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
         }
       
-        char *str = easy_createString_printf(&globalPerFrameArena, "%d", e->movesLeftForTurn);
+        char *str = easy_createString_printf(&globalPerFrameArena, "%d", e->maxMoveDistance);
         float3 p = renderP;
         p.y += 0.5f;
         p.z = 1;
@@ -1375,9 +1370,7 @@ void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP,
         r.string = str;
         r.p = p;
         r.color = make_float4(1, 1, 1, 1);
-        if(e->movesLeftForTurn <= 0) {
-            r.color = make_float4(1, 1, 1, 0.5);
-        }
+        
         pushArrayItem(&gameState->perFrameDamageSplatArray, r, RenderDamageSplatItem);
     }
 }

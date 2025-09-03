@@ -132,7 +132,7 @@ struct Entity {
     u64 flags;
     u64 boardFlags;
 
-    int movesLeftForTurn;
+    bool actionedThisTurn;
 
     //NOTE: TRANSFORM component
     float3 pos;
