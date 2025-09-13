@@ -152,6 +152,8 @@ struct Entity {
     float3 movementTargetPosition; //NOTE: For the location of the tree the peasant is cutting
     int movementAction;
     int movementTargetEntityId;
+
+    bool turnComplete;
     
     int maxMoveDistance;
     EntityMove *moves;

@@ -60,25 +60,53 @@ float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos
     return pos;
 }
 
-void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution) {
+enum UiButtonType {
+    UI_BUTTON_NONE,
+    UI_BUTTON_NEXT_TURN,
+};
+
+void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution, float2 mouseP, UiButtonType buttonType = UI_BUTTON_NONE) {
     DEBUG_TIME_BLOCK();
-	Rect2f bounds = getTextBounds(renderer, &gameState->font, text, 0, 0, 0.1); 
+    float fontSize = 0.1;
+	Rect2f bounds = getTextBounds(renderer, &gameState->font, text, 0, 0, fontSize); 
     float ar = gameState->bannerTexture.aspectRatio_h_over_w;
     float scalef = 25;
     float2 scale = make_float2(scalef, ar*scalef);
     float2 bScale = get_scale_rect2f(bounds);
+    float sizeFactor = 1.25f;
 
-    scale.x = math3d_maxfloat(1.1f*bScale.x, scale.x);
-    scale.y = math3d_maxfloat(bScale.y, scale.y);
+    Texture *t = &gameState->bannerTexture;
+    if(buttonType != UI_BUTTON_NONE) {
+        t = &gameState->buttonTexture;
+    }
+
+    scale.x = math3d_maxfloat(sizeFactor*bScale.x, scale.x);
+    scale.y = math3d_maxfloat(sizeFactor*bScale.y, scale.y);
     
     float2 pos = make_float2(0.5f*scale.x, 0.5f*scale.y);
-    float fontSize = 0.1;
-
     float2 pos1 = getUiPosition(percentOffset, anchorPoint, pos, resolution);
+
+    float4 color = make_float4(1, 1, 1, 1);
+    bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+    bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(pos1, scale), mouseP);
+    if(inSelectionBounds) {
+        color = make_float4(0.4f, 0.4f, 0.4f, 1);
+
+        if(clicked) {
+            if(buttonType == UI_BUTTON_NEXT_TURN) {
+                gameState->gamePlay.turnOn = GAME_TURN_PLAYER_GOBLIN;
+            }
+        }
+    }
+
     pushShader(renderer, &pixelArtShader);
     pushTexture(renderer, gameState->shadowUiTexture.handle, make_float3(pos1.x, pos1.y, UI_Z_POS), scale, make_float4(1, 1, 1, 0.3), gameState->shadowUiTexture.uvCoords);
-    pushTexture(renderer, gameState->bannerTexture.handle, make_float3(pos1.x, pos1.y, UI_Z_POS), scale, make_float4(1, 1, 1, 1), gameState->bannerTexture.uvCoords);
-    pos = getUiPosition(make_float2(0, 0), anchorPoint, pos, resolution);
+    pushTexture(renderer, t->handle, make_float3(pos1.x, pos1.y, UI_Z_POS), scale, color, t->uvCoords);
+
+    // pushTexture(renderer, global_white_texture, make_float3(pos1.x, pos1.y, UI_Z_POS), bScale, make_float4(1, 0, 0, 0.5f), make_float4(0, 0, 1, 1));
+
+
+    // pos = getUiPosition(make_float2(0, 0), anchorPoint, pos, resolution);
     pushShader(renderer, &sdfFontShader);
     draw_text(renderer, &gameState->font, text, pos1.x - 0.5f*bScale.x, pos1.y + 0.5f*bScale.y, fontSize, make_float4(0, 0, 0, 1)); 
 }
@@ -118,12 +146,13 @@ void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, 
         }
 
         pushShader(renderer, &sdfFontShader);
+        
         char *str = easy_createString_printf(&globalPerFrameArena, "%d", gameState->gamePlay.treeCount);
-        draw_text(renderer, &gameState->font, str, p.x, p.y, fontSize, make_float4(0, 0, 0, 1)); 
-
+        float2 bounds = get_scale_rect2f(getTextBounds(renderer, &gameState->font, str, 0, 0, fontSize)); 
+        draw_text(renderer, &gameState->font, str, (p.x - 0.5f*bounds.x) + 2, (p.y + 0.5f*bounds.y) - 2, fontSize, make_float4(0, 0, 0, 1)); 
     }
 
-void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float windowWidth, float windowHeight){
+void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float windowWidth, float windowHeight, float2 mouseP_01){
 	DEBUG_TIME_BLOCK();
     GamePlay *play = &gameState->gamePlay;
 
@@ -134,11 +163,12 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
 	float2 resolution = make_float2(fuaxWidth, fuaxWidth*aspectRatio_yOverX);
 	float16 fovMatrix = make_ortho_matrix_bottom_left_corner(resolution.x, resolution.y, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
     pushMatrix(renderer, fovMatrix);
-	
+
+    float2 mouseP = make_float2(mouseP_01.x*resolution.x, mouseP_01.y*resolution.y);
     // drawScrollText("YOUR TURN", gameState, renderer, make_float2(1, 1));
 
     char *str = easy_createString_printf(&globalPerFrameArena, "TURN: %d/%d", play->turnCount, play->maxTurnCount);
-    drawScrollText(str, gameState, renderer, make_float2(1, 1), UI_ANCHOR_TOP_LEFT, resolution);
+    drawScrollText(str, gameState, renderer, make_float2(1, 1), UI_ANCHOR_TOP_LEFT, resolution, mouseP);
     
     // {
     //NOTE: Drawing the time left string
@@ -176,36 +206,12 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         pushTexture(renderer, l->handle, p1, s1, make_float4(1, 1, 1, 1), l->uvCoords);
 
     }
-    {
-        char *text = "";
-        switch (play->phase) {
-            case GAME_TURN_PHASE_COMMAND: {
-                text = "COMMAND";
-            } break;
-            case GAME_TURN_PHASE_MOVE: {
-                text = "MOVE";
-            } break;
-            case GAME_TURN_PHASE_SHOOT: {
-                text = "SHOOT";
-            } break;
-            case GAME_TURN_PHASE_CHARGE: {
-                text = "CHARGE";
-            } break;
-            case GAME_TURN_PHASE_FIGHT: {
-                text = "FIGHT";
-            } break;
-            case GAME_TURN_PHASE_BATTLESHOCK: {
-                text = "BATTLESHOCK";
-            } break;
-            default: {
-
-            } break;
-        }
-
-        drawScrollText(text, gameState, renderer, make_float2(0, 1), UI_ANCHOR_CENTER_BOTTOM, resolution);
+    if(gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT){
+        char *text = "FINISH MOVE";
+        drawScrollText(text, gameState, renderer, make_float2(0, 1), UI_ANCHOR_CENTER_BOTTOM, resolution, mouseP, UI_BUTTON_NEXT_TURN);
     }
-    
-
-    
-    
+    // {
+    //     char *text = "FINISH : MOVE 2 / 3\nHey";
+    //     drawScrollText(text, gameState, renderer, make_float2(0, 0), UI_ANCHOR_CENTER, resolution);
+    // }
 }

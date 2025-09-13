@@ -100,7 +100,7 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	float16 fovMatrix = make_ortho_matrix_origin_center(gameState->planeSizeX*gameState->zoomLevel, gameState->planeSizeY*gameState->zoomLevel, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
 	
 	updateAndRenderEntities(gameState, renderer, dt, fovMatrix, windowWidth, windowHeight);
-	drawGameUi(gameState, renderer, dt, windowWidth, windowHeight);
+	drawGameUi(gameState, renderer, dt, windowWidth, windowHeight, mouseP_01);
 
 #if DEBUG_BUILD
 	// drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);

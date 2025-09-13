@@ -139,9 +139,9 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
             assert(p);
 
             Rect3f spawnBox = make_rect3f_center_dim(particler->worldP, particler->spawnBox);
-            float x = lerp(spawnBox.minX, spawnBox.maxX, make_lerpTValue((float)rand() / RAND_MAX));
-            float y = lerp(spawnBox.minY, spawnBox.maxY, make_lerpTValue((float)rand() / RAND_MAX));
-            float z = lerp(spawnBox.minZ, spawnBox.maxZ, make_lerpTValue((float)rand() / RAND_MAX));
+            float x = lerp(spawnBox.minX, spawnBox.maxX, make_lerpTValue((float)rand() / (float)RAND_MAX));
+            float y = lerp(spawnBox.minY, spawnBox.maxY, make_lerpTValue((float)rand() / (float)RAND_MAX));
+            float z = lerp(spawnBox.minZ, spawnBox.maxZ, make_lerpTValue((float)rand() / (float)RAND_MAX));
             p->T.pos = make_float3(x, y, z);
             p->T.scale = make_float3(random_between_float(pattern.randomSize.x, pattern.randomSize.y), random_between_float(pattern.randomSize.x, pattern.randomSize.y), 0.1f);
 

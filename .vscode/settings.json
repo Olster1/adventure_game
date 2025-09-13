@@ -27,6 +27,8 @@
         "stack": "cpp",
         "__bit_reference": "cpp",
         "complex": "cpp",
-        "deque": "cpp"
+        "deque": "cpp",
+        "__split_buffer": "cpp",
+        "initializer_list": "cpp"
     }
 }

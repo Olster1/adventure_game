@@ -221,7 +221,7 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 			// 	pushRect(renderer, a, make_float2(0.3f, 0.3f), make_float4(1, 0, 0, 1));
 			// }
 
-			if((e->flags & ENTITY_SELECTABLE) && (e->flags & ENTITY_ACTIVE)) {
+			if((e->flags & ENTITY_SELECTABLE) && (e->flags & ENTITY_ACTIVE) && !e->turnComplete) {
 				bool added = false;
 				{
 					//NOTE: This is the drag selection 
@@ -342,7 +342,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 
 	sortAndRenderEntityQueue(renderer);
 	renderAllDamageSplats(gameState);
-
 	
 	drawClouds(gameState, renderer, dt);
 	// drawCloudsAsTexture(gameState, renderer, dt, fovMatrix, windowSize);

@@ -1308,6 +1308,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
     //NOTE: Update the entity move cycle
     if(e->moves != 0) {
+        e->turnComplete = true;
         float3 lastP = convertRealWorldToBlockCoords(e->pos); 
 
         float3 target = e->moves->move;
@@ -1357,7 +1358,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 }
 
 void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP, Entity *e,  float dt) {
-    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_SELECTABLE)) {
+    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_SELECTABLE) && !e->turnComplete) {
          if(!gameState->perFrameDamageSplatArray) {
             gameState->perFrameDamageSplatArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
         }
@@ -1365,7 +1366,7 @@ void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP,
         char *str = easy_createString_printf(&globalPerFrameArena, "%d", e->maxMoveDistance);
         float3 p = renderP;
         p.y += 0.5f;
-        p.z = 1;
+        p.z = RENDER_Z;
         RenderDamageSplatItem r = {};
         r.string = str;
         r.p = p;

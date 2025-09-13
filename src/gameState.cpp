@@ -101,6 +101,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->kLogoText = backendRenderer_loadFromFileToGPU(backendRenderer, "../images/ui/kLogo.png");
 		gameState->gLogoText = backendRenderer_loadFromFileToGPU(backendRenderer, "../images/ui/gLogo.png");
 		gameState->blueText = backendRenderer_loadFromFileToGPU(backendRenderer, "../images/ui/b.png");
+		gameState->buttonTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../images/ui/button.png");
 		gameState->redText = backendRenderer_loadFromFileToGPU(backendRenderer, "../images/ui/r.png");
 		gameState->selectImage = backendRenderer_loadFromFileToGPU(backendRenderer, "../images/ui/select.png");
 		gameState->cloudText[0] = textureAtlas_getItem(&gameState->textureAtlas, "cloud.png");
@@ -110,7 +111,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->stumpTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "stump.png");
 		gameState->logTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "log.png");
 
-		gameState->splatTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation.png");
+		gameState->splatTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation1.png");
 		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
 
 		gameState->arrows[0] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowRight.png");

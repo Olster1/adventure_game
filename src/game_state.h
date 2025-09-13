@@ -148,6 +148,7 @@ typedef struct {
 	Texture kLogoText;
 	Texture gLogoText;
 	Texture blueText;
+	Texture buttonTexture;
 	Texture redText;
 	Texture selectImage;
 	AtlasAsset *cloudText[3];

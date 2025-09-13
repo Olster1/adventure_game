@@ -39,6 +39,7 @@ typedef struct {
     float originalScaleFactor;
     stbtt_fontinfo *fontInfo;
 
+    float padding;
     char *fileName;
     int fontHeight;
     FontSheet *sheets;
@@ -62,11 +63,11 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
     font->originalScaleFactor = scale;
     
     //NOTE(ollie): Scale the padding around the glyph proportional to the size of the glyph
-    s32 padding = (s32)(maxHeightForFontInPixels / 1.5f);
+    font->padding = 2;
     //NOTE(ollie): The distance from the glyph center that determines the edge (i.e. all the 'in' pixels)
     u8 onedge_value = (u8)(0.5f*255); 
     //NOTE(ollie): The rate at which the distance from the center should increase
-    float pixel_dist_scale = (float)onedge_value/(float)padding;
+    float pixel_dist_scale = 0.3*(float)onedge_value/font->padding;
 
     font->fontHeight = maxHeightForFontInPixels;
 
@@ -87,7 +88,7 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
 
         assert((endChar - firstChar) <= 256);
         
-        u8 *data = stbtt_GetCodepointSDF(font->fontInfo, scale, codeIndex, padding, onedge_value, pixel_dist_scale, &width, &height, &xoffset, &yoffset);    
+        u8 *data = stbtt_GetCodepointSDF(font->fontInfo, scale, codeIndex, font->padding, onedge_value, pixel_dist_scale, &width, &height, &xoffset, &yoffset);    
             
         assert(sheet->glyphCount < MY_MAX_GLYPH_COUNT);
         GlyphInfo *info = &sheet->glyphs[sheet->glyphCount++];
@@ -267,7 +268,7 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
 
     maxWidth += startX;
 
-    float yAt = -font->fontHeight*fontScale + yAt_;
+    float yAt = yAt_ - 0.5f*font->fontHeight*fontScale - 2.0f*font->padding*fontScale;
 
     bool newLine = true;
 
@@ -300,7 +301,7 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
 
                 if((*at == '\n' || xAt >= maxWidth) && token.type != TOKEN_SPACE && roundCount < 1) {
                     //NOTE: New line
-                    yAt -= font->fontHeight*fontScale;
+                    yAt -= font->fontHeight*fontScale - 2.0f*font->padding*fontScale;
                     if(*at == '\n') {
                         at++;
                         lastRune = '\n';
@@ -320,12 +321,11 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
 
                     if(g.hasTexture) {
 
-                        float4 color = font_color;//make_float4(0, 0, 0, 1);
+                        float4 color = font_color;
                         float2 scale = make_float2(g.width*fontScale, g.height*fontScale);
                         
-
                         if(newLine) {
-                            xAt = startX + fontScale*g.xoffset + 0.5f*scale.x;
+                            xAt = startX + fontScale*g.xoffset;
                         }
 
                         float3 pos = {};
@@ -333,7 +333,7 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
                         //      we offset the position by the width & height;
                         pos.x = xAt + fontScale*g.xoffset + 0.5f*fontScale*g.width;
                         assert(pos.x >= startX);
-                        pos.y = yAt -fontScale*g.yoffset - 0.5f*g.height*fontScale;
+                        pos.y = yAt - fontScale*g.yoffset - 0.5f*g.height*fontScale;
                         pos.z = 0;
 
                         if(renderGlyph) {

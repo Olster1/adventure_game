@@ -41,7 +41,7 @@ inline float safeDivide(float a, float b) {
 
 inline float random_between_float(float a, float b) {
     // Generate a random float between a and b (exclusive)
-    return a + (rand() / (float)RAND_MAX) * (b - a);
+    return a + ((float)rand() / (float)RAND_MAX) * (b - a);
 }
 
 int random_between_int(int a, int b) {
