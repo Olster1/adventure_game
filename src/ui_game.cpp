@@ -9,7 +9,13 @@ enum UiAnchorPoint {
     UI_ANCHOR_CENTER_RIGHT,
     UI_ANCHOR_CENTER_TOP,
     UI_ANCHOR_CENTER_BOTTOM,
-    
+};
+
+enum UiButtonType {
+    UI_BUTTON_NONE,
+    UI_BUTTON_NEXT_TURN,
+    UI_BUTTON_PEASEANT_ACTION_CHOP,
+    UI_BUTTON_PEASEANT_ACTION_BUILD
 };
 
 float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos, float2 resolution) {
@@ -60,11 +66,6 @@ float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos
     return pos;
 }
 
-enum UiButtonType {
-    UI_BUTTON_NONE,
-    UI_BUTTON_NEXT_TURN,
-};
-
 void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution, float2 mouseP, UiButtonType buttonType = UI_BUTTON_NONE) {
     DEBUG_TIME_BLOCK();
     float fontSize = 0.1;
@@ -75,11 +76,7 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     float2 bScale = get_scale_rect2f(bounds);
     float sizeFactor = 1.25f;
 
-    Texture *t = &gameState->bannerTexture;
-    if(buttonType != UI_BUTTON_NONE) {
-        t = &gameState->buttonTexture;
-    }
-
+    
     scale.x = math3d_maxfloat(sizeFactor*bScale.x, scale.x);
     scale.y = math3d_maxfloat(sizeFactor*bScale.y, scale.y);
     
@@ -87,14 +84,28 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     float2 pos1 = getUiPosition(percentOffset, anchorPoint, pos, resolution);
 
     float4 color = make_float4(1, 1, 1, 1);
+    Texture *t = &gameState->bannerTexture;
+    if(buttonType != UI_BUTTON_NONE) {
+        t = &gameState->buttonTexture;
+    }
+    
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
     bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(pos1, scale), mouseP);
     if(inSelectionBounds) {
-        color = make_float4(0.4f, 0.4f, 0.4f, 1);
+        gameState->hitUI = true;
+        if(buttonType != UI_BUTTON_NONE) {
+            color = make_float4(0.4f, 0.4f, 0.4f, 1);
 
-        if(clicked) {
-            if(buttonType == UI_BUTTON_NEXT_TURN) {
-                gameState->gamePlay.turnOn = GAME_TURN_PLAYER_GOBLIN;
+            if(clicked) {
+                if(buttonType == UI_BUTTON_NEXT_TURN) {
+                    gameState->gamePlay.turnOn = GAME_TURN_PLAYER_GOBLIN;
+                } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_BUILD && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT) {
+                    gameState->selectedMoveType = MOVE_TYPE_BUILD;
+                    gameState->gameChoiceUi = GAME_CHOICE_UI_PEASANT_BUILD;
+                } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_CHOP && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT) {
+                    gameState->selectedMoveType = MOVE_TYPE_CHOP;
+                    gameState->gameChoiceUi = GAME_CHOICE_UI_NONE;
+                }
             }
         }
     }
@@ -109,6 +120,16 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     // pos = getUiPosition(make_float2(0, 0), anchorPoint, pos, resolution);
     pushShader(renderer, &sdfFontShader);
     draw_text(renderer, &gameState->font, text, pos1.x - 0.5f*bScale.x, pos1.y + 0.5f*bScale.y, fontSize, make_float4(0, 0, 0, 1)); 
+}
+
+void checkDimissUIOptions(GameState *gameState) {
+    bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+    if(clicked && gameState->lastGameChoiceUi == gameState->gameChoiceUi) {
+        gameState->gameChoiceUi = GAME_CHOICE_UI_NONE;
+        if(gameState->selectedMoveType == MOVE_TYPE_NONE) {
+            gameState->selectedEntityCount = 0;
+        }
+    }
 }
 
 void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, float dt) {
@@ -154,6 +175,7 @@ void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, 
 
 void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float windowWidth, float windowHeight, float2 mouseP_01){
 	DEBUG_TIME_BLOCK();
+    gameState->hitUI = false;
     GamePlay *play = &gameState->gamePlay;
 
     play->turnTime += dt;
@@ -210,8 +232,24 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         char *text = "FINISH MOVE";
         drawScrollText(text, gameState, renderer, make_float2(0, 1), UI_ANCHOR_CENTER_BOTTOM, resolution, mouseP, UI_BUTTON_NEXT_TURN);
     }
-    // {
-    //     char *text = "FINISH : MOVE 2 / 3\nHey";
-    //     drawScrollText(text, gameState, renderer, make_float2(0, 0), UI_ANCHOR_CENTER, resolution);
-    // }
+
+      if(gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT && gameState->gameChoiceUi == GAME_CHOICE_UI_PEASANT){
+        if(gameState->selectedMoveType == MOVE_TYPE_NONE) { //Note: Haven't selected a movetype
+            gameState->hitUI = true;
+            pushTexture(renderer, global_white_texture, make_float3(0.5f*resolution.x, 0.5f*resolution.y, 1), make_float2(30, 30), make_float4(0, 0, 0, 0.5), make_float4(0, 0, 1, 1));
+            drawScrollText("BUILD", gameState, renderer, make_float2(0, 10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_BUILD);
+            drawScrollText("CHOP", gameState, renderer, make_float2(0, -10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_CHOP);
+
+            checkDimissUIOptions(gameState);
+        }
+    } else if(gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT && gameState->gameChoiceUi == GAME_CHOICE_UI_PEASANT_BUILD) {
+        gameState->hitUI = true;
+        pushTexture(renderer, global_white_texture, make_float3(0.5f*resolution.x, 0.5f*resolution.y, 1), make_float2(30, 30), make_float4(0, 0, 0, 0.5), make_float4(0, 0, 1, 1));
+        drawScrollText("BUILD", gameState, renderer, make_float2(0, 10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_BUILD);
+        
+        checkDimissUIOptions(gameState);
+    }
+
+    gameState->lastGameChoiceUi = gameState->gameChoiceUi;
+    
 }

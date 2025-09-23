@@ -158,16 +158,33 @@ void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent 
 	}
 }
 
+bool maybeAddEntityToSelection(GameState *gameState, Entity *e) {
+	bool result = false;
+	if((e->flags & ENTITY_SELECTABLE) && gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT && !gameState->hitUI) {
+		SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
+		data->id = e->id;
+		data->e = e;
+		data->worldPos = e->pos;
+		result = true;
+		if(e->animations == &gameState->peasantAnimations){
+			gameState->gameChoiceUi = GAME_CHOICE_UI_PEASANT;
+			gameState->selectedMoveType = MOVE_TYPE_NONE;
+		}
+	}
+	return result;
+}
+
 void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool clicked, float2 worldMousePLvl0, float3 mouseWorldP) {
-	bool released = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].releasedCount > 0;
 	pushShader(renderer, &lineShader);
 
-	if(clicked) {
+	if(clicked && !gameState->hitUI && !global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
 		gameState->startDragPForSelect = worldMousePLvl0;
-		gameState->holdingSelect = true;
+		gameState->draggingEntitySelector = true;
+	} else if(!global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || gameState->hitUI) {
+		gameState->draggingEntitySelector = false;
 	}
 	
-	if((global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || released) && !global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
+	if(gameState->draggingEntitySelector) {
 		gameState->selectedEntityCount = 0;
 		float2 a = worldMousePLvl0;
 		float2 b = gameState->startDragPForSelect;
@@ -206,20 +223,9 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 			pushLine(renderer, posA, posB, make_float4(1, 1, 1, 1));
 		}
 
-		// pushShader(renderer, &terrainLightingShader);
-
 		//NOTE: See if entities are selected 
 		for(int i = 0; i < gameState->entityCount; ++i) {
 			Entity *e = gameState->entities + i;
-
-			// {
-			// 	float3 a = e->pos;
-			// 	a.y += a.z;
-			// 	a.z = 2;
-			// 	a.x -= gameState->cameraPos.x;
-			// 	a.y -= gameState->cameraPos.y;
-			// 	pushRect(renderer, a, make_float2(0.3f, 0.3f), make_float4(1, 0, 0, 1));
-			// }
 
 			if((e->flags & ENTITY_SELECTABLE) && (e->flags & ENTITY_ACTIVE) && !e->turnComplete) {
 				bool added = false;
@@ -230,37 +236,30 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 					if(does_rect2f_overlap(make_rect2f_min_max(a.x, a.y, b.x, b.y), make_rect2f_center_dim(renderP.xy, make_float2(1, 1)))) {
 						assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
 						if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
-							SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
-							data->id = e->id;
-							data->e = e;
-							data->worldPos = e->pos;
-							added = true;
+							added = maybeAddEntityToSelection(gameState, e);
 						}
 					}
 				}
 
-				if(!added) {
-					//NOTE: This is the single selection of entities
-					float3 entityWorldPos = getWorldPosition(e);
-					bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(entityWorldPos.xy, scale_float2(0.5f, e->scale.xy)), mouseWorldP.xy);
+				// if(!added) {
+				// 	//NOTE: This is the single selection of entities
+				// 	float3 entityWorldPos = getWorldPosition(e);
+				// 	bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(entityWorldPos.xy, scale_float2(0.5f, e->scale.xy)), mouseWorldP.xy);
 
-					if(released) {
-						if(inSelectionBounds) {
-							assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
-							if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
-								SelectedEntityData *data = &gameState->selectedEntityIds[gameState->selectedEntityCount++];
-								data->id = e->id;
-								data->e = e;
-								data->worldPos = e->pos;
-							}
-						}
-					} 
-				}
+				// 	if(released) {
+				// 		if(inSelectionBounds) {
+				// 			assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
+				// 			if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
+				// 				maybeAddEntityToSelection(gameState, e);
+				// 			}
+				// 		}
+				// 	} 
+				// }
 			}
 		}
 		
 	} else {
-		gameState->holdingSelect = false;
+		gameState->startDragPForSelect = worldMousePLvl0;
 	}
 }
 
@@ -303,17 +302,19 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	float3 worldMouseP = getMouseWorldP(gameState, windowWidth, windowHeight);
 	float2 worldMousePLvl0 = getMouseWorldPLvl0(gameState, windowWidth, windowHeight);
 
+	bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0 && !gameState->hitUI;
+
 	//NOTE: Gameplay code
 	for(int i = 0; i < gameState->entityCount; ++i) {
 		Entity *e = &gameState->entities[i];
 
 		if(e->flags & ENTITY_ACTIVE) {
-			updateEntity(gameState, renderer, e, dt, worldMouseP);
+			updateEntity(gameState, renderer, e, dt, worldMouseP, clicked);
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
 
-	bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
+	
 	bool submitMove = gameState->selectedEntityCount > 0 && clicked;
 
 	if(gameState->selectedMoveCount == gameState->selectedEntityCount) {

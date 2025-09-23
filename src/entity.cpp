@@ -1131,10 +1131,8 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
 }
 
 
-void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP) {
+void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool clicked) {
     DEBUG_TIME_BLOCK();
-    bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
-
     float3 p = getWorldPosition(e);
     
     {
@@ -1188,13 +1186,10 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
         if(e->type == ENTITY_PEASANT && !easyAnimation_getCurrentAnimation(&e->animationController, &e->animations->attackSide)) {
             float3 mouseP = convertRealWorldToBlockCoords(mouseWorldP);
-            bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
-
             checkCutTree(gameState, clicked, mouseP, e, make_float3(0, 1, 0));
             checkCutTree(gameState, clicked, mouseP, e, make_float3(0, -1, 0));
             checkCutTree(gameState, clicked, mouseP, e, make_float3(1, 0, 0));
             checkCutTree(gameState, clicked, mouseP, e, make_float3(-1, 0, 0));
-            
         }
     }
 
@@ -1358,7 +1353,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 }
 
 void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP, Entity *e,  float dt) {
-    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_SELECTABLE) && !e->turnComplete) {
+    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_SELECTABLE) && !e->turnComplete && gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT) {
          if(!gameState->perFrameDamageSplatArray) {
             gameState->perFrameDamageSplatArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
         }

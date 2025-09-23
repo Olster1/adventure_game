@@ -90,6 +90,18 @@ struct RenderDamageSplatItem {
 	float4 color;
 };
 
+enum SelectedMoveType {
+	MOVE_TYPE_NONE,
+	MOVE_TYPE_CHOP,
+	MOVE_TYPE_BUILD,
+};
+
+enum GameChoiceUi {
+    GAME_CHOICE_UI_NONE,
+    GAME_CHOICE_UI_PEASANT,
+	GAME_CHOICE_UI_PEASANT_BUILD,
+};
+
 typedef struct {
 	bool initialized;
 
@@ -98,10 +110,16 @@ typedef struct {
 
 	SoundAssets soundAssets;
 
+	SelectedMoveType selectedMoveType;
+	bool hitUI;
+	GameChoiceUi gameChoiceUi;
+	GameChoiceUi lastGameChoiceUi;
+
 	float2 startDragPForSelect;
-	bool holdingSelect;
 	int selectedMoveCount;
 	int selectedEntityCount;
+	bool draggingEntitySelector;
+	
 	SelectedEntityData selectedEntityIds[32];
 
 	EntityTileItem *freeListEntityTileItem;
