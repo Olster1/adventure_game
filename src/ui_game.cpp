@@ -173,6 +173,20 @@ void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, 
         draw_text(renderer, &gameState->font, str, (p.x - 0.5f*bounds.x) + 2, (p.y + 0.5f*bounds.y) - 2, fontSize, make_float4(0, 0, 0, 1)); 
     }
 
+void renderCost(GameState *gameState, Renderer *renderer, float xAt, float yAt, BuildingCost cost) {
+    float2 s1 = make_float2(5, 5);
+    float fontSize = 0.1;
+    Texture *b = &gameState->logTexture;
+    pushTexture(renderer, b->handle, make_float3(xAt, yAt, UI_Z_POS), s1, make_float4(1, 1, 1, 1), b->uvCoords);
+
+    pushShader(renderer, &sdfFontShader);
+    char *str = easy_createString_printf(&globalPerFrameArena, "%d", cost.wood);
+    float2 bounds = get_scale_rect2f(getTextBounds(renderer, &gameState->font, str, 0, 0, fontSize)); 
+    draw_text(renderer, &gameState->font, str, (xAt - 0.5f*bounds.x), (yAt + 0.5f*bounds.y) - 4, fontSize, make_float4(0, 0, 0, 1)); 
+
+    pushShader(renderer, &pixelArtShader);
+}
+
 void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float windowWidth, float windowHeight, float2 mouseP_01){
 	DEBUG_TIME_BLOCK();
     gameState->hitUI = false;
@@ -236,7 +250,9 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
       if(gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT && gameState->gameChoiceUi == GAME_CHOICE_UI_PEASANT){
         if(gameState->selectedMoveType == MOVE_TYPE_NONE) { //Note: Haven't selected a movetype
             gameState->hitUI = true;
-            pushTexture(renderer, global_white_texture, make_float3(0.5f*resolution.x, 0.5f*resolution.y, 1), make_float2(30, 30), make_float4(0, 0, 0, 0.5), make_float4(0, 0, 1, 1));
+            pushShader(renderer, &pixelArtShader);
+            Texture *bannerTexture = &gameState->bannerTexture;
+            pushTexture(renderer, bannerTexture->handle, make_float3(0.5f*resolution.x, 0.5f*resolution.y, 1), make_float2(30, 30), make_float4(1, 1, 1, 1), bannerTexture->uvCoords);
             drawScrollText("BUILD", gameState, renderer, make_float2(0, 10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_BUILD);
             drawScrollText("CHOP", gameState, renderer, make_float2(0, -10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_CHOP);
 
@@ -244,8 +260,20 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         }
     } else if(gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT && gameState->gameChoiceUi == GAME_CHOICE_UI_PEASANT_BUILD) {
         gameState->hitUI = true;
-        pushTexture(renderer, global_white_texture, make_float3(0.5f*resolution.x, 0.5f*resolution.y, 1), make_float2(30, 30), make_float4(0, 0, 0, 0.5), make_float4(0, 0, 1, 1));
-        drawScrollText("BUILD", gameState, renderer, make_float2(0, 10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_BUILD);
+        Texture *bannerTexture = &gameState->bannerTexture;
+        pushShader(renderer, &pixelArtShader);
+        pushTexture(renderer, bannerTexture->handle, make_float3(0.5f*resolution.x, 0.5f*resolution.y, 1), make_float2(40, 30), make_float4(1, 1, 1, 1), bannerTexture->uvCoords);
+        float buildingSize = 10;
+        float padding = 5;
+        float xAt = 0.5f*resolution.x - 0.5f*(buildingSize + padding);
+        float yAt = 0.57f*resolution.y;
+        float costY = yAt - buildingSize;
+        pushTexture(renderer, gameState->houseTexture.handle, make_float3(xAt, yAt, 1), make_float2(buildingSize, gameState->houseTexture.aspectRatio_h_over_w*buildingSize), make_float4(1, 1, 1, 1), gameState->houseTexture.uvCoords);
+        renderCost(gameState, renderer, xAt, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE]);
+        xAt += buildingSize + padding;
+        pushTexture(renderer, gameState->towerTexture.handle, make_float3(xAt, yAt, 1), make_float2(buildingSize, gameState->towerTexture.aspectRatio_h_over_w*buildingSize), make_float4(1, 1, 1, 1), gameState->towerTexture.uvCoords);
+        renderCost(gameState, renderer, xAt, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER]);
+
         
         checkDimissUIOptions(gameState);
     }
