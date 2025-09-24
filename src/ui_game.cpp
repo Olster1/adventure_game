@@ -15,7 +15,9 @@ enum UiButtonType {
     UI_BUTTON_NONE,
     UI_BUTTON_NEXT_TURN,
     UI_BUTTON_PEASEANT_ACTION_CHOP,
-    UI_BUTTON_PEASEANT_ACTION_BUILD
+    UI_BUTTON_PEASEANT_ACTION_BUILD,
+    UI_BUTTON_PEASEANT_ACTION_BUILD_HOUSE,
+    UI_BUTTON_PEASEANT_ACTION_BUILD_TOWER,
 };
 
 float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos, float2 resolution) {
@@ -66,29 +68,7 @@ float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos
     return pos;
 }
 
-void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution, float2 mouseP, UiButtonType buttonType = UI_BUTTON_NONE) {
-    DEBUG_TIME_BLOCK();
-    float fontSize = 0.1;
-	Rect2f bounds = getTextBounds(renderer, &gameState->font, text, 0, 0, fontSize); 
-    float ar = gameState->bannerTexture.aspectRatio_h_over_w;
-    float scalef = 25;
-    float2 scale = make_float2(scalef, ar*scalef);
-    float2 bScale = get_scale_rect2f(bounds);
-    float sizeFactor = 1.25f;
-
-    
-    scale.x = math3d_maxfloat(sizeFactor*bScale.x, scale.x);
-    scale.y = math3d_maxfloat(sizeFactor*bScale.y, scale.y);
-    
-    float2 pos = make_float2(0.5f*scale.x, 0.5f*scale.y);
-    float2 pos1 = getUiPosition(percentOffset, anchorPoint, pos, resolution);
-
-    float4 color = make_float4(1, 1, 1, 1);
-    Texture *t = &gameState->bannerTexture;
-    if(buttonType != UI_BUTTON_NONE) {
-        t = &gameState->buttonTexture;
-    }
-    
+float4 checkButtonInteraction(GameState *gameState, UiButtonType buttonType, float2 pos1, float2 scale, float2 mouseP, float4 color) {
     bool clicked = global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0;
     bool inSelectionBounds = in_rect2f_bounds(make_rect2f_center_dim(pos1, scale), mouseP);
     if(inSelectionBounds) {
@@ -109,6 +89,37 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
             }
         }
     }
+    return color;
+}
+
+bool hasEnoughResourses(GameState *gameState, BuildingCost cost) {
+    bool result = (gameState->gamePlay.treeCount >= cost.wood && gameState->gamePlay.stoneCount >= cost.stone);
+    return result;
+}
+
+void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution, float2 mouseP, UiButtonType buttonType = UI_BUTTON_NONE) {
+    DEBUG_TIME_BLOCK();
+    float fontSize = 0.1;
+	Rect2f bounds = getTextBounds(renderer, &gameState->font, text, 0, 0, fontSize); 
+    float ar = gameState->bannerTexture.aspectRatio_h_over_w;
+    float scalef = 25;
+    float2 scale = make_float2(scalef, ar*scalef);
+    float2 bScale = get_scale_rect2f(bounds);
+    float sizeFactor = 1.25f;
+
+    scale.x = math3d_maxfloat(sizeFactor*bScale.x, scale.x);
+    scale.y = math3d_maxfloat(sizeFactor*bScale.y, scale.y);
+    
+    float2 pos = make_float2(0.5f*scale.x, 0.5f*scale.y);
+    float2 pos1 = getUiPosition(percentOffset, anchorPoint, pos, resolution);
+
+    float4 color = make_float4(1, 1, 1, 1);
+    Texture *t = &gameState->bannerTexture;
+    if(buttonType != UI_BUTTON_NONE) {
+        t = &gameState->buttonTexture;
+    }
+    
+   color = checkButtonInteraction(gameState, buttonType, pos1, scale, mouseP, color);
 
     pushShader(renderer, &pixelArtShader);
     pushTexture(renderer, gameState->shadowUiTexture.handle, make_float3(pos1.x, pos1.y, UI_Z_POS), scale, make_float4(1, 1, 1, 0.3), gameState->shadowUiTexture.uvCoords);
@@ -173,14 +184,14 @@ void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, 
         draw_text(renderer, &gameState->font, str, (p.x - 0.5f*bounds.x) + 2, (p.y + 0.5f*bounds.y) - 2, fontSize, make_float4(0, 0, 0, 1)); 
     }
 
-void renderCost(GameState *gameState, Renderer *renderer, float xAt, float yAt, BuildingCost cost) {
+void renderCost(GameState *gameState, Renderer *renderer, float xAt, float yAt, int cost, Texture *b) {
     float2 s1 = make_float2(5, 5);
     float fontSize = 0.1;
-    Texture *b = &gameState->logTexture;
+    
     pushTexture(renderer, b->handle, make_float3(xAt, yAt, UI_Z_POS), s1, make_float4(1, 1, 1, 1), b->uvCoords);
 
     pushShader(renderer, &sdfFontShader);
-    char *str = easy_createString_printf(&globalPerFrameArena, "%d", cost.wood);
+    char *str = easy_createString_printf(&globalPerFrameArena, "%d", cost);
     float2 bounds = get_scale_rect2f(getTextBounds(renderer, &gameState->font, str, 0, 0, fontSize)); 
     draw_text(renderer, &gameState->font, str, (xAt - 0.5f*bounds.x), (yAt + 0.5f*bounds.y) - 4, fontSize, make_float4(0, 0, 0, 1)); 
 
@@ -268,12 +279,36 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         float xAt = 0.5f*resolution.x - 0.5f*(buildingSize + padding);
         float yAt = 0.57f*resolution.y;
         float costY = yAt - buildingSize;
-        pushTexture(renderer, gameState->houseTexture.handle, make_float3(xAt, yAt, 1), make_float2(buildingSize, gameState->houseTexture.aspectRatio_h_over_w*buildingSize), make_float4(1, 1, 1, 1), gameState->houseTexture.uvCoords);
-        renderCost(gameState, renderer, xAt, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE]);
-        xAt += buildingSize + padding;
-        pushTexture(renderer, gameState->towerTexture.handle, make_float3(xAt, yAt, 1), make_float2(buildingSize, gameState->towerTexture.aspectRatio_h_over_w*buildingSize), make_float4(1, 1, 1, 1), gameState->towerTexture.uvCoords);
-        renderCost(gameState, renderer, xAt, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER]);
 
+        float costOffset = 3;
+
+        {
+            float3 p = make_float3(xAt, yAt, 1);
+            float2 scale = make_float2(buildingSize, gameState->houseTexture.aspectRatio_h_over_w*buildingSize);
+            bool hasEnough = hasEnoughResourses(gameState, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE]);
+            float4 color = checkButtonInteraction(gameState, hasEnough ? UI_BUTTON_PEASEANT_ACTION_BUILD_HOUSE : UI_BUTTON_NONE, p.xy, scale, mouseP, make_float4(1, 1, 1, 1));
+            if(!hasEnough) {
+                color = make_float4(1, 0, 0, 1);
+            }
+            pushTexture(renderer, gameState->houseTexture.handle, p, scale, color, gameState->houseTexture.uvCoords);
+        }
+        
+        renderCost(gameState, renderer, xAt - costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE].wood, &gameState->logTexture);
+        renderCost(gameState, renderer, xAt + costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE].stone, &gameState->stoneTexture);
+        
+        xAt += buildingSize + padding;
+        {
+            float3 p = make_float3(xAt, yAt, 1);
+            float2 scale = make_float2(buildingSize, gameState->towerTexture.aspectRatio_h_over_w*buildingSize);
+            bool hasEnough = hasEnoughResourses(gameState, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER]);
+            float4 color = checkButtonInteraction(gameState, hasEnough ? UI_BUTTON_PEASEANT_ACTION_BUILD_TOWER : UI_BUTTON_NONE, p.xy, scale, mouseP, make_float4(1, 1, 1, 1));
+            if(!hasEnough) {
+                color = make_float4(1, 0, 0, 1);
+            }
+            pushTexture(renderer, gameState->towerTexture.handle, p, scale, color, gameState->towerTexture.uvCoords);
+        }
+        renderCost(gameState, renderer, xAt - costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER].wood, &gameState->logTexture);
+        renderCost(gameState, renderer, xAt + costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER].stone, &gameState->stoneTexture);
         
         checkDimissUIOptions(gameState);
     }

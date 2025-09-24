@@ -45,6 +45,7 @@ struct GamePlay {
     int maxTurnCount;
     GameTurnPhase phase;
     int treeCount;
+    int stoneCount;
     
     BuildingCost buildingCosts[BUILDING_COST_TOTAL_COUNT];
 };
@@ -61,6 +62,7 @@ GamePlay init_gameplay() {
     gamePlay.maxTurnCount = 10;
     gamePlay.turnCount = 0;
     gamePlay.treeCount = 0;
+    gamePlay.stoneCount = 0;
 
     gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE] = initBuildingCost(3, 2, BUILDING_COST_KNIGHT_HOUSE);
     gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER] = initBuildingCost(6, 4, BUILDING_COST_KNIGHT_TOWER);

@@ -216,7 +216,8 @@ typedef struct {
 
 	float3 averageStartBoardPos;
 	int averageStartBoardCount;
-	
+
+	Texture stoneTexture; //NOTE: Used for building cost ui
 	Texture towerTexture;
 	Animation towerAnimation;
 	Texture towerBurntTexture;
