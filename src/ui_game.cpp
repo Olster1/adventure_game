@@ -11,15 +11,6 @@ enum UiAnchorPoint {
     UI_ANCHOR_CENTER_BOTTOM,
 };
 
-enum UiButtonType {
-    UI_BUTTON_NONE,
-    UI_BUTTON_NEXT_TURN,
-    UI_BUTTON_PEASEANT_ACTION_CHOP,
-    UI_BUTTON_PEASEANT_ACTION_BUILD,
-    UI_BUTTON_PEASEANT_ACTION_BUILD_HOUSE,
-    UI_BUTTON_PEASEANT_ACTION_BUILD_TOWER,
-};
-
 float2 getUiPosition(float2 percentOffset, UiAnchorPoint anchorPoint, float2 pos, float2 resolution) {
     float inverse100 = 1.0f / 100.0f;
     float2 t = make_float2(resolution.x*percentOffset.x*inverse100, resolution.y*percentOffset.y*inverse100);
@@ -80,10 +71,15 @@ float4 checkButtonInteraction(GameState *gameState, UiButtonType buttonType, flo
                 if(buttonType == UI_BUTTON_NEXT_TURN) {
                     gameState->gamePlay.turnOn = GAME_TURN_PLAYER_GOBLIN;
                 } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_BUILD && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT) {
-                    gameState->selectedMoveType = MOVE_TYPE_BUILD;
                     gameState->gameChoiceUi = GAME_CHOICE_UI_PEASANT_BUILD;
                 } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_CHOP && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT) {
                     gameState->selectedMoveType = MOVE_TYPE_CHOP;
+                    gameState->gameChoiceUi = GAME_CHOICE_UI_NONE;
+                } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_BUILD_HOUSE && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT_BUILD) {
+                    gameState->selectedMoveType = MOVE_TYPE_BUILD_HOUSE;
+                    gameState->gameChoiceUi = GAME_CHOICE_UI_NONE;
+                } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_BUILD_TOWER && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT_BUILD) {
+                    gameState->selectedMoveType = MOVE_TYPE_BUILD_TOWER;
                     gameState->gameChoiceUi = GAME_CHOICE_UI_NONE;
                 }
             }
@@ -93,7 +89,8 @@ float4 checkButtonInteraction(GameState *gameState, UiButtonType buttonType, flo
 }
 
 bool hasEnoughResourses(GameState *gameState, BuildingCost cost) {
-    bool result = (gameState->gamePlay.treeCount >= cost.wood && gameState->gamePlay.stoneCount >= cost.stone);
+    // bool result = (gameState->gamePlay.treeCount >= cost.wood && gameState->gamePlay.stoneCount >= cost.stone);
+    bool result = true; //NOTE: Temp
     return result;
 }
 
@@ -265,7 +262,7 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
             Texture *bannerTexture = &gameState->bannerTexture;
             pushTexture(renderer, bannerTexture->handle, make_float3(0.5f*resolution.x, 0.5f*resolution.y, 1), make_float2(30, 30), make_float4(1, 1, 1, 1), bannerTexture->uvCoords);
             drawScrollText("BUILD", gameState, renderer, make_float2(0, 10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_BUILD);
-            drawScrollText("CHOP", gameState, renderer, make_float2(0, -10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_CHOP);
+            drawScrollText("WALK or CHOP", gameState, renderer, make_float2(0, -10), UI_ANCHOR_CENTER, resolution, mouseP, UI_BUTTON_PEASEANT_ACTION_CHOP);
 
             checkDimissUIOptions(gameState);
         }
@@ -310,7 +307,7 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         renderCost(gameState, renderer, xAt - costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER].wood, &gameState->logTexture);
         renderCost(gameState, renderer, xAt + costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER].stone, &gameState->stoneTexture);
         
-        checkDimissUIOptions(gameState);
+        // checkDimissUIOptions(gameState);
     }
 
     gameState->lastGameChoiceUi = gameState->gameChoiceUi;

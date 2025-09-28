@@ -1,3 +1,13 @@
+void clearEntitySelection(GameState *gameState) {
+	gameState->selectedMoveType = MOVE_TYPE_NONE;
+
+	if(gameState->gameChoiceUi == GAME_CHOICE_UI_NONE) {
+		gameState->selectedEntityCount = 0;
+	}
+
+	gameState->gameChoiceUi = GAME_CHOICE_UI_NONE;
+}
+
 float2 getMouseWorldPLvl0(GameState *state, float windowWidth, float windowHeight) {
 	float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
     float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
@@ -125,15 +135,45 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 void drawAllSectionHovers(GameState *gameState, Renderer *renderer, float dt, float3 worldMouseP) {
 	gameState->selectHoverTimer += dt;
 	if(gameState->selectedEntityCount == 0) {
-		drawSelectionHover(gameState, renderer, dt, worldMouseP, 0);
+		
+			drawSelectionHover(gameState, renderer, dt, worldMouseP, 0);			
 	} else {
 		//NOTE: The position all the other positions are relative to
 		float3 startP = getOriginSelection(gameState); 
-		for(int i = 0; i < gameState->selectedEntityCount; ++i) {
-			SelectedEntityData *data = gameState->selectedEntityIds + i; 
-			float3 offset = minus_float3(data->worldPos, startP);
+		
+		if(isTryingToBuild(gameState)) {
+			//NOTE: Draw the area of the building
+			 float3 offsets[HOUSE_DIM_Y_BY_PESEANT*HOUSE_DIM_X];
 
-			drawSelectionHover(gameState, renderer, dt, plus_float3(offset, worldMouseP), data);
+			int offsetCount = 0;
+			for(int y = 0; y < HOUSE_DIM_Y_BY_PESEANT; y++) {
+				for(int x = 0; x < HOUSE_DIM_X; x++) {
+					offsets[offsetCount++] = make_float3(x, y, 0);
+				}
+			}
+			
+			SelectedEntityData *data = gameState->selectedEntityIds + 0; 
+			for(int i = 0; i < arrayCount(offsets); ++i) {
+				float3 tileWorldP = plus_float3(worldMouseP, offsets[i]);
+				tileWorldP = convertRealWorldToBlockCoords(tileWorldP);
+				drawSelectionHover(gameState, renderer, dt, tileWorldP, data);	
+			}
+
+			//NOTE: Draw the hammer in the middle of the selectors
+			float3 mouseP = getRenderWorldP(worldMouseP);
+			mouseP.x -= gameState->cameraPos.x; 
+			mouseP.y -= gameState->cameraPos.y; 
+			mouseP.x += 0.5f;
+			mouseP.y += 0.5f;
+			drawUIActionImage(gameState, &gameState->hammerUiTexture, convertRealWorldToBlockCoords(mouseP), convertRealWorldToBlockCoords(worldMouseP));
+
+		} else {
+			for(int i = 0; i < gameState->selectedEntityCount; ++i) {
+				SelectedEntityData *data = gameState->selectedEntityIds + i; 
+				float3 offset = minus_float3(data->worldPos, startP);
+
+				drawSelectionHover(gameState, renderer, dt, plus_float3(offset, worldMouseP), data);
+			}
 		}
 	}
 }
@@ -313,7 +353,6 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
-
 	
 	bool submitMove = gameState->selectedEntityCount > 0 && clicked;
 
@@ -346,5 +385,9 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	
 	drawClouds(gameState, renderer, dt);
 	// drawCloudsAsTexture(gameState, renderer, dt, fovMatrix, windowSize);
+
+	if(global_platformInput.keyStates[PLATFORM_KEY_ESCAPE].pressedCount > 0) {
+		clearEntitySelection(gameState);
+	}
 	
 }

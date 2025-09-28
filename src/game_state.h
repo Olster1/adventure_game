@@ -82,24 +82,15 @@ struct SoundAssets {
 	GameSoundAsset woodChopSounds[2];
 	GameSoundAsset footsteps[3];
 	GameSoundAsset swordAttack[2];
+	GameSoundAsset hammerBuilding[5];
 	GameSoundAsset medieval1;
+	GameSoundAsset successSound;
+	
 };
 struct RenderDamageSplatItem {
     char *string;
     float3 p;
 	float4 color;
-};
-
-enum SelectedMoveType {
-	MOVE_TYPE_NONE,
-	MOVE_TYPE_CHOP,
-	MOVE_TYPE_BUILD,
-};
-
-enum GameChoiceUi {
-    GAME_CHOICE_UI_NONE,
-    GAME_CHOICE_UI_PEASANT,
-	GAME_CHOICE_UI_PEASANT_BUILD,
 };
 
 typedef struct {
@@ -220,10 +211,15 @@ typedef struct {
 	Texture stoneTexture; //NOTE: Used for building cost ui
 	Texture towerTexture;
 	Animation towerAnimation;
+	Texture towerBuiltTexture;
+	Animation towerBuiltAnimation;
 	Texture towerBurntTexture;
 	Animation towerBurntAnimation;
 	Texture houseTexture;
 	Animation houseAnimation;
+	Texture houseBuiltTexture;
+	Animation houseBuiltAnimation;
+	
 	Texture castleTexture;
 	Animation castleAnimation;
 	Texture houseBurntTexture;
@@ -231,6 +227,7 @@ typedef struct {
 	Texture castleBurntTexture;
 	Animation castleBurntAnimation;
 	Texture swordUiTexture;
+	Texture hammerUiTexture;
 	Texture axeUiTexture;
 
 	AnimationState animationState;

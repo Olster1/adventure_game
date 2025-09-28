@@ -31,6 +31,8 @@
 #include "editor_gui.cpp"
 #include "board_astar.cpp"
 #include "damage_splats.cpp"
+#include "entity_init.cpp"
+#include "init_board.cpp"
 #include "entity.cpp"
 #include "cloudAlt.cpp"
 #include "save_load_level.cpp"
@@ -45,7 +47,6 @@
 #include "ui_game.cpp"
 #include "easy_profiler_draw.h"
 #include "debug.cpp"
-#include "init_board.cpp"
 #include "camera.cpp"
 
 static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float windowWidth, float windowHeight, bool should_save_settings, char *save_file_location_utf8_only_use_on_inititalize, Settings_To_Save save_settings_only_use_on_inititalize) {

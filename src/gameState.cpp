@@ -34,6 +34,12 @@ void initBuildingTextures(GameState *gameState) {
 	gameState->houseTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house.png");
 	easyAnimation_pushFrame(&gameState->houseAnimation, &gameState->houseTexture);
 
+	gameState->houseBuiltTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "house_build.png");
+	easyAnimation_pushFrame(&gameState->houseBuiltAnimation, &gameState->houseBuiltTexture);
+
+	gameState->towerBuiltTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "tower_built.png");
+	easyAnimation_pushFrame(&gameState->towerBuiltAnimation, &gameState->towerBuiltTexture);
+
 	gameState->castleTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "castle.png");
 	easyAnimation_pushFrame(&gameState->castleAnimation, &gameState->castleTexture);
 
@@ -122,6 +128,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->arrows[4] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "routeFinish.png");
 
 		gameState->swordUiTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "sword.png");
+		gameState->hammerUiTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "hammer.png");
 		gameState->axeUiTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "axe.png");
 
 		initBuildingTextures(gameState);
@@ -194,6 +201,14 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadOggVorbisFile(&gameState->soundAssets.footsteps[2], "../sounds/footstep_3.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.swordAttack[0], "../sounds/sword1.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.swordAttack[1], "../sounds/sword2.ogg", &gameState->audioSpec);
+
+		loadOggVorbisFile(&gameState->soundAssets.successSound, "../sounds/success.ogg", &gameState->audioSpec);
+
+		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[0], "../sounds/hammer1.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[1], "../sounds/hammer2.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[2], "../sounds/hammer3.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[3], "../sounds/hammer4.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[4], "../sounds/hammer5.ogg", &gameState->audioSpec);
 		
 		playSound(&gameState->soundAssets.medieval1)->volume = 0.1f;
 		

@@ -110,6 +110,9 @@ struct DefaultEntityAnimations {
 
     //NOTE: For the TNT barrel & Peasant
     Animation scared;
+
+    //NOTE: For being built
+    Animation building;
 };
 
 struct DamageSplat {

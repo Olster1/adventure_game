@@ -3,6 +3,10 @@ int getLocalBoardIndex(int x, int y, int z, float3 origin) {
 	return DOUBLE_MAX_MOVE_DISTANCE*DOUBLE_MAX_MOVE_DISTANCE*z + DOUBLE_MAX_MOVE_DISTANCE*(y - origin.y) + (x - origin.x);
 }
 
+bool isTileValidWalkPosition(Tile *tile) {
+	return tile && (tile->flags & TILE_FLAG_WALKABLE) && !(tile->flags & TILE_FLAG_ENEMY);
+}
+
 void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *visited, float3 *cameFrom, float3 cameFromThisTile, int x, int y, int z, float3 origin, float3 startP) {
 	int index = getLocalBoardIndex(x, y, z, origin);
 		
@@ -13,7 +17,7 @@ void pushOnFloodFillQueue(GameState *gameState, FloodFillEvent *queue, bool *vis
 		if(c) {
 			float3 tileP = getChunkLocalPos(x, y, z);
 			Tile *tile = c->getTile(tileP.x, tileP.y, tileP.z);
-			if(tile && (tile->flags & TILE_FLAG_WALKABLE) && !(tile->flags & TILE_FLAG_ENEMY)) { //(tile->entityOccupation == 0 || sameFloat3(make_float3(x, y, z), startP))
+			if(isTileValidWalkPosition(tile)) { //(tile->entityOccupation == 0 || sameFloat3(make_float3(x, y, z), startP))
 				
 				FloodFillEvent *node = pushStruct(&globalPerFrameArena, FloodFillEvent);
 				node->x = x;

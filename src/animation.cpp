@@ -25,6 +25,7 @@ struct EasyAnimationAction {
     int actionId; //NOTE: Callback id to perform an action when this animation finishes
     int actionFrame; //NOTE: The frame to run the action
     bool hasRunActionForLoop; //NOTE: Wether the action has been called for this loop. Get's reset at the end of the loop
+    void *payload; //NOTE: Unkown payload
 };
 
 typedef struct EasyAnimation_ListItem EasyAnimation_ListItem;
@@ -200,13 +201,14 @@ static void easyAnimation_randomStart(EasyAnimation_ListItem *item) {
     }
 }
 
-static void easyAnimation_addActionForFrame(EasyAnimation_ListItem *item, int actionId, int frame) {
+static void easyAnimation_addActionForFrame(EasyAnimation_ListItem *item, int actionId, int frame, void *payload = 0) {
      if(item) {
         if(item->actionCount < arrayCount(item->actions)) {
             EasyAnimationAction *action = item->actions + item->actionCount++;
             action->actionFrame = frame;
             action->hasRunActionForLoop = false;
             action->actionId = actionId;
+            action->payload = payload;
         } else {
             assert(false);
         }

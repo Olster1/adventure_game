@@ -3,6 +3,10 @@ enum PlacementType {
     UNIT_PLACE_EXACT,
 };
 
+#define HOUSE_DIM_X 2
+#define HOUSE_DIM_Y_WITH_SAFE_OUT_FRONT 4
+#define HOUSE_DIM_Y_BY_PESEANT 3
+
 float3 getSafeSpawnLocation(GameState *gameState, float3 offset, int pWidth, int pHeight) {
     int maxChunkSearch = 10;
     bool searching = true;
@@ -67,21 +71,23 @@ void addBoardPosToAverage(GameState *gameState, float3 pos) {
     gameState->averageStartBoardPos = plus_float3(gameState->averageStartBoardPos, pos);
 }
 
-void markTileAsUsed(GameState *gameState, float3 boardP, bool markUnWalkable = false) {
+void markTileAsUsed(GameState *gameState, float3 boardP, bool markUnWalkable = false, bool ignoreVisited = false) {
     addBoardPosToAverage(gameState, boardP);
-     //NOTE: Now say we've used this cell up
-     float2 chunkP = getChunkPosForWorldP(boardP.xy);
-     Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState,  &gameState->textureAtlas,chunkP.x, chunkP.y, 0, true, true);
+    //NOTE: Now say we've used this cell up
+    float2 chunkP = getChunkPosForWorldP(boardP.xy);
+    Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState,  &gameState->textureAtlas,chunkP.x, chunkP.y, 0, true, true);
 
-     float3 localP = getChunkLocalPos(boardP.x, boardP.y, boardP.z);
+    float3 localP = getChunkLocalPos(boardP.x, boardP.y, boardP.z);
 
-     assert(c->visited);
-     assert(localP.x < CHUNK_DIM && localP.y < CHUNK_DIM);
+    assert(localP.x < CHUNK_DIM && localP.y < CHUNK_DIM);
 
-     assert(!c->visited[(int)localP.y*CHUNK_DIM + (int)localP.x]);
-     c->visited[(int)localP.y*CHUNK_DIM + (int)localP.x] = true;
+    if(!ignoreVisited) {
+        assert(c->visited);
+        assert(!c->visited[(int)localP.y*CHUNK_DIM + (int)localP.x]);
+        c->visited[(int)localP.y*CHUNK_DIM + (int)localP.x] = true;
+    }
 
-     if(markUnWalkable) {
+    if(markUnWalkable) {
         Tile *tile = c->getTile(localP.x, localP.y, localP.z);
         if(tile) {
             assert((tile->flags & TILE_FLAG_WALKABLE));
@@ -89,8 +95,7 @@ void markTileAsUsed(GameState *gameState, float3 boardP, bool markUnWalkable = f
             tile->flags &= (~TILE_FLAG_WALKABLE);
             assert(!(tile->flags & TILE_FLAG_WALKABLE));
         }
-
-     }
+    }
 }
 
 
@@ -207,7 +212,7 @@ void placeGoblinTower(GameState *gameState, float3 offset) {
             p.y += y;
             p.z = getMapHeight(p.x, p.y);
             float3 boardP = convertRealWorldToBlockCoords(p);
-            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell
+            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell aswell only if it's the ones not one out front   
         }
     }
 
@@ -226,6 +231,31 @@ void placeGoblinTower(GameState *gameState, float3 offset) {
     // placePeasantUnit(gameState, p, UNIT_PLACE_EXACT);
 }
 
+Entity *placeTowerByPeasent(GameState *gameState, float3 offset) {
+    DEBUG_TIME_BLOCK();
+    int pWidth = 2;
+    int pHeight = 2 + 1; //NOTE: Plus one for safe location out the front
+
+    for(int y = 0; y < pHeight; y++) {
+        for(int x = 0; x < pWidth; x++) {
+            float3 p = offset;
+            p.x += x;
+            p.y += y;
+            p.z = getMapHeight(p.x, p.y);
+            float3 boardP = convertRealWorldToBlockCoords(p);
+            markTileAsUsed(gameState, boardP, y >= 1, true); //NOTE: Mark chunk as not WALKABLE aswell only if it's the ones not one out front   
+        }
+    }
+
+    float3 p = offset;
+    p.z = getMapHeight(p.x, p.y);
+    p = convertRealWorldToBlockCoords(p);
+    p.x += 0.5f;
+    p.y += 1.5f; //NOTE: We move it to the center of the two tiles
+    Entity *tower = addTowerEntity(gameState, p, &gameState->towerBuiltAnimation);
+    return tower;
+}
+
 void placeTower(GameState *gameState, float3 offset) {
     DEBUG_TIME_BLOCK();
     int pWidth = 2;
@@ -241,7 +271,7 @@ void placeTower(GameState *gameState, float3 offset) {
             p.y += y;
             p.z = getMapHeight(p.x, p.y);
             float3 boardP = convertRealWorldToBlockCoords(p);
-            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell
+            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell only if it's the ones not one out front   
         }
     }
 
@@ -251,19 +281,39 @@ void placeTower(GameState *gameState, float3 offset) {
     p.x += 0.5f;
     p.y += 2.5f; //NOTE: We move it to the center of the two tiles
     addTowerEntity(gameState, p);
-
-    // p = offset;
-    // p.y += 1;
-    // p.x += random_between_int(0, 2);
-    // p.z = getMapHeight(p.x, p.y);
-    // p = convertRealWorldToBlockCoords(p);
-    // placePeasantUnit(gameState, p, UNIT_PLACE_EXACT);
 }
 
-void placeHouse(GameState *gameState, float3 offset) {
+
+Entity *placeHouseByPeasent(GameState *gameState, float3 offset) {
     DEBUG_TIME_BLOCK();
-    int pWidth = 2;
-    int pHeight = 2 + 2; //NOTE: Plus two for safe location out the front
+    int pWidth = HOUSE_DIM_X;
+    int pHeight = HOUSE_DIM_Y_BY_PESEANT; //NOTE: Plus 1 for safe location out the front
+    
+    for(int y = 0; y < pHeight; y++) {
+        for(int x = 0; x < pWidth; x++) {
+            float3 p = offset;
+            p.x += x;
+            p.y += y;
+            p.z = getMapHeight(p.x, p.y);
+            float3 boardP = convertRealWorldToBlockCoords(p);
+            markTileAsUsed(gameState, boardP, y >= 1, true); //NOTE: Mark chunk as not WALKABLE aswell only if it's the ones not one out front   
+        }
+    }
+
+    float3 p = offset;
+    p.z = getMapHeight(p.x, p.y);
+    p = convertRealWorldToBlockCoords(p);
+    p.x += 0.5f;
+    p.y += 1.5f; //NOTE: We move it to the center of the two tiles
+    Entity *result = addHouseEntity(gameState, p, &gameState->houseBuiltAnimation);
+
+    return result;
+}
+
+Entity *placeHouse(GameState *gameState, float3 offset, bool addPeasant = true) {
+    DEBUG_TIME_BLOCK();
+    int pWidth = HOUSE_DIM_X;
+    int pHeight = HOUSE_DIM_Y_WITH_SAFE_OUT_FRONT; //NOTE: Plus two for safe location out the front
     
     //NOTE: Find a safe location to spawn the house unit
     offset = getSafeSpawnLocation(gameState, offset, pWidth, pHeight);
@@ -275,7 +325,7 @@ void placeHouse(GameState *gameState, float3 offset) {
             p.y += y;
             p.z = getMapHeight(p.x, p.y);
             float3 boardP = convertRealWorldToBlockCoords(p);
-            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell
+            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell only if it's the ones not one out front   
         }
     }
 
@@ -284,14 +334,18 @@ void placeHouse(GameState *gameState, float3 offset) {
     p = convertRealWorldToBlockCoords(p);
     p.x += 0.5f;
     p.y += 2.5f; //NOTE: We move it to the center of the two tiles
-    addHouseEntity(gameState, p);
+    Entity *result = addHouseEntity(gameState, p);
 
-    p = offset;
-    p.y += 1;
-    p.x += random_between_int(0, 2);
-    p.z = getMapHeight(p.x, p.y);
-    p = convertRealWorldToBlockCoords(p);
-    placePeasantUnit(gameState, p, UNIT_PLACE_EXACT);
+    if(addPeasant) {
+        p = offset;
+        p.y += 1;
+        p.x += random_between_int(0, 2);
+        p.z = getMapHeight(p.x, p.y);
+        p = convertRealWorldToBlockCoords(p);
+        placePeasantUnit(gameState, p, UNIT_PLACE_EXACT);
+    }
+
+    return result;
 }
 
 void placeGoblinHouse(GameState *gameState, float3 offset) {
@@ -309,7 +363,7 @@ void placeGoblinHouse(GameState *gameState, float3 offset) {
             p.y += y;
             p.z = getMapHeight(p.x, p.y);
             float3 boardP = convertRealWorldToBlockCoords(p);
-            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell
+            markTileAsUsed(gameState, boardP, y > 1); //NOTE: Mark chunk as not WALKABLE aswell only if it's the ones not one out front   
         }
     }
 
