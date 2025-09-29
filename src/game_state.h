@@ -85,8 +85,10 @@ struct SoundAssets {
 	GameSoundAsset hammerBuilding[5];
 	GameSoundAsset medieval1;
 	GameSoundAsset successSound;
-	
+	GameSoundAsset arrowSound;
+	GameSoundAsset arrowHitSound;
 };
+
 struct RenderDamageSplatItem {
     char *string;
     float3 p;
@@ -173,8 +175,6 @@ typedef struct {
 
 	EntityMove *freeEntityMoves;
 
-	Texture arrows[5]; //NOTE: goes anti-clockwise, starting at right. Last one is a circle when there is no direction
-
 	float4 selectedColor;
 
 	float selectHoverTimer;
@@ -227,6 +227,7 @@ typedef struct {
 	Texture castleBurntTexture;
 	Animation castleBurntAnimation;
 	Texture swordUiTexture;
+	Texture arrowUiTexture;
 	Texture hammerUiTexture;
 	Texture axeUiTexture;
 
@@ -242,6 +243,9 @@ typedef struct {
 	EditorGui editorGuiState;
 
 	bool cameraFollowPlayer;
+
+	int arrowCount;
+	Arrow arrows[256];
 
 	float zoomLevel;
 

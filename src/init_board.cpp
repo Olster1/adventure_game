@@ -231,6 +231,14 @@ void placeGoblinTower(GameState *gameState, float3 offset) {
     // placePeasantUnit(gameState, p, UNIT_PLACE_EXACT);
 }
 
+Entity *addArcherOnTower(GameState *gameState, float3 p) {
+    float3 archerP = p;
+    archerP.z += 1.9;
+    archerP.y -= 0.9f;
+    Entity *archer = addArcherEntity(gameState, archerP);
+    return archer;
+}
+
 Entity *placeTowerByPeasent(GameState *gameState, float3 offset) {
     DEBUG_TIME_BLOCK();
     int pWidth = 2;
@@ -253,6 +261,7 @@ Entity *placeTowerByPeasent(GameState *gameState, float3 offset) {
     p.x += 0.5f;
     p.y += 1.5f; //NOTE: We move it to the center of the two tiles
     Entity *tower = addTowerEntity(gameState, p, &gameState->towerBuiltAnimation);
+
     return tower;
 }
 
@@ -281,6 +290,8 @@ void placeTower(GameState *gameState, float3 offset) {
     p.x += 0.5f;
     p.y += 2.5f; //NOTE: We move it to the center of the two tiles
     addTowerEntity(gameState, p);
+
+    addArcherOnTower(gameState, p);
 }
 
 

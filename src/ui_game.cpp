@@ -211,8 +211,8 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
     float2 mouseP = make_float2(mouseP_01.x*resolution.x, mouseP_01.y*resolution.y);
     // drawScrollText("YOUR TURN", gameState, renderer, make_float2(1, 1));
 
-    char *str = easy_createString_printf(&globalPerFrameArena, "TURN: %d/%d", play->turnCount, play->maxTurnCount);
-    drawScrollText(str, gameState, renderer, make_float2(1, 1), UI_ANCHOR_TOP_LEFT, resolution, mouseP);
+    // char *str = easy_createString_printf(&globalPerFrameArena, "TURN: %d/%d", play->turnCount, play->maxTurnCount);
+    // drawScrollText(str, gameState, renderer, make_float2(1, 1), UI_ANCHOR_TOP_LEFT, resolution, mouseP);
     
     // {
     //NOTE: Drawing the time left string

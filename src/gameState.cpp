@@ -121,13 +121,14 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->splatTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation1.png");
 		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
 
-		gameState->arrows[0] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowRight.png");
-		gameState->arrows[1] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowUp.png");
-		gameState->arrows[2] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowLeft.png");
-		gameState->arrows[3] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowDown.png");
-		gameState->arrows[4] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "routeFinish.png");
+		// gameState->arrows[0] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowRight.png");
+		// gameState->arrows[1] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowUp.png");
+		// gameState->arrows[2] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowLeft.png");
+		// gameState->arrows[3] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowDown.png");
+		// gameState->arrows[4] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "routeFinish.png");
 
 		gameState->swordUiTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "sword.png");
+		gameState->arrowUiTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrow.png");
 		gameState->hammerUiTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "hammer.png");
 		gameState->axeUiTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "axe.png");
 
@@ -202,6 +203,10 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadOggVorbisFile(&gameState->soundAssets.swordAttack[0], "../sounds/sword1.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.swordAttack[1], "../sounds/sword2.ogg", &gameState->audioSpec);
 
+		
+		loadOggVorbisFile(&gameState->soundAssets.arrowSound, "../sounds/arrow.ogg", &gameState->audioSpec);
+		loadOggVorbisFile(&gameState->soundAssets.arrowHitSound, "../sounds/hit_arrow.ogg", &gameState->audioSpec);
+		
 		loadOggVorbisFile(&gameState->soundAssets.successSound, "../sounds/success.ogg", &gameState->audioSpec);
 
 		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[0], "../sounds/hammer1.ogg", &gameState->audioSpec);

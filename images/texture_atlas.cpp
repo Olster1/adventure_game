@@ -97,7 +97,7 @@
 
         glViewport(0, 0, outputW, outputH);
 
-        game_file_handle atlasJsonFile = platformBeginFileWrite("./texture_atlas.json");
+        game_file_handle atlasJsonFile = platformBeginFileWrite("/Users/olivermarsh/Documents/dev/adventure_game/images/texture_atlas.json");
         assert(!atlasJsonFile.HasErrors);
         
         size_t offset = 0;
@@ -167,7 +167,7 @@
         
         
         stbi_flip_vertically_on_write(1);
-        int writeResult = stbi_write_png("./texture_atlas.png", outputW, outputH, 4, pixelBuffer, stride_in_bytes);
+        int writeResult = stbi_write_png("/Users/olivermarsh/Documents/dev/adventure_game/images/texture_atlas.png", outputW, outputH, 4, pixelBuffer, stride_in_bytes);
 
         free(pixelBuffer);
 

@@ -402,8 +402,9 @@ Entity *addArcherEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
     if(e) {
         e->type = ENTITY_ARCHER;
-        e->flags |= ENTITY_SELECTABLE;
+        e->flags |= ENTITY_SELECTABLE | ENTITY_CAN_SHOOT;
         e->offsetP.y = 0.16; //NOTE: Fraction of the scale
+        e->scale = make_float3(2.5f, 2.5f, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->archerAnimations.idle, 0.08f);
         e->animations = &state->archerAnimations;

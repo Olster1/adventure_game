@@ -120,14 +120,16 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 				drawUIActionImage(gameState, &gameState->axeUiTexture, mouseP, sortP);
 			} else if(selectedData->movementAction == MOVEMENT_ACTION_FIGHT_ENEMY) {
 				drawUIActionImage(gameState, &gameState->swordUiTexture, mouseP, sortP);
+			} else if(selectedData->movementAction == MOVEMENT_ACTION_SHOOT) {
+				drawUIActionImage(gameState, &gameState->arrowUiTexture, mouseP, sortP);
 			}
 		}
 
 		float3 tileP = convertRealWorldToBlockCoords(make_float3(worldMouseP.x, worldMouseP.y, worldMouseP.z));
 		//NOTE: Draw position above player
 		char *str = easy_createString_printf(&globalPerFrameArena, "(%d %d %d)", (int)tileP.x, (int)tileP.y, (int)tileP.z);
-		pushShader(renderer, &sdfFontShader);
-		draw_text(renderer, &gameState->font, str, p.x, p.y, 0.02, make_float4(0, 0, 0, 1)); 
+		// pushShader(renderer, &sdfFontShader);
+		// draw_text(renderer, &gameState->font, str, p.x, p.y, 0.02, make_float4(0, 0, 0, 1)); 
 	 
     }
 }
@@ -225,7 +227,7 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 	}
 	
 	if(gameState->draggingEntitySelector) {
-		gameState->selectedEntityCount = 0;
+		clearEntitySelection(gameState);
 		float2 a = worldMousePLvl0;
 		float2 b = gameState->startDragPForSelect;
 
@@ -321,6 +323,65 @@ void renderAllDamageSplats(GameState *gameState) {
     }
 }
 
+void updateArrows(GameState *gameState, float dt) {
+	for(int i = 0; i < gameState->arrowCount; ) {
+		int addend = 1;
+
+		Arrow *arrow = gameState->arrows + i;
+
+		arrow->timer -= dt;
+		
+		float t = arrow->timer;
+		if(arrow->timer < 0) {
+			t = 0;
+
+			playArrowHitSound(gameState);
+
+			//NOTE: Hurt Entity
+			Tile *tile = getTileFromWorldP(gameState, arrow->endPos);
+			if(tile) {
+				Entity *attackEntity = findEntityFromTile(tile, arrow->targetEntityId);
+				if(attackEntity) {
+					hurtEntity(gameState, attackEntity, arrow->damage);
+				}
+			} else {
+				assert(false);
+			}
+
+			//NOTE: Remove the arrow
+			addend = 0;
+			gameState->arrows[i] = gameState->arrows[--gameState->arrowCount];
+
+		}
+
+		float tNorm = 1.0f - (t / MAX_ARROW_TIME);
+		float3 worldP = lerp_float3(arrow->startPos, arrow->endPos, tNorm);
+
+		//NOTE: make the arrow go in a parabola shape
+		{
+			// Pick how high above the straight line the arrow peaks
+			float peakHeight = 5.0f; // adjust to taste
+
+			// Parabola factor: 0 at start/end, 1 at midpoint
+			float parabola = 4.0f * tNorm * (1.0f - tNorm);
+
+			// Add to the Z coordinate (since +Z = up)
+			worldP.z += peakHeight * parabola;
+		}
+
+		float3 sortP = worldP;
+
+		float3 renderP = getRenderWorldP(worldP);
+        renderP.x -= gameState->cameraPos.x;
+        renderP.y -= gameState->cameraPos.y;
+        renderP.z = RENDER_Z;
+
+		drawUIActionImage(gameState, &gameState->arrowUiTexture, renderP, sortP);
+
+		i += addend;
+	}
+}
+
 void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt, float16 fovMatrix, float windowWidth, float windowHeight){
 	DEBUG_TIME_BLOCK();
 
@@ -361,15 +422,28 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 			SelectedEntityData *data = gameState->selectedEntityIds + i;
 			assert(data->isValidPos);
 			if(submitMove) {
-				data->e->movementAction = data->movementAction;
-				if(data->e->movementAction != MOVEMENT_ACTION_NONE) {
-					data->e->movementTargetPosition = data->targetPosition;
-					Tile *t = getTileFromWorldP(gameState, data->targetPosition);
-					if(t) {
-						data->e->movementTargetEntityId = getFirstEntityIdFromTile(t);
+				if(data->movementAction == MOVEMENT_ACTION_SHOOT) {
+					//NOTE: Start firing an arrow
+					assert(gameState->arrowCount < arrayCount(gameState->arrows));
+					if(gameState->arrowCount < arrayCount(gameState->arrows)) {
+						Arrow *arrow = gameState->arrows + gameState->arrowCount++;
+						Tile *t = getTileFromWorldP(gameState, data->targetPosition);
+						*arrow = initArrow(getWorldPosition(data->e), data->targetPosition, getFirstEntityIdFromTile(t), data->e->damage);
+						data->e->turnComplete = true;
+						playArrowSound(gameState);
 					}
+				} else {
+					//NOTE: MOVE ACTIONS
+					data->e->movementAction = data->movementAction;
+					if(data->e->movementAction != MOVEMENT_ACTION_NONE) {
+						data->e->movementTargetPosition = data->targetPosition;
+						Tile *t = getTileFromWorldP(gameState, data->targetPosition);
+						if(t) {
+							data->e->movementTargetEntityId = getFirstEntityIdFromTile(t);
+						}
+					}
+					addMovePositionsFromBoardAstar(gameState, data->floodFillResult, data->e);
 				}
-				addMovePositionsFromBoardAstar(gameState, data->floodFillResult, data->e);
 			}
 		}
 	}
@@ -379,6 +453,8 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	updateAndDrawEntitySelection(gameState, renderer, clicked, worldMousePLvl0, worldMouseP);
 
 	drawAllSectionHovers(gameState, renderer, dt, worldMouseP);
+
+	updateArrows(gameState, dt);
 
 	sortAndRenderEntityQueue(renderer);
 	renderAllDamageSplats(gameState);

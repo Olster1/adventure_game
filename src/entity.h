@@ -8,6 +8,7 @@ enum EntityFlag {
     ENTITY_CAN_WALK = 1 << 5, //NOTE: For entities that can walk around like the peasant, knight, etc.
     ENTITY_SELECTED = 1 << 6, //NOTE: Whether entity is selected
     ENTITY_SELECTABLE = 1 << 7, //NOTE: Whether entity can be selected i.e. moved by the player
+    ENTITY_CAN_SHOOT = 1 << 8, //NOTE: For entities that can shoot like the archer
     
 };
 
@@ -126,6 +127,25 @@ struct EntityMove {
     float3 move;
     EntityMove *next;
 };
+
+struct Arrow {
+    float3 startPos;
+    float3 endPos;
+    float timer;
+    u32 targetEntityId;
+    float damage;
+};
+
+Arrow initArrow(float3 startPos, float3 endPos, u32 targetEntityId, float damage) {
+    Arrow result = {};
+
+    result.timer = MAX_ARROW_TIME;
+    result.startPos = startPos;
+    result.endPos = endPos;
+    result.targetEntityId = targetEntityId;
+
+    return result;
+}
 
 struct Entity {
     u32 id; 

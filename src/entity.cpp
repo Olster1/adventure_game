@@ -25,7 +25,14 @@ void playFootstepSound(GameState *gameState) {
     int soundIndex = random_between_int(0, arrayCount(gameState->soundAssets.footsteps));
     assert(soundIndex < arrayCount(gameState->soundAssets.footsteps));
     playSound(&gameState->soundAssets.footsteps[soundIndex])->volume = 0.3f;
-    
+}
+
+void playArrowSound(GameState *gameState) {
+    playSound(&gameState->soundAssets.arrowSound)->volume = 0.5f;
+}
+
+void playArrowHitSound(GameState *gameState) {
+    playSound(&gameState->soundAssets.arrowHitSound)->volume = 0.5f;
 }
 
 void startAttackingEntity(GameState *gameState, Entity *e) {
@@ -119,6 +126,10 @@ void hurtEntity(GameState *gameState, Entity *e, int damage) {
 
 }
 
+void updateArrows() {
+    
+}
+
 void updateAnimationActions(GameState *gameState, Entity *e) {
      EasyAnimation_ListItem *listItem = easyAnimation_getCurrentAnimationItem(&e->animationController);
     if(listItem) {
@@ -155,6 +166,8 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
                     if(towerEntity) {
                         easyAnimation_emptyAnimationContoller(&towerEntity->animationController, &gameState->animationState.animationItemFreeListPtr);
                         easyAnimation_addAnimationToController(&towerEntity->animationController, &gameState->animationState.animationItemFreeListPtr, &gameState->towerAnimation, 0.08f);
+
+                        addArcherOnTower(gameState, towerEntity->pos);
                     }
                 } else if(action->actionId == ANIMATION_ACTION_BUILD_HOUSE) {
                     Entity *houseEntity = (Entity *)action->payload;
@@ -318,17 +331,33 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
     int selectedEntityIndex = isEntitySelected(gameState, e);
     if(selectedEntityIndex >= 0) {
         gameState->selectedEntityIds[selectedEntityIndex].isValidPos = false;
-        
-        if((e->flags & ENTITY_CAN_WALK)) {
-            //NOTE: Draw the path 
-            // MemoryArenaMark mark = takeMemoryMark(&globalPerFrameArena);
 
-            float3 offset = minus_float3(gameState->selectedEntityIds[selectedEntityIndex].worldPos, getOriginSelection(gameState));
-            float3 targetP = plus_float3(mouseWorldP, offset);
+        float3 offset = minus_float3(gameState->selectedEntityIds[selectedEntityIndex].worldPos, getOriginSelection(gameState));
+        float3 targetP = plus_float3(mouseWorldP, offset);
+        float3 targetRounded = convertRealWorldToBlockCoords(targetP);
+
+        int movementAction = MOVEMENT_ACTION_NONE;
+        FloodFillResult searchResult = {};
+        bool addSelectionResult = false;
+
+        //NOTE: Update if they entity can shoot
+        if((e->flags & ENTITY_CAN_SHOOT)) {
+            float3 targetP = mouseWorldP;
             float3 targetRounded = convertRealWorldToBlockCoords(targetP);
 
-            int movementAction = MOVEMENT_ACTION_NONE;
-            FloodFillResult searchResult = {};
+            Tile *tile = getTileFromWorldP(gameState, targetRounded);
+            bool isAttackEnemy = (tile->flags & TILE_FLAG_ENEMY) && (e->flags & ENTITY_SELECTABLE);
+
+            //NOTE: Check if can reach the entity
+            float dist = float2_magnitude(minus_float2(targetRounded.xy, gameState->selectedEntityIds[selectedEntityIndex].worldPos.xy));
+            if(dist < 10 && isAttackEnemy) {
+                addSelectionResult = true;
+                movementAction = MOVEMENT_ACTION_SHOOT;
+            }
+        }
+        
+        if((e->flags & ENTITY_CAN_WALK)) {
+            //NOTE: Path finding
             Tile *tile = getTileFromWorldP(gameState, targetRounded);
             if(tile) {
                 bool isTree = (tile->flags & TILE_FLAG_TREE) && e->type == ENTITY_PEASANT;
@@ -397,17 +426,20 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                     } 
                     
                 }
-
-                if(searchResult.foundNode) {
-                    assert(searchResult.cameFrom);
-                    gameState->selectedMoveCount++;
-                    gameState->selectedEntityIds[selectedEntityIndex].isValidPos = true;
-                    gameState->selectedEntityIds[selectedEntityIndex].floodFillResult = searchResult;
-                    gameState->selectedEntityIds[selectedEntityIndex].movementAction = movementAction;
-                    gameState->selectedEntityIds[selectedEntityIndex].targetPosition = targetRounded;
-                } 
             }
         }
+
+        if(searchResult.foundNode || addSelectionResult) {
+            if(searchResult.foundNode) {
+                assert(searchResult.cameFrom);
+            }
+            
+            gameState->selectedMoveCount++;
+            gameState->selectedEntityIds[selectedEntityIndex].isValidPos = true;
+            gameState->selectedEntityIds[selectedEntityIndex].floodFillResult = searchResult;
+            gameState->selectedEntityIds[selectedEntityIndex].movementAction = movementAction;
+            gameState->selectedEntityIds[selectedEntityIndex].targetPosition = targetRounded;
+        } 
     }
 
     //NOTE: Update the entity move cycle
@@ -466,7 +498,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 }
 
 void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP, Entity *e,  float dt) {
-    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_CAN_WALK) && (e->flags & ENTITY_SELECTABLE) && !e->turnComplete && gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT) {
+    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_SELECTABLE) && !e->turnComplete && gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT) {
          if(!gameState->perFrameDamageSplatArray) {
             gameState->perFrameDamageSplatArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
         }

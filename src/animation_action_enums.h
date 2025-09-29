@@ -24,6 +24,7 @@ enum MovementActionEnums { //NOTE: When player clicks on an action but needs to 
     MOVEMENT_ACTION_FIGHT_ENEMY,
     MOVEMENT_ACTION_BUILD_HOUSE, //NOTE: For Peaseants building structures
     MOVEMENT_ACTION_BUILD_TOWER, //NOTE: For Peaseants building structures
+    MOVEMENT_ACTION_SHOOT, //NOTE: NOTE: for archers shooting enemies
 };
 
 /////// UI types used by the Game UI overlay //////////
