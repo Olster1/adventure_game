@@ -240,7 +240,7 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     global_platformInput.mouseX = (float)x;
     global_platformInput.mouseY = (float)(y);
 
-    updateKeyState(PLATFORM_MOUSE_LEFT_BUTTON, mouseState && SDL_BUTTON(1));
+    updateKeyState(PLATFORM_MOUSE_LEFT_BUTTON, mouseState & SDL_BUTTON(1));
 }
 
 #include "../memory_arena.cpp"
@@ -535,7 +535,6 @@ int main(int argc, char **argv) {
         }
         
         first_frame = false;
-
 
         DEBUG_TIME_BLOCK_FOR_FRAME_END(beginFrameProfiler, global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0);
         DEBUG_TIME_BLOCK_FOR_FRAME_START(beginFrameProfiler, "Per frame");
