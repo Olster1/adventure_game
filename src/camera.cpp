@@ -1,4 +1,4 @@
-void updateZoomAndPan(GameState *gameState, float dt, float2 mouseP_01) {
+void updateZoomAndPan(GameState *gameState, float dt, float2 mouseP_01, float2 windowDim) {
 	{
 		gameState->scrollDp += global_platformInput.mouseScrollY*dt;
 
@@ -7,38 +7,27 @@ void updateZoomAndPan(GameState *gameState, float dt, float2 mouseP_01) {
 
 		//NOTE: Zoom in & out
 		gameState->zoomLevel *= 1 + gameState->scrollDp;
-		
+
 		float min = 0.01f;
 		if(gameState->zoomLevel < min) {
 			gameState->zoomLevel = min;
 		}
-	} 
+	}
 
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
+		float2 worldMouseP = getMouseWorldPLvl0(gameState, windowDim.x, windowDim.y, false);
 		//NOTE: Update Pan
 		if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {
 			//NOTE: Move the canvas
-			gameState->draggingCanvas = true;
-			gameState->startDragP = mouseP_01;
-			gameState->canvasMoveDp = make_float2(0, 0);
-		} else if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown && gameState->draggingCanvas) {
-			float panPower = 500*gameState->zoomLevel; //NOTE: Scale with how far out we're looking
-			float2 diff = scale_float2(panPower*dt, minus_float2(gameState->startDragP, mouseP_01));
-			gameState->canvasMoveDp = diff;
-		} else {
-			gameState->draggingCanvas = false;
+			gameState->startDragP = worldMouseP;
+		} else if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown) {
+			float2 diff = minus_float2(gameState->startDragP, worldMouseP);
+			gameState->cameraPos.xy = plus_float2(gameState->cameraPos.xy, diff);
 		}
-		
-		if(!gameState->draggingCanvas) {
-			gameState->canvasMoveDp.x *= 0.9f;
-			gameState->canvasMoveDp.y *= 0.9f;
-		}
-	
-		gameState->cameraPos.xy = plus_float2(gameState->cameraPos.xy, gameState->canvasMoveDp);
-		gameState->startDragP = mouseP_01;
+		gameState->startDragP = worldMouseP;
 	}
-} 
+}
 
 void updateCamera(GameState *gameState, float dt) {
 	float2 cameraOffset = make_float2(0, 0);
@@ -63,18 +52,18 @@ void updateCamera(GameState *gameState, float dt) {
 	} else {
 		float speed = 10*dt;
 		if(global_platformInput.keyStates[PLATFORM_KEY_UP].isDown) {
-			gameState->cameraPos.y += speed; 
+			gameState->cameraPos.y += speed;
 		}
 		if(global_platformInput.keyStates[PLATFORM_KEY_DOWN].isDown) {
-			gameState->cameraPos.y -= speed; 
+			gameState->cameraPos.y -= speed;
 		}
 		if(global_platformInput.keyStates[PLATFORM_KEY_LEFT].isDown) {
-			gameState->cameraPos.x -= speed; 
+			gameState->cameraPos.x -= speed;
 		}
 		if(global_platformInput.keyStates[PLATFORM_KEY_RIGHT].isDown) {
-			gameState->cameraPos.x += speed; 
+			gameState->cameraPos.x += speed;
 		}
-		
+
 	}
 
 }

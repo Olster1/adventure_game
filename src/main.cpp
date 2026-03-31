@@ -53,7 +53,7 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	DEBUG_TIME_BLOCK();
 	GameState *gameState = (GameState *)global_platform.permanent_storage;
 	assert(sizeof(GameState) < global_platform.permanent_storage_size);
-	
+
 	if(!gameState->initialized) {
 		initGameState(gameState, backendRenderer);
 	} else {
@@ -76,7 +76,7 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
     float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
 
 	if(gameState->drawState->openState == EASY_PROFILER_DRAW_CLOSED) {
-		updateZoomAndPan(gameState, dt, mouseP_01);
+		updateZoomAndPan(gameState, dt, mouseP_01, make_float2(windowWidth, windowHeight));
 	}
 
 	//NOTE: Get pointer to player - always at slot zero
@@ -88,7 +88,7 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	pushRenderFrameBuffer(renderer, 0);
 	pushClearColor(renderer, BACKGROUND_COLOR);
 
-	float2 mouse_point_top_left_origin = make_float2(global_platformInput.mouseX, global_platformInput.mouseY);	
+	float2 mouse_point_top_left_origin = make_float2(global_platformInput.mouseX, global_platformInput.mouseY);
 	float2 mouse_point_top_left_origin_01 = make_float2(global_platformInput.mouseX / windowWidth, global_platformInput.mouseY / windowHeight);
 
 	float fauxDimensionY = 1000;
@@ -104,7 +104,7 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 
 #if DEBUG_BUILD
 	// drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
-	
+
 	EasyProfile_DrawGraph(renderer, gameState, gameState->drawState, dt, windowHeight/windowWidth, mouseP_01);
 #endif
 

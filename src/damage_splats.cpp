@@ -5,11 +5,11 @@ DamageSplat *getDamageSplat(GameState *gameState, Entity *e) {
     if(gameState->freeListDamageSplats) {
         result = gameState->freeListDamageSplats;
         gameState->freeListDamageSplats = gameState->freeListDamageSplats->next;
-        
+
     } else {
         result = pushStruct(&globalPerEntityLoadArena, DamageSplat);
     }
-    
+
     if(result) {
         //NOTE: Clear the damage splat
         DamageSplat temp = {};
@@ -21,7 +21,7 @@ DamageSplat *getDamageSplat(GameState *gameState, Entity *e) {
     }
 
     return result;
-} 
+}
 
 
 
@@ -29,6 +29,8 @@ void renderDamageSplats(GameState *gameState, Entity *e, float dt) {
     if(!gameState->perFrameDamageSplatArray) {
         gameState->perFrameDamageSplatArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
     }
+
+    Texture *sprites[3] = {&gameState->splatTextureNumber1, &gameState->splatTextureNumber2, &gameState->splatTextureNumber3};
 
     DamageSplat **d = &e->damageSplats;
     while(*d) {
@@ -47,13 +49,23 @@ void renderDamageSplats(GameState *gameState, Entity *e, float dt) {
 
             float4 color = make_float4(1, 1, 1, alpha / MAX_TIME_DAMAGE_SPLAT);
 
-            p.x -= gameState->cameraPos.x; 
+            p.x -= gameState->cameraPos.x;
             p.y -= gameState->cameraPos.y;
             char *str = easy_createString_printf(&globalPerFrameArena, "%d", (*d)->damage);
             RenderDamageSplatItem r = {};
             r.string = str;
             r.p = p;
             r.color = color;
+
+            int spriteIndex = (*d)->damage - 1;
+            if(spriteIndex < arrayCount(sprites)) {
+                r.sprite = sprites[spriteIndex];
+            } else {
+                r.sprite = &gameState->splatTexture;
+            }
+
+            r.scale = make_float2( 0.7f,  0.7f);
+
             pushArrayItem(&gameState->perFrameDamageSplatArray, r, RenderDamageSplatItem);
         }
 

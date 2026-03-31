@@ -25,7 +25,7 @@ void createAOOffsets(GameState *gameState) {
         }
 
         gameState->lightingOffsets.aoOffsets[i].offsets[0] = plus_float3(sizedOffset, masks[0]);
-        gameState->lightingOffsets.aoOffsets[i].offsets[1] = sizedOffset; 
+        gameState->lightingOffsets.aoOffsets[i].offsets[1] = sizedOffset;
         gameState->lightingOffsets.aoOffsets[i].offsets[2] = plus_float3(sizedOffset, masks[1]);
     }
 }
@@ -75,7 +75,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		gameState->font = initFont("../fonts/liberation-mono.ttf");
 		gameState->pixelFont = initFont("../fonts/Pixelify.ttf");
-		
+
 		gameState->fontScale = 0.6f;
 		gameState->scrollDp = 0;
 
@@ -89,7 +89,7 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		srand(time(NULL));   // Initialization, should only be called once.
 
-		//NOTE: Used to build the entity ids 
+		//NOTE: Used to build the entity ids
 		gameState->randomIdStartApp = rand();
 		gameState->randomIdStart = rand();
 
@@ -118,8 +118,14 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		gameState->stumpTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "stump.png");
 		gameState->logTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "log.png");
 
-		gameState->splatTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation1.png");
+		gameState->splatTexture = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation.png");
+		gameState->splatTextureNumber1 = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation1.png");
+		gameState->splatTextureNumber2 = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation2.png");
+		gameState->splatTextureNumber3 = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "exclamation3.png");
+		gameState->healthBar = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "healthBar.png");
 		gameState->smokeTexture =  textureAtlas_getItemAsTexture(&gameState->textureAtlas, "flame.png");
+
+
 
 		// gameState->arrows[0] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowRight.png");
 		// gameState->arrows[1] = textureAtlas_getItemAsTexture(&gameState->textureAtlas, "arrowUp.png");
@@ -153,15 +159,15 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		// archerAnimations
 
 		// Animation run;
-		
+
 		// //NOTE: ATTACK
 		// Animation attackUp;
 		// Animation attackDown;
 		// Animation attackSide;
-	
+
 		// //NOTE: For the peasant
 		// Animation work;
-	
+
 		// //NOTE: For the TNT barrel & Peasant
 		// Animation scared;
 
@@ -203,10 +209,10 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadOggVorbisFile(&gameState->soundAssets.swordAttack[0], "../sounds/sword1.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.swordAttack[1], "../sounds/sword2.ogg", &gameState->audioSpec);
 
-		
+
 		loadOggVorbisFile(&gameState->soundAssets.arrowSound, "../sounds/arrow.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.arrowHitSound, "../sounds/hit_arrow.ogg", &gameState->audioSpec);
-		
+
 		loadOggVorbisFile(&gameState->soundAssets.successSound, "../sounds/success.ogg", &gameState->audioSpec);
 
 		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[0], "../sounds/hammer1.ogg", &gameState->audioSpec);
@@ -214,9 +220,9 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[2], "../sounds/hammer3.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[3], "../sounds/hammer4.ogg", &gameState->audioSpec);
 		loadOggVorbisFile(&gameState->soundAssets.hammerBuilding[4], "../sounds/hammer5.ogg", &gameState->audioSpec);
-		
+
 		playSound(&gameState->soundAssets.medieval1)->volume = 0.1f;
-		
+
 		/////////////
 		{
 			int tileCount = 0;

@@ -37,7 +37,7 @@ typedef struct {
 
 static EasyProfile_ProfilerDrawState *EasyProfiler_initProfilerDrawState() {
 	EasyProfile_ProfilerDrawState *result = pushStruct(&global_long_term_arena, EasyProfile_ProfilerDrawState);
-		
+
 	result->hotIndex = -1;
 	result->level = 0;
 	result->drawType = EASY_PROFILER_DRAW_OVERVIEW;
@@ -68,7 +68,7 @@ struct SelectedEntityData {
 	float3 worldPos;
 	bool isValidPos; //NOTE: If this selected entity is allowed to move
 	FloodFillResult floodFillResult; //NOTE: Allocated on the perframe arena, so is rubbish across frame boundaries
-	int movementAction; 
+	int movementAction;
 	float3 targetPosition;
 	Entity *e;
 };
@@ -91,8 +91,10 @@ struct SoundAssets {
 
 struct RenderDamageSplatItem {
     char *string;
+    Texture *sprite;
     float3 p;
 	float4 color;
+	float2 scale;
 };
 
 typedef struct {
@@ -112,12 +114,13 @@ typedef struct {
 	int selectedMoveCount;
 	int selectedEntityCount;
 	bool draggingEntitySelector;
-	
+
 	SelectedEntityData selectedEntityIds[32];
 
 	EntityTileItem *freeListEntityTileItem;
 	DamageSplat *freeListDamageSplats;
 	RenderDamageSplatItem *perFrameDamageSplatArray;
+	RenderDamageSplatItem *perFrameHealthBarArray;
 
 	//NOTE: For creating unique entity ids like MongoDb ObjectIds
 	int randomIdStartApp;
@@ -138,7 +141,7 @@ typedef struct {
 
 	LightingOffsets lightingOffsets;
 
-	Entity *player;	
+	Entity *player;
 
 	float scrollDp;
 
@@ -167,10 +170,14 @@ typedef struct {
 	Texture stumpTexture;
 	Texture logTexture;
 	Texture splatTexture;
+	Texture splatTextureNumber1;
+	Texture splatTextureNumber2;
+	Texture splatTextureNumber3;
+	Texture healthBar;
 
 	int uiOnScreenItemCount;
 	UiOnScreenItem uiOnScreenItems[8];
-	
+
 	TextureAtlas textureAtlas;
 
 	EntityMove *freeEntityMoves;
@@ -179,10 +186,8 @@ typedef struct {
 
 	float selectHoverTimer;
 
-	bool draggingCanvas;
 	float2 startDragP;
-	float2 canvasMoveDp;
-	
+
 	int tileCount;
 	MapTile tiles[10000];
 
@@ -201,7 +206,7 @@ typedef struct {
 	Texture goblinHutBurntTexture;
 	Animation goblinHutBurntAnimation;
 
-	Animation goblinTowerAnimation; 
+	Animation goblinTowerAnimation;
 	Texture goblinTowerBurntTexture;
 	Animation goblinTowerBurntAnimation;
 
@@ -219,7 +224,7 @@ typedef struct {
 	Animation houseAnimation;
 	Texture houseBuiltTexture;
 	Animation houseBuiltAnimation;
-	
+
 	Texture castleTexture;
 	Animation castleAnimation;
 	Texture houseBurntTexture;

@@ -2,7 +2,7 @@ void playCutWoodSound(GameState *gameState) {
     int soundIndex = random_between_int(0, arrayCount(gameState->soundAssets.woodChopSounds));
     assert(soundIndex < arrayCount(gameState->soundAssets.woodChopSounds));
     playSound(&gameState->soundAssets.woodChopSounds[soundIndex]);
-    
+
 }
 
 void playSwordAttackSound(GameState *gameState) {
@@ -112,6 +112,7 @@ float2 worldCameraToScreen01(GameState *state, float2 p) {
 
 void hurtEntity(GameState *gameState, Entity *e, int damage) {
     e->health -= damage;
+    printf("%d\n", damage);
 
     DamageSplat *d = getDamageSplat(gameState, e);
     if(d) {
@@ -121,13 +122,14 @@ void hurtEntity(GameState *gameState, Entity *e, int damage) {
     easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
     easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
     easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
+    //NOTE: And back to the idle animation
     easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
 
 
 }
 
 void updateArrows() {
-    
+
 }
 
 void updateAnimationActions(GameState *gameState, Entity *e) {
@@ -217,7 +219,7 @@ bool isTryingToBuild(GameState *gameState) {
 void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool clicked) {
     DEBUG_TIME_BLOCK();
     float3 p = getWorldPosition(e);
-    
+
     {
         float2 chunkP =  getChunkPosForWorldP(p.xy);
         float3 localP = getChunkLocalPos(p.x, p.y, p.z);
@@ -277,7 +279,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
     }
 
     updateAnimationActions(gameState, e);
-    
+
     if(e->fireTimer >= 0) {
         e->fireTimer += dt;
 
@@ -293,7 +295,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                 }
             }
         }
-        
+
         if(p) {
             //NOTE: Reset the lifespan so it keeps going
             resetParticlerLife(p);
@@ -355,7 +357,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                 movementAction = MOVEMENT_ACTION_SHOOT;
             }
         }
-        
+
         if((e->flags & ENTITY_CAN_WALK)) {
             //NOTE: Path finding
             Tile *tile = getTileFromWorldP(gameState, targetRounded);
@@ -371,7 +373,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 
                     if(tryingToBuild) {
                         offsetCount = 8;
-                        //NOTE: These assumes all buildings being built are 2 x 2 area 
+                        //NOTE: These assumes all buildings being built are 2 x 2 area
                         float3 offsets_[8] = {make_float3(0, 0, 0), make_float3(1, 0, 0), make_float3(2, 1, 0), make_float3(2, 2, 0),
                                       make_float3(0, 3, 0), make_float3(1, 3, 0), make_float3(-1, 1, 0), make_float3(-1, 2, 0)};
                         offsets = offsets_;
@@ -394,11 +396,11 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                 } else {
                     //NOTE: Just walking, no actions
                     searchResult = floodFillSearch(gameState, convertRealWorldToBlockCoords(p), targetRounded, e->maxMoveDistance);
-                } 
+                }
 
                 if(tryingToBuild && searchResult.foundNode) {
                     //NOTE: Check there is enough space for the building
-                    //NOTE: These assumes all buildings being built are 2 x 2 area 
+                    //NOTE: These assumes all buildings being built are 2 x 2 area
                     float3 offsets[HOUSE_DIM_Y_BY_PESEANT*HOUSE_DIM_X];
 
                     int offsetCount = 0;
@@ -407,7 +409,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                             offsets[offsetCount++] = make_float3(x, y, 0);
                         }
                     }
-                    
+
                     bool enoughRoomForBuilding = true;
                     float targetHeight = getMapHeight(targetRounded.x, targetRounded.y);
                     for(int i = 0; i < arrayCount(offsets) && enoughRoomForBuilding; ++i) {
@@ -423,8 +425,8 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
                     if(!enoughRoomForBuilding) {
                         //NOTE: Not a valid position so get rid of it
                         searchResult.foundNode = 0;
-                    } 
-                    
+                    }
+
                 }
             }
         }
@@ -433,19 +435,19 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             if(searchResult.foundNode) {
                 assert(searchResult.cameFrom);
             }
-            
+
             gameState->selectedMoveCount++;
             gameState->selectedEntityIds[selectedEntityIndex].isValidPos = true;
             gameState->selectedEntityIds[selectedEntityIndex].floodFillResult = searchResult;
             gameState->selectedEntityIds[selectedEntityIndex].movementAction = movementAction;
             gameState->selectedEntityIds[selectedEntityIndex].targetPosition = targetRounded;
-        } 
+        }
     }
 
     //NOTE: Update the entity move cycle
     if(e->moves != 0) {
         e->turnComplete = true;
-        float3 lastP = convertRealWorldToBlockCoords(e->pos); 
+        float3 lastP = convertRealWorldToBlockCoords(e->pos);
 
         float3 target = e->moves->move;
         float3 dir = normalize_float3(minus_float3(target, e->pos));
@@ -463,7 +465,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             EntityMove *move = e->moves;
             //NOTE: Move to the next in the list
             e->moves = move->next;
-            
+
 
             if(!e->moves) {
                 if(e->movementAction == MOVEMENT_ACTION_FIGHT_ENEMY) {
@@ -486,7 +488,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
             gameState->freeEntityMoves = move;
         }
 
-        float3 currentP = convertRealWorldToBlockCoords(e->pos); 
+        float3 currentP = convertRealWorldToBlockCoords(e->pos);
 
         if(!sameFloat3(currentP, lastP)) {
             markBoardAsEntityOccupied(gameState, currentP, e);
@@ -498,11 +500,12 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
 }
 
 void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP, Entity *e,  float dt) {
-    if(gameState->gamePlay.phase == GAME_TURN_PHASE_MOVE && (e->flags & ENTITY_SELECTABLE) && !e->turnComplete && gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT) {
+    //NOTE: This renders the little exclamation mark the entities have above their head if they still have a turn left
+    if((e->flags & ENTITY_SELECTABLE) && !e->turnComplete && gameState->gamePlay.turnOn == GAME_TURN_PLAYER_KNIGHT) {
          if(!gameState->perFrameDamageSplatArray) {
             gameState->perFrameDamageSplatArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
         }
-      
+
         char *str = easy_createString_printf(&globalPerFrameArena, "%d", e->maxMoveDistance);
         float3 p = renderP;
         p.y += 0.5f;
@@ -511,10 +514,32 @@ void renderGameUILogic(Renderer *renderer, GameState *gameState, float3 renderP,
         r.string = str;
         r.p = p;
         r.color = make_float4(1, 1, 1, 1);
-        
+        r.sprite = &gameState->splatTexture;
+        r.scale = make_float2(0.7, 0.7);
+
         pushArrayItem(&gameState->perFrameDamageSplatArray, r, RenderDamageSplatItem);
     }
 }
+
+void pushEntityHealthBar(Renderer *renderer, GameState *gameState, float3 renderP, Entity *e,  float dt) {
+    if(!gameState->perFrameHealthBarArray) {
+        gameState->perFrameHealthBarArray = initResizeArrayArena(RenderDamageSplatItem, &globalPerFrameArena);
+    }
+
+    char *str = easy_createString_printf(&globalPerFrameArena, "%d", e->maxMoveDistance);
+    float3 p = renderP;
+    // p.y = 0.5f;
+    p.z = RENDER_Z;
+    RenderDamageSplatItem r = {};
+    r.string = str;
+    r.p = p;
+    r.color = make_float4(1, 1, 1, 1);
+    r.sprite = &gameState->healthBar;
+    r.scale = make_float2(0.7, 0.35);
+
+    pushArrayItem(&gameState->perFrameHealthBarArray, r, RenderDamageSplatItem);
+}
+
 
 void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 fovMatrix, float dt) {
 
@@ -522,12 +547,12 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
 
     if(easyAnimation_isControllerValid(&e->animationController)) {
         t = easyAnimation_updateAnimation_getTexture(&e->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
-    } 
+    }
 
     float3 renderWorldP = getRenderWorldP(e->pos);
     renderWorldP.x += e->offsetP.x * e->scale.x;
     renderWorldP.y += e->offsetP.y * e->scale.y;
-    
+
     renderWorldP.x -= gameState->cameraPos.x;
     renderWorldP.y -= gameState->cameraPos.y;
 
@@ -540,13 +565,13 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
     } else {
         e->flags &= ~(ENTITY_SELECTED);
     }
-    
+
 
     //NOTE: Draw position above player
     float3 tileP = convertRealWorldToBlockCoords(e->pos);
     char *str = easy_createString_printf(&globalPerFrameArena, "(%d %d %d)", (int)tileP.x, (int)tileP.y, (int)tileP.z);
     // pushShader(renderer, &sdfFontShader);
-	// draw_text(renderer, &gameState->font, str, renderWorldP.x, renderWorldP.y, 0.02, make_float4(0, 0, 0, 1)); 
+	// draw_text(renderer, &gameState->font, str, renderWorldP.x, renderWorldP.y, 0.02, make_float4(0, 0, 0, 1));
 
     if(t) {
         float3 sortPos = e->pos;
@@ -566,11 +591,20 @@ void renderEntity(GameState *gameState, Renderer *renderer, Entity *e, float16 f
         }
 
         pushEntityTexture(renderer, t->handle, renderWorldP, e->scale.xy, color, t->uvCoords, getSortIndex(sortPos, RENDER_LAYER_3));
+
+        // if(e->healthBarTimer > 0)
+        {
+            e->healthBarTimer -= dt;
+
+            //NOTE: Draw the health bar
+            pushEntityHealthBar(renderer, gameState, renderWorldP, e, dt);
+
+        }
+
     }
     renderGameUILogic(renderer, gameState, renderWorldP, e, dt);
     renderDamageSplats(gameState, e, dt);
 }
-
 
 
 void pushAllEntityLights(GameState *gameState, float dt) {

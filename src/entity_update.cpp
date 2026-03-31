@@ -8,18 +8,20 @@ void clearEntitySelection(GameState *gameState) {
 	gameState->gameChoiceUi = GAME_CHOICE_UI_NONE;
 }
 
-float2 getMouseWorldPLvl0(GameState *state, float windowWidth, float windowHeight) {
+float2 getMouseWorldPLvl0(GameState *state, float windowWidth, float windowHeight, bool withCamera = true) {
 	float2 mouseP = make_float2(global_platformInput.mouseX, windowHeight - global_platformInput.mouseY);
     float2 mouseP_01 = make_float2(mouseP.x / windowWidth, mouseP.y / windowHeight);
 
 	float worldX = lerp(-0.5f*state->planeSizeX*state->zoomLevel, 0.5f*state->planeSizeX*state->zoomLevel, make_lerpTValue(mouseP_01.x));
     float worldY = lerp(-0.5f*state->planeSizeY*state->zoomLevel, 0.5f*state->planeSizeY*state->zoomLevel, make_lerpTValue(mouseP_01.y));
 
-    worldX += state->cameraPos.x;
-    worldY += state->cameraPos.y;
+	if(withCamera) {
+	    worldX += state->cameraPos.x;
+    	worldY += state->cameraPos.y;
+    }
 
 	return make_float2(worldX, worldY);
-} 
+}
 
 
 float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
@@ -51,7 +53,7 @@ float3 getMouseWorldP(GameState *state, float windowWidth, float windowHeight) {
 			worldY -= 2;
 			wasStandAlone = false;
 		} else {
-			
+
 
 			if(oneInHeight == 1) {
 				//NOTE: Height is actually 1 because of our werid rendering perspective
@@ -106,7 +108,7 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 		p.y -= gameState->cameraPos.y; //NOTE: Offset for middle of the tile
 
 		//NOTE: P is now in camera space
-		
+
 		float scale = 1.0f;//lerp(0.9f, 1.1f, make_lerpTValue(sin01(gameState->selectHoverTimer)));
 		float3 sortP = worldP;
 		pushEntityTexture(renderer, gameState->selectImage.handle, p, make_float2(scale, scale), color, gameState->selectImage.uvCoords, getSortIndex(sortP, RENDER_LAYER_2));
@@ -129,20 +131,20 @@ void drawSelectionHover(GameState *gameState, Renderer *renderer, float dt, floa
 		//NOTE: Draw position above player
 		char *str = easy_createString_printf(&globalPerFrameArena, "(%d %d %d)", (int)tileP.x, (int)tileP.y, (int)tileP.z);
 		// pushShader(renderer, &sdfFontShader);
-		// draw_text(renderer, &gameState->font, str, p.x, p.y, 0.02, make_float4(0, 0, 0, 1)); 
-	 
+		// draw_text(renderer, &gameState->font, str, p.x, p.y, 0.02, make_float4(0, 0, 0, 1));
+
     }
 }
 
 void drawAllSectionHovers(GameState *gameState, Renderer *renderer, float dt, float3 worldMouseP) {
 	gameState->selectHoverTimer += dt;
 	if(gameState->selectedEntityCount == 0) {
-		
-			drawSelectionHover(gameState, renderer, dt, worldMouseP, 0);			
+
+			drawSelectionHover(gameState, renderer, dt, worldMouseP, 0);
 	} else {
 		//NOTE: The position all the other positions are relative to
-		float3 startP = getOriginSelection(gameState); 
-		
+		float3 startP = getOriginSelection(gameState);
+
 		if(isTryingToBuild(gameState)) {
 			//NOTE: Draw the area of the building
 			 float3 offsets[HOUSE_DIM_Y_BY_PESEANT*HOUSE_DIM_X];
@@ -153,25 +155,25 @@ void drawAllSectionHovers(GameState *gameState, Renderer *renderer, float dt, fl
 					offsets[offsetCount++] = make_float3(x, y, 0);
 				}
 			}
-			
-			SelectedEntityData *data = gameState->selectedEntityIds + 0; 
+
+			SelectedEntityData *data = gameState->selectedEntityIds + 0;
 			for(int i = 0; i < arrayCount(offsets); ++i) {
 				float3 tileWorldP = plus_float3(worldMouseP, offsets[i]);
 				tileWorldP = convertRealWorldToBlockCoords(tileWorldP);
-				drawSelectionHover(gameState, renderer, dt, tileWorldP, data);	
+				drawSelectionHover(gameState, renderer, dt, tileWorldP, data);
 			}
 
 			//NOTE: Draw the hammer in the middle of the selectors
 			float3 mouseP = getRenderWorldP(worldMouseP);
-			mouseP.x -= gameState->cameraPos.x; 
-			mouseP.y -= gameState->cameraPos.y; 
+			mouseP.x -= gameState->cameraPos.x;
+			mouseP.y -= gameState->cameraPos.y;
 			mouseP.x += 0.5f;
 			mouseP.y += 0.5f;
 			drawUIActionImage(gameState, &gameState->hammerUiTexture, convertRealWorldToBlockCoords(mouseP), convertRealWorldToBlockCoords(worldMouseP));
 
 		} else {
 			for(int i = 0; i < gameState->selectedEntityCount; ++i) {
-				SelectedEntityData *data = gameState->selectedEntityIds + i; 
+				SelectedEntityData *data = gameState->selectedEntityIds + i;
 				float3 offset = minus_float3(data->worldPos, startP);
 
 				drawSelectionHover(gameState, renderer, dt, plus_float3(offset, worldMouseP), data);
@@ -190,11 +192,11 @@ void updateParticlers(Renderer *renderer, GameState *gameState, ParticlerParent 
 		if(shouldRemove) {
 			//NOTE: Move from the end
 			parent->particlers[i] = parent->particlers[--parent->particlerCount];
-			
+
 			//NOTE: Invalidate the end particle system so any entity still pointing to this knows to reset their pointer
 			parent->particlers[parent->particlerCount].id = getInvalidParticleId();
 			addend = 0;
-		} 
+		}
 
 		i += addend;
 	}
@@ -225,7 +227,7 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 	} else if(!global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || gameState->hitUI) {
 		gameState->draggingEntitySelector = false;
 	}
-	
+
 	if(gameState->draggingEntitySelector) {
 		clearEntitySelection(gameState);
 		float2 a = worldMousePLvl0;
@@ -265,16 +267,16 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 			pushLine(renderer, posA, posB, make_float4(1, 1, 1, 1));
 		}
 
-		//NOTE: See if entities are selected 
+		//NOTE: See if entities are selected
 		for(int i = 0; i < gameState->entityCount; ++i) {
 			Entity *e = gameState->entities + i;
 
 			if((e->flags & ENTITY_SELECTABLE) && (e->flags & ENTITY_ACTIVE) && !e->turnComplete) {
 				bool added = false;
 				{
-					//NOTE: This is the drag selection 
+					//NOTE: This is the drag selection
 					float3 renderP = getRenderWorldP(e->pos);
-					
+
 					if(does_rect2f_overlap(make_rect2f_min_max(a.x, a.y, b.x, b.y), make_rect2f_center_dim(renderP.xy, make_float2(1, 1)))) {
 						assert(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds));
 						if(gameState->selectedEntityCount < arrayCount(gameState->selectedEntityIds)) {
@@ -295,14 +297,31 @@ void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool
 				// 				maybeAddEntityToSelection(gameState, e);
 				// 			}
 				// 		}
-				// 	} 
+				// 	}
 				// }
 			}
 		}
-		
+
 	} else {
 		gameState->startDragPForSelect = worldMousePLvl0;
 	}
+}
+
+void renderAllHealthBars(GameState *gameState) {
+    if(gameState->perFrameHealthBarArray) {
+        for(int i = 0; i < getArrayLength(gameState->perFrameHealthBarArray); ++i) {
+            RenderDamageSplatItem *item = gameState->perFrameHealthBarArray + i;
+
+            float3 p = item->p;
+            assert(item->sprite);
+            pushShader(&gameState->renderer, &pixelArtShader);
+			pushTexture(&gameState->renderer, item->sprite->handle, p, item->scale, item->color, item->sprite->uvCoords);
+
+            // pushShader(&gameState->renderer, &sdfFontShader);
+            // draw_text(&gameState->renderer, &gameState->font, item->string, p.x - 0.4f, p.y + 0.5f, 0.02, make_float4(0, 0, 0, item->color.w));
+        }
+        gameState->perFrameHealthBarArray = 0;
+    }
 }
 
 
@@ -311,13 +330,13 @@ void renderAllDamageSplats(GameState *gameState) {
         for(int i = 0; i < getArrayLength(gameState->perFrameDamageSplatArray); ++i) {
             RenderDamageSplatItem *item = gameState->perFrameDamageSplatArray + i;
 
-            float scale = 0.7f;
             float3 p = item->p;
+            assert(item->sprite);
             pushShader(&gameState->renderer, &pixelArtShader);
-            pushTexture(&gameState->renderer, gameState->splatTexture.handle, p, make_float2(scale, scale), item->color, gameState->splatTexture.uvCoords);
-            
+            pushTexture(&gameState->renderer, item->sprite->handle, p, item->scale, item->color, item->sprite->uvCoords);
+
             // pushShader(&gameState->renderer, &sdfFontShader);
-            // draw_text(&gameState->renderer, &gameState->font, item->string, p.x - 0.4f, p.y + 0.5f, 0.02, make_float4(0, 0, 0, item->color.w)); 
+            // draw_text(&gameState->renderer, &gameState->font, item->string, p.x - 0.4f, p.y + 0.5f, 0.02, make_float4(0, 0, 0, item->color.w));
         }
         gameState->perFrameDamageSplatArray = 0;
     }
@@ -330,7 +349,7 @@ void updateArrows(GameState *gameState, float dt) {
 		Arrow *arrow = gameState->arrows + i;
 
 		arrow->timer -= dt;
-		
+
 		float t = arrow->timer;
 		if(arrow->timer < 0) {
 			t = 0;
@@ -414,7 +433,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
-	
+
 	bool submitMove = gameState->selectedEntityCount > 0 && clicked;
 
 	if(gameState->selectedMoveCount == gameState->selectedEntityCount) {
@@ -457,13 +476,14 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	updateArrows(gameState, dt);
 
 	sortAndRenderEntityQueue(renderer);
+	renderAllHealthBars(gameState);
 	renderAllDamageSplats(gameState);
-	
+
 	drawClouds(gameState, renderer, dt);
 	// drawCloudsAsTexture(gameState, renderer, dt, fovMatrix, windowSize);
 
 	if(global_platformInput.keyStates[PLATFORM_KEY_ESCAPE].pressedCount > 0) {
 		clearEntitySelection(gameState);
 	}
-	
+
 }

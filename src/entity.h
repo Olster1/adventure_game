@@ -1,7 +1,7 @@
 static u32 global_entityId = 0;
 
 enum EntityFlag {
-    ENTITY_ACTIVE = 1 << 0, 
+    ENTITY_ACTIVE = 1 << 0,
     LIGHT_COMPONENT = 1 << 1,
     ENTITY_SPRITE_FLIPPED = 1 << 3,
     ENTITY_ON_FIRE = 1 << 4, //NOTE: For buildings that catch fire
@@ -9,7 +9,7 @@ enum EntityFlag {
     ENTITY_SELECTED = 1 << 6, //NOTE: Whether entity is selected
     ENTITY_SELECTABLE = 1 << 7, //NOTE: Whether entity can be selected i.e. moved by the player
     ENTITY_CAN_SHOOT = 1 << 8, //NOTE: For entities that can shoot like the archer
-    
+
 };
 
 #define MY_ENTITY_TYPE(FUNC) \
@@ -69,7 +69,7 @@ struct CollideEvent {
     float2 hitDir;
 
     //@private
-    bool hitThisFrame; //NOTE: Only used by the internal collision code 
+    bool hitThisFrame; //NOTE: Only used by the internal collision code
 };
 
 struct Collider {
@@ -100,7 +100,7 @@ struct DefaultEntityAnimations {
 
     Animation hurt;
     Animation death;
-	
+
     //NOTE: ATTACK
 	Animation attackUp;
     Animation attackDown;
@@ -143,17 +143,20 @@ Arrow initArrow(float3 startPos, float3 endPos, u32 targetEntityId, float damage
     result.startPos = startPos;
     result.endPos = endPos;
     result.targetEntityId = targetEntityId;
+    result.damage = damage;
 
     return result;
 }
 
 struct Entity {
-    u32 id; 
+    u32 id;
 
     Entity *parent; //TODO: Not sure if we need this
     EntityType type;
     u64 flags;
     u64 boardFlags;
+
+    float healthBarTimer;
 
     //NOTE: TRANSFORM component
     float3 pos;
@@ -175,7 +178,7 @@ struct Entity {
     int movementTargetEntityId;
 
     bool turnComplete;
-    
+
     int maxMoveDistance;
     EntityMove *moves;
 

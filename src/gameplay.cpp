@@ -3,15 +3,6 @@ enum GameTurnType {
     GAME_TURN_PLAYER_GOBLIN,
 };
 
-enum GameTurnPhase {
-    GAME_TURN_PHASE_COMMAND, //Cast spells, activate hero abilities, use command abilities.
-    GAME_TURN_PHASE_MOVE,
-    GAME_TURN_PHASE_SHOOT,
-    GAME_TURN_PHASE_CHARGE,
-    GAME_TURN_PHASE_FIGHT,
-    GAME_TURN_PHASE_BATTLESHOCK,
-};
-
 enum BuildingCostType {
     BUILDING_COST_KNIGHT_HOUSE = 0,
     BUILDING_COST_KNIGHT_TOWER = 1,
@@ -43,10 +34,9 @@ struct GamePlay {
     float maxTurnTime;
     int turnCount;
     int maxTurnCount;
-    GameTurnPhase phase;
     int treeCount;
     int stoneCount;
-    
+
     BuildingCost buildingCosts[BUILDING_COST_TOTAL_COUNT];
 };
 
@@ -54,7 +44,6 @@ GamePlay init_gameplay() {
     GamePlay gamePlay = {};
 
     gamePlay.turnOn = GAME_TURN_PLAYER_KNIGHT;
-    gamePlay.phase = GAME_TURN_PHASE_MOVE;
     gamePlay.boardInited = false;
 
     gamePlay.turnTime = 0;

@@ -17,7 +17,7 @@ char *makeEntityId(GameState *gameState) {
     gameState->randomIdStart++;
 
     return result;
-}  
+}
 
 float16 getModelToWorldTransform(Entity *e_) {
     float16 result = float16_identity();
@@ -56,7 +56,7 @@ float3 getWorldPosition(Entity *e_) {
         float3 localP = e->pos;
         localP.x += e->offsetP.x * e->scale.x;
         localP.y += e->offsetP.y * e->scale.y;
-        
+
         result = plus_float3(result, localP);
 
         e = e->parent;
@@ -93,7 +93,7 @@ u32 getFirstEntityIdFromTile(Tile *t) {
     if(item) {
         result = item->e->id;
     }
-    
+
     return result;
 }
 
@@ -142,7 +142,7 @@ void removeEntityFromTile(GameState *gameState, Tile *tile, Entity *e) {
         } else {
             item = &(*item)->next;
         }
-    } 
+    }
     assert(found);
 }
 
@@ -186,7 +186,7 @@ Entity *makeNewEntity(GameState *state, float3 worldP, u64 flagsToAddForBoard = 
         e->id = global_entityId++;
 
         e->fireTimer = -1;
-        
+
 
         e->velocity = make_float3(0, 0, 0);
         e->offsetP = make_float3(0, 0, 0);
@@ -211,10 +211,10 @@ Entity *makeNewEntity(GameState *state, float3 worldP, u64 flagsToAddForBoard = 
 
 int getNewOrReuseParticler(Entity *e, EntityFlag type, ParticlerParent *parent) {
     int index = -1;
-    
+
     assert(parent->particlerCount < arrayCount(parent->particlers));
     if(parent->particlerCount < arrayCount(parent->particlers)) { //NOTE: IF there's no particlers left don;t bother
-        
+
         for(int i = 0; i < e->particlerCount && index < 0; i++) {
             Particler *pTemp = e->particlers[i];
             if(pTemp->flags & type) {
@@ -224,7 +224,7 @@ int getNewOrReuseParticler(Entity *e, EntityFlag type, ParticlerParent *parent) 
         }
 
         if(index < 0) {
-            
+
             //NOTE: Get a new one from the storeage
             assert(e->particlerCount < arrayCount(e->particlers));
             if(e->particlerCount < arrayCount(e->particlers)) {
@@ -302,10 +302,10 @@ Entity *addKnightEntity(GameState *state, float3 worldP) {
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->knightAnimations.idle, 0.08f);
         e->animations = &state->knightAnimations;
-        
+
     }
     return e;
-} 
+}
 
 Entity *addHouseEntity(GameState *state, float3 worldP, Animation *startAnimation = 0) {
     Entity *e = makeNewEntity(state, worldP);
@@ -320,7 +320,7 @@ Entity *addHouseEntity(GameState *state, float3 worldP, Animation *startAnimatio
         // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
     }
     return e;
-} 
+}
 
 Entity *addTowerEntity(GameState *state, float3 worldP, Animation *startAnimation = 0) {
     Entity *e = makeNewEntity(state, worldP);
@@ -335,7 +335,7 @@ Entity *addTowerEntity(GameState *state, float3 worldP, Animation *startAnimatio
         // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
     }
     return e;
-} 
+}
 
 Entity *addGoblinHouseEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
@@ -346,12 +346,12 @@ Entity *addGoblinHouseEntity(GameState *state, float3 worldP) {
         e->scale = make_float3(1.8, 2.7, 1);
         easyAnimation_initController(&e->animationController);
 		easyAnimation_addAnimationToController(&e->animationController, &state->animationState.animationItemFreeListPtr, &state->goblinHutAnimation, 0.08f);
-        
+
 
         // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
     }
     return e;
-} 
+}
 
 
 Entity *addGoblinTowerEntity(GameState *state, float3 worldP) {
@@ -367,7 +367,7 @@ Entity *addGoblinTowerEntity(GameState *state, float3 worldP) {
         // entityCatchFire(state, e, make_float2(0.8f, 0.8f));
     }
     return e;
-} 
+}
 
 Entity *addCastleEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
@@ -382,7 +382,7 @@ Entity *addCastleEntity(GameState *state, float3 worldP) {
         // entityCatchFire(state, e, make_float2(3, 1));
     }
     return e;
-} 
+}
 
 Entity *addPeasantEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
@@ -396,7 +396,7 @@ Entity *addPeasantEntity(GameState *state, float3 worldP) {
         e->animations = &state->peasantAnimations;
     }
     return e;
-} 
+}
 
 Entity *addArcherEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP);
@@ -410,7 +410,7 @@ Entity *addArcherEntity(GameState *state, float3 worldP) {
         e->animations = &state->archerAnimations;
     }
     return e;
-} 
+}
 
 Entity *addGoblinEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP, TILE_FLAG_ENEMY);
@@ -424,7 +424,7 @@ Entity *addGoblinEntity(GameState *state, float3 worldP) {
         e->animations = &state->goblinAnimations;
     }
     return e;
-} 
+}
 
 Entity *addGoblinBarrelEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP, TILE_FLAG_ENEMY);
@@ -437,7 +437,7 @@ Entity *addGoblinBarrelEntity(GameState *state, float3 worldP) {
         e->animations = &state->barrellAnimations;
     }
     return e;
-} 
+}
 
 Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
     Entity *e = makeNewEntity(state, worldP, TILE_FLAG_ENEMY);
@@ -450,7 +450,7 @@ Entity *addGoblinTntEntity(GameState *state, float3 worldP) {
         e->animations = &state->tntAnimations;
     }
     return e;
-} 
+}
 
 void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
     DEBUG_TIME_BLOCK();
@@ -463,7 +463,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
             Chunk *c = gameState->terrain.getChunk(&gameState->lightingOffsets, &gameState->animationState, &gameState->textureAtlas, x, y, 0, true, false);
             if(c && (c->generateState == CHUNK_NOT_GENERATED || c->cloudFadeTimer >= 0)) {
                 float maxTime = 1.5f;
-                
+
                 //NOTE: Generate the clouds
                 if(c->cloudCount == 0) {
                     DEBUG_TIME_BLOCK_NAMED("CREATE CLOUDS");
@@ -485,8 +485,8 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
 
                         }
                     }
-                }   
-                
+                }
+
                 for(int i = 0; i < c->cloudCount; ++i) {
                     DEBUG_TIME_BLOCK_NAMED("PUSH CLOUDS AS TEXTUREs");
                     CloudData *cloud = &c->clouds[i];
@@ -495,7 +495,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
                     worldP.y += cloud->pos.y;
                     worldP.x -= gameState->cameraPos.x;
                     worldP.y -= gameState->cameraPos.y;
-                    
+
                     float s = cloud->scale;
 
                     float tVal = c->cloudFadeTimer;
@@ -503,9 +503,9 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
                         tVal = 0;
                     }
                     float alpha = lerp(0.4f, 0, make_lerpTValue(tVal / cloud->fadePeriod));
-                    
+
                     AtlasAsset *t = gameState->cloudText[cloud->cloudIndex];
-                    
+
                     float2 scale = make_float2(s, s*t->aspectRatio_h_over_w);
                     float darkness = cloud->darkness;
                     pushTexture(renderer, atlasHandle, worldP, scale, make_float4(cloud->darkness, cloud->darkness, cloud->darkness, alpha), t->uv);
@@ -519,7 +519,7 @@ void drawClouds(GameState *gameState, Renderer *renderer, float dt) {
                         c->cloudFadeTimer = -1;
                     }
                 }
-                
+
             }
         }
     }
@@ -540,7 +540,7 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
         sortP.y++;//NOTE: To get it in the middle
         sortP = convertRealWorldToBlockCoords(sortP);
 
-        float alpha = 1.0f; 
+        float alpha = 1.0f;
 
         bool isStump = false;
 
@@ -570,11 +570,11 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
                 if(chunkToCheck) {
                     tile = chunkToCheck->getTile(tileP.x, tileP.y, tileP.z);
                 }
-                
+
             } else {
                 tile = c->getTile(tileP.x, tileP.y, tileP.z);
             }
-            
+
             if(tile && (tile->entityOccupation > 0)) {
                 alpha = 0.5f;
             }
@@ -587,7 +587,7 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
     for(int i = 0; i < c->decorSpriteCount; ++i) {
         DecorSprite b = c->decorSprites[i];
         float3 renderP = getRenderWorldP(b.worldP);
-        
+
         renderP.x -= gameState->cameraPos.x;
         renderP.y -= gameState->cameraPos.y;
         renderP.z = RENDER_Z;
@@ -597,7 +597,7 @@ void renderChunkDecor(GameState *gameState, Renderer *renderer, Chunk *c) {
         pushEntityTexture(renderer, b.textureHandle, renderP, b.scale, make_float4(1, 1, 1, 1), b.uvs, getSortIndex(sortP, RENDER_LAYER_3));
     }
 
-   
+
 }
 
 //NOTE: If this function returns a positive number it means it should swap a & b, making a come after b
@@ -606,7 +606,7 @@ int compare_by_height(InstanceEntityData *pa, InstanceEntityData *pb) {
     float b_yz = (float)pb->sortIndex.worldP.y;// + (float)pb->sortIndex.worldP.z;
 
 	if (a_yz != b_yz) {
-		return (b_yz - a_yz) > 0 ? 1 : -1; 
+		return (b_yz - a_yz) > 0 ? 1 : -1;
 	}
 
 	if(pa->sortIndex.worldP.z != pb->sortIndex.worldP.z) {
@@ -625,7 +625,7 @@ int compare_by_height(InstanceEntityData *pa, InstanceEntityData *pb) {
 
 void sortAndRenderTileQueue(Renderer *renderer) {
 	DEBUG_TIME_BLOCK();
-	
+
 	{
 		//TODO: Make this faster
 		DEBUG_TIME_BLOCK_NAMED("SORT RENDER TILES");
@@ -644,7 +644,7 @@ void sortAndRenderTileQueue(Renderer *renderer) {
 	pushShader(renderer, &terrainLightingShader);
 	//NOTE: Draw the list
 	for(int i = 0; i < renderer->tileEntityRenderCount; ++i) {
-		InstanceEntityData *d = renderer->tileRenderData + i; 
+		InstanceEntityData *d = renderer->tileRenderData + i;
 		pushTexture(renderer, d->textureHandle, d->pos, d->scale, d->color, d->uv, d->aoMask);
 	}
 
@@ -653,7 +653,7 @@ void sortAndRenderTileQueue(Renderer *renderer) {
 
 void sortAndRenderEntityQueue(Renderer *renderer) {
 	DEBUG_TIME_BLOCK();
-	
+
 	{
 		//TODO: Make this faster
 		DEBUG_TIME_BLOCK_NAMED("SORT RENDER ENTITIES");
@@ -672,7 +672,7 @@ void sortAndRenderEntityQueue(Renderer *renderer) {
 	pushShader(renderer, &terrainLightingShader);
 	//NOTE: Draw the list
 	for(int i = 0; i < renderer->entityRenderCount; ++i) {
-		InstanceEntityData *d = renderer->entityRenderData + i; 
+		InstanceEntityData *d = renderer->entityRenderData + i;
 		pushTexture(renderer, d->textureHandle, d->pos, d->scale, d->color, d->uv, d->aoMask);
 	}
 
@@ -710,7 +710,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                     // pushEntityTexture(renderer, c->texture.textureHandle, renderP, chunkScale, make_float4(1, 1, 1, 1), make_float4(0, 1, 1, 0), getSortIndex(worldP, RENDER_LAYER_1), 0);
                     float4 color = make_float4(1, 1, 1, 1); //make_float4(c->y % 2 ? 1 : 0, c->x % 2 ? 1 : 0, 1, 1)
                     pushTexture(renderer, c->texture.textureHandle, renderP, chunkScale, color, make_float4(0, 1, 1, 0));
-                    
+
                     renderChunkDecor(gameState, renderer, c);
                 } else if(c->generateState & CHUNK_GENERATED) {
                     float2 chunkInPixels = make_float2(chunkScale.x*TILE_WIDTH_PIXELS, chunkScale.y*TILE_WIDTH_PIXELS);
@@ -735,7 +735,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
 
                                         float2 localP = make_float2(tiley, tilex);
                                         float3 defaultP = make_float3(tilex + 0.5f, tiley + tilez + 0.5f, RENDER_Z);
-                                       
+
                                         assert(defaultP.y < chunkScale.y);
 
                                         u32 lightingMask = tile->lightingMask;
@@ -762,7 +762,7 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                                                     float3 p1 = worldP;
                                                     p1.y -= 1;
                                                     RenderSortIndex sort = getSortIndex(p1, RENDER_LAYER_2);
-                                                    
+
                                                     Texture *t = getTileTexture(&gameState->sandTileSet, coord);
                                                     pushTileEntityTexture(renderer, t->handle, make_float3(defaultP.x, defaultP.y - 1, RENDER_Z), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, sort, lightingMask);
                                                 }
@@ -791,8 +791,8 @@ void renderTileMap(GameState *gameState, Renderer *renderer, float16 fovMatrix, 
                                                 Texture *t = getTileTexture(&gameState->sandTileSet, coord);
                                                 pushTileEntityTexture(renderer, t->handle, make_float3(defaultP.x, defaultP.y - 1, RENDER_Z), make_float2(1, 1), make_float4(1, 1, 1, 1), t->uvCoords, getSortIndex(worldP, RENDER_LAYER_3), lightingMask);
                                             }
-                                        } 
-                                        
+                                        }
+
                                         if(tile->type != TILE_TYPE_WATER_ROCK) {
                                             if(tile->animationController) {
                                                 Texture *animationSprite = easyAnimation_updateAnimation_getTexture(tile->animationController, &gameState->animationState.animationItemFreeListPtr, dt);
@@ -838,7 +838,7 @@ bool tileIsOccupied(GameState *gameState, float3 worldP) {
 static float3 roundToGridBoard(float3 in, float tileSize) {
     float xMod = (in.x < 0) ? -tileSize : tileSize;
     float yMod = (in.y < 0) ? -tileSize : tileSize;
-    
+
     float3 result = {};
     if(tileSize == 1) {
         result = make_float3((int)(in.x + xMod*0.5f), (int)(in.y + yMod*0.5f), (int)(in.z));
@@ -848,7 +848,7 @@ static float3 roundToGridBoard(float3 in, float tileSize) {
         result.x -= ((int)result.x) % (int)tileSize;
         result.y -= ((int)result.y) % (int)tileSize;
     }
-    
+
     return result;
 }
 
@@ -866,13 +866,13 @@ Animation *getBestWalkAnimation(Entity *e) {
 
     if(impluse.y > margin) {
         if(impluse.x < -margin || impluse.x > margin) {
-            animation = &e->animations->run;	
+            animation = &e->animations->run;
         } else {
             animation = &e->animations->run;
         }
     } else if(impluse.y < -margin) {
         if(impluse.x < -margin || impluse.x > margin) {
-            animation = &e->animations->run;	
+            animation = &e->animations->run;
 
             //TODO: Remove this when the animations are coorect
             if((impluse.x > margin  && impluse.y < -margin) || (impluse.x < -margin && impluse.y > margin) || ((impluse.x > margin && impluse.y < margin && impluse.y > -margin))) { //NOTE: The extra check is becuase the front & back sideways animation aren't matching - should flip one in the aesprite
@@ -984,7 +984,7 @@ void addMovePositionsFromBoardAstar(GameState *gameState, FloodFillResult search
 float3 getOriginSelection(GameState *gameState) {
     float3 p = {};
     if(gameState->selectedEntityCount > 0) {
-        p = gameState->selectedEntityIds[gameState->selectedEntityCount - 1].worldPos;    
+        p = gameState->selectedEntityIds[gameState->selectedEntityCount - 1].worldPos;
     }
     return p;
 }
