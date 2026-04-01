@@ -221,10 +221,10 @@ bool maybeAddEntityToSelection(GameState *gameState, Entity *e) {
 void updateAndDrawEntitySelection(GameState *gameState, Renderer *renderer, bool clicked, float2 worldMousePLvl0, float3 mouseWorldP) {
 	pushShader(renderer, &lineShader);
 
-	if(clicked && !gameState->hitUI && !global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
+	if(clicked && !gameState->hitUI && global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
 		gameState->startDragPForSelect = worldMousePLvl0;
 		gameState->draggingEntitySelector = true;
-	} else if(!global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || gameState->hitUI) {
+	} else if(!global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].isDown || gameState->hitUI || !global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
 		gameState->draggingEntitySelector = false;
 	}
 
@@ -429,7 +429,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 		Entity *e = &gameState->entities[i];
 
 		if(e->flags & ENTITY_ACTIVE) {
-			updateEntity(gameState, renderer, e, dt, worldMouseP, clicked);
+			updateEntity(gameState, renderer, e, dt, worldMouseP, clicked, i);
 			renderEntity(gameState, renderer, e, fovMatrix, dt);
 		}
 	}
@@ -485,5 +485,7 @@ void updateAndRenderEntities(GameState *gameState, Renderer *renderer, float dt,
 	if(global_platformInput.keyStates[PLATFORM_KEY_ESCAPE].pressedCount > 0) {
 		clearEntitySelection(gameState);
 	}
+
+	removeEntitiesForDelete(gameState);
 
 }

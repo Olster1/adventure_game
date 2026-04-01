@@ -9,22 +9,12 @@ void pushGameLight(GameState *state, float3 worldPos, float4 color, float perlin
 	}
 }
 
-char *makeEntityId(GameState *gameState) {
-    u64 timeSinceEpoch = platform_getTimeSinceEpoch();
-    char *result = easy_createString_printf(&globalPerEntityLoadArena, "%ld-%d-%d", timeSinceEpoch, gameState->randomIdStartApp, gameState->randomIdStart);
-
-    //NOTE: This would have to be locked in threaded application
-    gameState->randomIdStart++;
-
-    return result;
-}
-
 float16 getModelToWorldTransform(Entity *e_) {
     float16 result = float16_identity();
 
     Entity *e = e_;
 
-    while(e) {
+    // while(e) {
         //NOTE: ROTATION
         float16 local = float16_angle_aroundZ(e->rotation);
 
@@ -39,8 +29,8 @@ float16 getModelToWorldTransform(Entity *e_) {
         //NOTE: Cocat to end matrix
         result = float16_multiply(local, result);
 
-        e = e->parent;
-    }
+    //     e = e->parent;
+    // }
 
     return result;
 }
@@ -50,17 +40,17 @@ float3 getWorldPosition(Entity *e_) {
     result.x += e_->offsetP.x * e_->scale.x;
     result.y += e_->offsetP.y * e_->scale.y;
 
-    Entity *e = e_->parent;
+    // Entity *e = e_->parent;
 
-    while(e) {
-        float3 localP = e->pos;
-        localP.x += e->offsetP.x * e->scale.x;
-        localP.y += e->offsetP.y * e->scale.y;
+    // while(e) {
+    //     float3 localP = e->pos;
+    //     localP.x += e->offsetP.x * e->scale.x;
+    //     localP.y += e->offsetP.y * e->scale.y;
 
-        result = plus_float3(result, localP);
+    //     result = plus_float3(result, localP);
 
-        e = e->parent;
-    }
+    //     e = e->parent;
+    // }
 
     return result;
 }

@@ -141,12 +141,13 @@ typedef struct {
 
 	LightingOffsets lightingOffsets;
 
-	Entity *player;
-
 	float scrollDp;
 
 	int entityCount;
 	Entity entities[2056];
+
+	int entitiesToRemove;
+	int entitiesToRemoveForFrame[2056];
 
 	float3 cameraPos;
 	float cameraFOV;

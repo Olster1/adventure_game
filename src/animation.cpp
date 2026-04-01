@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #define EASY_HEADERS_FREE(ptr) free(ptr)
 #endif
-	
+
 #define EASY_MAX_FRAME_COUNT 32
 typedef struct {
     char *frames[EASY_MAX_FRAME_COUNT];
@@ -37,7 +37,7 @@ typedef struct EasyAnimation_ListItem {
     EasyAnimationAction actions[4];
 
     int frameIndex;
-    
+
     Animation *animation;
 
     EasyAnimation_ListItem *prev;
@@ -45,7 +45,7 @@ typedef struct EasyAnimation_ListItem {
 } EasyAnimation_ListItem;
 
 typedef struct {
-    EasyAnimation_ListItem parent; //NOTE: This is a dummy sentinel
+    EasyAnimation_ListItem *parent; //NOTE: This is a dummy sentinel
 
     Animation *lastAnimationOn;
     bool finishedAnimationLastUpdate; //goes to true if it finished an animation in the last update so you can change it if you need to
@@ -77,16 +77,17 @@ static char *easyAnimation2d_copyString(char *str) {
 }
 
 static bool easyAnimation_isControllerValid(EasyAnimation_Controller *controller) {
-    return (controller->parent.next != 0);
+    return (controller->parent->next != 0);
 }
 
 static EasyAnimation_ListItem *easyAnimation_getCurrentAnimationItem(EasyAnimation_Controller *controller) {
-    return controller->parent.next;
+    return controller->parent->next;
 }
 
 
 static void easyAnimation_initController(EasyAnimation_Controller *controller) {
-    controller->parent.next = controller->parent.prev = &controller->parent;
+    controller->parent = (EasyAnimation_ListItem *)EASY_HEADERS_ALLOC(sizeof(EasyAnimation_ListItem));
+    controller->parent->next = controller->parent->prev = controller->parent;
     controller->finishedAnimationLastUpdate = false;
     controller->lastAnimationOn = 0;
     controller->currentLoopCount = 0;
@@ -121,7 +122,7 @@ static void easyAnimation_pushFrame(Animation *animation, Texture *t) {
 //             break;
 //         }
 //     }
-    
+
 //     return Result;
 // }
 
@@ -134,7 +135,7 @@ static Animation *easyAnimation_findAnimation(Animation *Animations, int Animati
             break;
         }
     }
-    
+
     return Result;
 }
 
@@ -148,48 +149,59 @@ static EasyAnimation_ListItem *easyAnimation_addAnimationToController(EasyAnimat
     } else {
         Item = (EasyAnimation_ListItem *)EASY_HEADERS_ALLOC(sizeof(EasyAnimation_ListItem));
     }
-    
+
     EASY_HEADERS_ASSERT(Item);
-    
+
     Item->timerAt = 0;
     Item->timerPeriod = period;
-    
+
     Item->frameIndex = 0;
-    
+
     Item->actionCount = 0;
-    
+
     Item->animation = animation;
-        
-    EasyAnimation_ListItem *AnimationListSentintel = &controller->parent;
+
+    EasyAnimation_ListItem *AnimationListSentintel = controller->parent;
 
     //Add animation to end of list;
     Item->next = AnimationListSentintel;
     Item->prev = AnimationListSentintel->prev;
-    
+
     AnimationListSentintel->prev->next = Item;
     AnimationListSentintel->prev = Item;
 
     return Item;
-    
+
 }
 
 static void easyAnimation_emptyAnimationContoller(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr) {
     //NOTE(ollie): While still things on the list
-    EasyAnimation_ListItem *AnimationListSentintel = &controller->parent;
+    EasyAnimation_ListItem *AnimationListSentintel = controller->parent;
 
     while(AnimationListSentintel->next != AnimationListSentintel) {
         EasyAnimation_ListItem *Item = AnimationListSentintel->next;
+
         //Remove from linked list
         AnimationListSentintel->next = Item->next;
         Item->next->prev = AnimationListSentintel;
-        
+
         //Add to free list
         Item->next = *AnimationItemFreeListPtr;
         *AnimationItemFreeListPtr = Item;
     }
 
     controller->currentLoopCount = 0;
-    
+}
+
+static void easyAnimation_endAnimationController(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr) {
+    easyAnimation_emptyAnimationContoller(controller, AnimationItemFreeListPtr);
+
+    EasyAnimation_ListItem *sentinel = controller->parent;
+    //Add to free list
+    sentinel->next = *AnimationItemFreeListPtr;
+    *AnimationItemFreeListPtr = sentinel;
+    controller->parent = 0;
+
 }
 
 static void easyAnimation_randomStart(EasyAnimation_ListItem *item) {
@@ -216,27 +228,27 @@ static void easyAnimation_addActionForFrame(EasyAnimation_ListItem *item, int ac
 }
 
 static char *easyAnimation_updateAnimation(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, float dt) {
-    EasyAnimation_ListItem *AnimationListSentintel = &controller->parent;
+    EasyAnimation_ListItem *AnimationListSentintel = controller->parent;
 
     controller->finishedAnimationLastUpdate = false; //clear out the value
 
     EasyAnimation_ListItem *Item = AnimationListSentintel->next;
     EASY_HEADERS_ASSERT(Item != AnimationListSentintel);
-    
+
     EASY_HEADERS_ASSERT(Item->timerAt >= 0);
 
     controller->lastAnimationOn = Item->animation;
 
-    Item->timerAt += dt;    
+    Item->timerAt += dt;
 
     char *result = Item->animation->frames[Item->frameIndex];
 
     if(Item->timerAt >= Item->timerPeriod) {
         Item->frameIndex++;
         Item->timerAt = 0;
-        
+
         if(Item->frameIndex >= Item->animation->frameCount)
-        { 
+        {
             //finished animation
             Item->frameIndex = 0;
 
@@ -245,7 +257,7 @@ static char *easyAnimation_updateAnimation(EasyAnimation_Controller *controller,
                 //Remove from linked list
                 AnimationListSentintel->next = Item->next;
                 Item->next->prev = AnimationListSentintel;
-                
+
                 //Add to free list
                 Item->next = *AnimationItemFreeListPtr;
                 *AnimationItemFreeListPtr = Item;
@@ -261,15 +273,15 @@ static char *easyAnimation_updateAnimation(EasyAnimation_Controller *controller,
             controller->finishedAnimationLastUpdate = true;
 
         }
-        
+
     }
 
-    
+
     return result;
 }
 
 static Texture *easyAnimation_updateAnimation_getTexture(EasyAnimation_Controller *controller, EasyAnimation_ListItem **AnimationItemFreeListPtr, float dt) {
-	EasyAnimation_ListItem *AnimationListSentintel = &controller->parent;
+	EasyAnimation_ListItem *AnimationListSentintel = controller->parent;
 
 	easyAnimation_updateAnimation(controller, AnimationItemFreeListPtr, dt);
 
@@ -281,7 +293,7 @@ static Texture *easyAnimation_updateAnimation_getTexture(EasyAnimation_Controlle
 }
 
 inline static int easyAnimation_isControllerEmpty(EasyAnimation_Controller *c) {
-    int Result = c->parent.next == &c->parent;
+    int Result = c->parent->next == c->parent;
     return Result;
 }
 
@@ -300,7 +312,7 @@ inline static char *easyAnimation_getFrameOn(EasyAnimation_ListItem *AnimationLi
 }
 
 inline static bool easyAnimation_getCurrentAnimation(EasyAnimation_Controller *c, Animation *a) {
-    return (c->parent.next->animation == a);
+    return (c->parent->next->animation == a);
 
 }
 

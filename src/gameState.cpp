@@ -192,7 +192,8 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 		loadImageStripXY(&gameState->goblinAnimations.attackSide, backendRenderer, "../images/factions/goblin.png", 192, 192, 6, 0, 2);
 		loadImageStripXY(&gameState->goblinAnimations.attackDown, backendRenderer, "../images/factions/goblin.png", 192, 192, 6, 0, 3);
 		loadImageStripXY(&gameState->goblinAnimations.attackUp, backendRenderer, "../images/factions/goblin.png", 192, 192, 6, 0, 4);
-		loadImageStripXY(&gameState->goblinAnimations.hurt, backendRenderer, "../images/factions/goblin_hit.png", 192, 192, 4, 0, 0);
+		loadImageStripXY(&gameState->goblinAnimations.hurt, backendRenderer, "../images/factions/goblin_hit.png", 192, 192, 3, 0, 0);
+		loadImageStripXY(&gameState->goblinAnimations.death, backendRenderer, "../images/factions/goblin_die.png", 192, 192, 4, 0, 0);
 
 		loadImageStripXY(&gameState->tntAnimations.idle, backendRenderer, "../images/factions/tnt.png", 192, 192, 6, 0, 0);
 		loadImageStripXY(&gameState->tntAnimations.run, backendRenderer, "../images/factions/tnt.png", 192, 192, 6, 1, 0);

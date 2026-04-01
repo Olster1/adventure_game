@@ -1,0 +1,4 @@
+- players shouldn't be able to go on the same square as other entities
+
+- when have two peasants should show two building outlines
+

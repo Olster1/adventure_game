@@ -151,7 +151,7 @@ Arrow initArrow(float3 startPos, float3 endPos, u32 targetEntityId, float damage
 struct Entity {
     u32 id;
 
-    Entity *parent; //TODO: Not sure if we need this
+    // Entity *parent; //TODO: Not sure if we need this
     EntityType type;
     u64 flags;
     u64 boardFlags;

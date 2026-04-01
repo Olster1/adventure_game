@@ -112,27 +112,61 @@ float2 worldCameraToScreen01(GameState *state, float2 p) {
 
 void hurtEntity(GameState *gameState, Entity *e, int damage) {
     e->health -= damage;
-    printf("%d\n", damage);
+
+    easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+    if(e->health <= 0) {
+    //NOTE: Died
+        EasyAnimation_ListItem *item0 = easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->death, 0.08f);
+        easyAnimation_addActionForFrame(item0, ANIMATION_ACTION_REMOVE_FROM_WORLD, item0->animation->frameCount - 1);
+    } else {
+        easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
+        easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
+        //NOTE: And back to the idle animation
+        easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
+    }
 
     DamageSplat *d = getDamageSplat(gameState, e);
     if(d) {
         d->damage = damage;
     }
-
-    easyAnimation_emptyAnimationContoller(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
-    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
-    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->hurt, 0.08f);
-    //NOTE: And back to the idle animation
-    easyAnimation_addAnimationToController(&e->animationController, &gameState->animationState.animationItemFreeListPtr, &e->animations->idle, 0.08f);
-
-
 }
 
-void updateArrows() {
+void freeMemoryForEntityDelete(GameState *gameState, Entity *e) {
+    easyAnimation_endAnimationController(&e->animationController, &gameState->animationState.animationItemFreeListPtr);
+    freeDamageSplats(gameState, e);
 
+    //NOTE: Finish any particle systems
+    for(int i = 0; i < e->particlerCount; i++) {
+        endParticlerLife(e->particlers[i]);
+    }
+
+    //NOTE: Free all entity moves
+    EntityMove *move = e->moves;
+    while(move) {
+        EntityMove *nextMove = e->moves->next;
+        move->next = gameState->freeEntityMoves;
+        gameState->freeEntityMoves = move;
+        move = nextMove;
+    }
 }
 
-void updateAnimationActions(GameState *gameState, Entity *e) {
+void removeEntitiesForDelete(GameState *gameState) {
+    for(int i = 0; i < gameState->entitiesToRemove; ++i) {
+        int entityIndex = gameState->entitiesToRemoveForFrame[i];
+        printf("removing entity %d\n", entityIndex);
+        freeMemoryForEntityDelete(gameState, &gameState->entities[entityIndex]);
+        gameState->entities[entityIndex] = gameState->entities[--gameState->entityCount];
+    }
+    gameState->entitiesToRemove = 0;
+}
+
+void queueRemoveEntityFromWorld(GameState *gameState, Entity *e, int entityArrayIndex) {
+    if(gameState->entitiesToRemove < arrayCount(gameState->entitiesToRemoveForFrame)) {
+        gameState->entitiesToRemoveForFrame[gameState->entitiesToRemove++] = entityArrayIndex;
+    }
+}
+
+void updateAnimationActions(GameState *gameState, Entity *e, int entityArrayIndex) {
      EasyAnimation_ListItem *listItem = easyAnimation_getCurrentAnimationItem(&e->animationController);
     if(listItem) {
         //NOTE: Process any actions that the animation controller has
@@ -159,6 +193,9 @@ void updateAnimationActions(GameState *gameState, Entity *e) {
                     }
                 } else if(action->actionId == ANIMATION_ACTION_PLAY_FOOTSTEPS) {
                     playFootstepSound(gameState);
+                } else if(action->actionId == ANIMATION_ACTION_REMOVE_FROM_WORLD) {
+                    //NOTE: Entity died or needs to be removed from some reason.
+                    queueRemoveEntityFromWorld(gameState, e, entityArrayIndex);
                 } else if(action->actionId == ANIMATION_ACTION_PLAY_SWORD_SOUND) {
                     playSwordAttackSound(gameState);
                 } else if(action->actionId == ANIMATION_ACTION_PLAY_BUILD_SOUND) {
@@ -216,7 +253,7 @@ bool isTryingToBuild(GameState *gameState) {
     return result;
 }
 
-void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool clicked) {
+void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt, float3 mouseWorldP, bool clicked, int arrayIndex) {
     DEBUG_TIME_BLOCK();
     float3 p = getWorldPosition(e);
 
@@ -278,7 +315,7 @@ void updateEntity(GameState *gameState, Renderer *renderer, Entity *e, float dt,
         // }
     }
 
-    updateAnimationActions(gameState, e);
+    updateAnimationActions(gameState, e, arrayIndex);
 
     if(e->fireTimer >= 0) {
         e->fireTimer += dt;

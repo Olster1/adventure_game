@@ -37,6 +37,8 @@ struct GamePlay {
     int treeCount;
     int stoneCount;
 
+    bool aiTakingTurn;
+
     BuildingCost buildingCosts[BUILDING_COST_TOTAL_COUNT];
 };
 
@@ -45,6 +47,7 @@ GamePlay init_gameplay() {
 
     gamePlay.turnOn = GAME_TURN_PLAYER_KNIGHT;
     gamePlay.boardInited = false;
+    gamePlay.aiTakingTurn = false;
 
     gamePlay.turnTime = 0;
     gamePlay.maxTurnTime = 60*5; //NOTE: 5 mintues

@@ -70,6 +70,7 @@ float4 checkButtonInteraction(GameState *gameState, UiButtonType buttonType, flo
             if(clicked) {
                 if(buttonType == UI_BUTTON_NEXT_TURN) {
                     gameState->gamePlay.turnOn = GAME_TURN_PLAYER_GOBLIN;
+                    gameState->gamePlay.aiTakingTurn = false;
                 } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_BUILD && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT) {
                     gameState->gameChoiceUi = GAME_CHOICE_UI_PEASANT_BUILD;
                 } else if(buttonType == UI_BUTTON_PEASEANT_ACTION_CHOP && gameState->lastGameChoiceUi == GAME_CHOICE_UI_PEASANT) {
@@ -97,7 +98,7 @@ bool hasEnoughResourses(GameState *gameState, BuildingCost cost) {
 void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2 percentOffset, UiAnchorPoint anchorPoint, float2 resolution, float2 mouseP, UiButtonType buttonType = UI_BUTTON_NONE) {
     DEBUG_TIME_BLOCK();
     float fontSize = 0.1;
-	Rect2f bounds = getTextBounds(renderer, &gameState->font, text, 0, 0, fontSize); 
+	Rect2f bounds = getTextBounds(renderer, &gameState->font, text, 0, 0, fontSize);
     float ar = gameState->bannerTexture.aspectRatio_h_over_w;
     float scalef = 25;
     float2 scale = make_float2(scalef, ar*scalef);
@@ -106,7 +107,7 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
 
     scale.x = math3d_maxfloat(sizeFactor*bScale.x, scale.x);
     scale.y = math3d_maxfloat(sizeFactor*bScale.y, scale.y);
-    
+
     float2 pos = make_float2(0.5f*scale.x, 0.5f*scale.y);
     float2 pos1 = getUiPosition(percentOffset, anchorPoint, pos, resolution);
 
@@ -115,7 +116,7 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
     if(buttonType != UI_BUTTON_NONE) {
         t = &gameState->buttonTexture;
     }
-    
+
    color = checkButtonInteraction(gameState, buttonType, pos1, scale, mouseP, color);
 
     pushShader(renderer, &pixelArtShader);
@@ -127,7 +128,7 @@ void drawScrollText(char *text, GameState *gameState, Renderer *renderer, float2
 
     // pos = getUiPosition(make_float2(0, 0), anchorPoint, pos, resolution);
     pushShader(renderer, &sdfFontShader);
-    draw_text(renderer, &gameState->font, text, pos1.x - 0.5f*bScale.x, pos1.y + 0.5f*bScale.y, fontSize, make_float4(0, 0, 0, 1)); 
+    draw_text(renderer, &gameState->font, text, pos1.x - 0.5f*bScale.x, pos1.y + 0.5f*bScale.y, fontSize, make_float4(0, 0, 0, 1));
 }
 
 void checkDimissUIOptions(GameState *gameState) {
@@ -142,7 +143,7 @@ void checkDimissUIOptions(GameState *gameState) {
 
 void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, float dt) {
         float fontSize = 0.1;
-        
+
         Texture *b = &gameState->logTexture;
         float2 s = make_float2(10, 10);
         float2 s1 = make_float2(5, 5);
@@ -175,22 +176,22 @@ void drawResources(GameState *gameState, Renderer *renderer, float2 resolution, 
         }
 
         pushShader(renderer, &sdfFontShader);
-        
+
         char *str = easy_createString_printf(&globalPerFrameArena, "%d", gameState->gamePlay.treeCount);
-        float2 bounds = get_scale_rect2f(getTextBounds(renderer, &gameState->font, str, 0, 0, fontSize)); 
-        draw_text(renderer, &gameState->font, str, (p.x - 0.5f*bounds.x) + 2, (p.y + 0.5f*bounds.y) - 2, fontSize, make_float4(0, 0, 0, 1)); 
+        float2 bounds = get_scale_rect2f(getTextBounds(renderer, &gameState->font, str, 0, 0, fontSize));
+        draw_text(renderer, &gameState->font, str, (p.x - 0.5f*bounds.x) + 2, (p.y + 0.5f*bounds.y) - 2, fontSize, make_float4(0, 0, 0, 1));
     }
 
 void renderCost(GameState *gameState, Renderer *renderer, float xAt, float yAt, int cost, Texture *b) {
     float2 s1 = make_float2(5, 5);
     float fontSize = 0.1;
-    
+
     pushTexture(renderer, b->handle, make_float3(xAt, yAt, UI_Z_POS), s1, make_float4(1, 1, 1, 1), b->uvCoords);
 
     pushShader(renderer, &sdfFontShader);
     char *str = easy_createString_printf(&globalPerFrameArena, "%d", cost);
-    float2 bounds = get_scale_rect2f(getTextBounds(renderer, &gameState->font, str, 0, 0, fontSize)); 
-    draw_text(renderer, &gameState->font, str, (xAt - 0.5f*bounds.x), (yAt + 0.5f*bounds.y) - 4, fontSize, make_float4(0, 0, 0, 1)); 
+    float2 bounds = get_scale_rect2f(getTextBounds(renderer, &gameState->font, str, 0, 0, fontSize));
+    draw_text(renderer, &gameState->font, str, (xAt - 0.5f*bounds.x), (yAt + 0.5f*bounds.y) - 4, fontSize, make_float4(0, 0, 0, 1));
 
     pushShader(renderer, &pixelArtShader);
 }
@@ -213,13 +214,13 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
 
     // char *str = easy_createString_printf(&globalPerFrameArena, "TURN: %d/%d", play->turnCount, play->maxTurnCount);
     // drawScrollText(str, gameState, renderer, make_float2(1, 1), UI_ANCHOR_TOP_LEFT, resolution, mouseP);
-    
+
     // {
     //NOTE: Drawing the time left string
     //     int sec = (int)(play->maxTurnTime - play->turnTime);
     //     int min = sec / 60;
     //     sec -= min*60;
-    
+
     //     str = easy_createString_printf(&globalPerFrameArena, "Time Left: %d:%d", min, sec);
     //     drawScrollText(str, gameState, renderer, make_float2(1, 1), UI_ANCHOR_TOP_LEFT, resolution);
     // }
@@ -289,10 +290,10 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
             }
             pushTexture(renderer, gameState->houseTexture.handle, p, scale, color, gameState->houseTexture.uvCoords);
         }
-        
+
         renderCost(gameState, renderer, xAt - costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE].wood, &gameState->logTexture);
         renderCost(gameState, renderer, xAt + costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_HOUSE].stone, &gameState->stoneTexture);
-        
+
         xAt += buildingSize + padding;
         {
             float3 p = make_float3(xAt, yAt, 1);
@@ -306,10 +307,10 @@ void drawGameUi(GameState *gameState, Renderer *renderer, float dt, float window
         }
         renderCost(gameState, renderer, xAt - costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER].wood, &gameState->logTexture);
         renderCost(gameState, renderer, xAt + costOffset, costY, gameState->gamePlay.buildingCosts[BUILDING_COST_KNIGHT_TOWER].stone, &gameState->stoneTexture);
-        
+
         // checkDimissUIOptions(gameState);
     }
 
     gameState->lastGameChoiceUi = gameState->gameChoiceUi;
-    
+
 }

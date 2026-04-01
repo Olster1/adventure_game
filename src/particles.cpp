@@ -12,7 +12,7 @@ struct PariclePattern {
 };
 
 struct ParticlerId {
-    int id; 
+    int id;
     bool invalid;
 };
 
@@ -46,7 +46,7 @@ struct Particler {
     TextureHandle *imageHandle;
     float4 uvCoords;
 
-    u32 flags; //NOTE: These are entity flags 
+    u32 flags; //NOTE: These are entity flags
 
     int colorCount;
     float4 colors[4]; //NOTE: Moves through colors as lifespan increases
@@ -61,6 +61,11 @@ struct Particler {
 void resetParticlerLife(Particler *p) {
     p->lifeAt = 0;
 }
+
+void endParticlerLife(Particler *p) {
+    p->lifeAt = p->lifespan;
+}
+
 
 void updateParticlerWorldPosition(Particler *p, float3 worldP) {
     p->worldP = worldP;
@@ -84,7 +89,7 @@ Particler initParticler(float lifespan, float spawnRate, float3 pos, float3 spaw
     p.id = id;
     p.warmStart = true;
 
-    return p;   
+    return p;
 }
 
 bool addColorToParticler(Particler *p, float4 color) {
@@ -93,7 +98,7 @@ bool addColorToParticler(Particler *p, float4 color) {
         p->colorCount++;
         //NOTE: We push them on in reverse order for the gradient lerping. Because it makes it less confusing when thinking about that code
         for(int i = (p->colorCount - 1); i > 0; --i) {
-            p->colors[i] = p->colors[i - 1];    
+            p->colors[i] = p->colors[i - 1];
         }
         p->colors[0] = color;
         result = true;
@@ -111,7 +116,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
 
     float diff = (particler->tAt - particler->lastTimeCreation);
     if(!isDead && (diff >= particler->spawnRate) || particler->warmStart) {
-        
+
         int numberOfParticles = diff / particler->spawnRate;
 
         if(particler->warmStart) {
@@ -125,7 +130,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
 
             if(particler->count < arrayCount(particler->particles)) {
                 p = &particler->particles[particler->count++];
-                
+
             } else {
                 //NOTE: Already full so use the ring buffer index
                 assert(particler->indexAt < arrayCount(particler->particles));
@@ -152,7 +157,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
 
         particler->lastTimeCreation = particler->tAt;
     }
-    
+
     int deadCount = 0;
     for(int i = 0; i < particler->count; ++i) {
         Particle *p = &particler->particles[i];
@@ -161,7 +166,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
             float3 accelForFrame = scale_float3(dt, make_float3(0, 0, 0));
 
             //NOTE: Integrate velocity
-            p->dP = plus_float3(p->dP, accelForFrame); //NOTE: Already * by dt 
+            p->dP = plus_float3(p->dP, accelForFrame); //NOTE: Already * by dt
 
             //NOTE: Apply drag
             // p->dP = scale_float3(0.95f, p->dP);
@@ -193,10 +198,10 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
                 }
 
                 float pos = lerp(0, particler->colorCount - 1, make_lerpTValue(v));
-              
+
                 int index = floor(pos);
                 int index1 = (index + 1 < particler->colorCount) ? index + 1 : index;
-               
+
                 assert(index >= 0 && index < particler->colorCount);
                 assert(index1 >= 0 && index1 < particler->colorCount);
 
@@ -207,7 +212,7 @@ bool updateParticler(Renderer *renderer, Particler *particler, float3 cameraPos,
 
             //NOTE: Draw the particle
             pushEntityTexture(renderer, particler->imageHandle, drawP, p->T.scale.xy, color, particler->uvCoords, getSortIndex(p->T.pos));
-          
+
         } else {
             deadCount++;
         }
@@ -238,7 +243,7 @@ Particler *getNewParticleSystem(ParticlerParent *parent, float3 startP, TextureH
         float lifespan = 0.1f; //NOTE: Seconds for the _particler_ not particles. Particle lifespan is set by MAX_PARTICLE_LIFESPAN
         parent->particlers[parent->particlerCount++] = initParticler(lifespan, spawnRatePerSecond, startP, spawnArea, imageHandle, uvCoords, makeParticlerId(global_particleId++));
         p = &parent->particlers[parent->particlerCount - 1];
-        
+
     }
 
     return p;

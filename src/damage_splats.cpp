@@ -23,6 +23,16 @@ DamageSplat *getDamageSplat(GameState *gameState, Entity *e) {
     return result;
 }
 
+void freeDamageSplats(GameState *gameState, Entity *e) {
+    DamageSplat **d = &e->damageSplats;
+    while(*d) {
+        DamageSplat *temp = *d;
+        *d = (*d)->next;
+
+        temp->next = gameState->freeListDamageSplats;
+        gameState->freeListDamageSplats = temp;
+    }
+}
 
 
 void renderDamageSplats(GameState *gameState, Entity *e, float dt) {

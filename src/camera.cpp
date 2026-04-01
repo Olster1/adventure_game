@@ -15,8 +15,11 @@ void updateZoomAndPan(GameState *gameState, float dt, float2 mouseP_01, float2 w
 	}
 
 
-	if(global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown) {
-		float2 worldMouseP = getMouseWorldPLvl0(gameState, windowDim.x, windowDim.y, false);
+
+
+	float2 worldMouseP = getMouseWorldPLvl0(gameState, windowDim.x, windowDim.y, false);
+	if(!global_platformInput.keyStates[PLATFORM_KEY_SHIFT].isDown)
+	{
 		//NOTE: Update Pan
 		if(global_platformInput.keyStates[PLATFORM_MOUSE_LEFT_BUTTON].pressedCount > 0) {
 			//NOTE: Move the canvas
@@ -25,8 +28,9 @@ void updateZoomAndPan(GameState *gameState, float dt, float2 mouseP_01, float2 w
 			float2 diff = minus_float2(gameState->startDragP, worldMouseP);
 			gameState->cameraPos.xy = plus_float2(gameState->cameraPos.xy, diff);
 		}
-		gameState->startDragP = worldMouseP;
 	}
+
+	gameState->startDragP = worldMouseP;
 }
 
 void updateCamera(GameState *gameState, float dt) {

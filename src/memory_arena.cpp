@@ -9,7 +9,7 @@ typedef struct MemoryPiece {
 
     MemoryPiece *next;
 
-} MemoryPiece; //this is for the memory to remember 
+} MemoryPiece; //this is for the memory to remember
 
 typedef struct {
     //NOTE: everything is in pieces now
@@ -32,7 +32,7 @@ MemoryPiece *getCurrentMemoryPiece(Memory_Arena *arena) {
 
 static size_t DEBUG_get_total_arena_size(Memory_Arena *arena) {
     MemoryPiece *p = arena->pieces;
-    
+
     size_t result = 0;
     while(p) {
         result += p->totalSize;
@@ -67,17 +67,17 @@ void *pushSize(Memory_Arena *arena, size_t size, int alignment = 8) {
         if(piece)  {
             MemoryPiece **piecePtr = &arena->piecesFreeList;
             assert(piece->totalSize > 0);
-            while(piece && piece->totalSize < extension) {//find the right size piece. 
-                piecePtr = &piece->next; 
+            while(piece && piece->totalSize < extension) {//find the right size piece.
+                piecePtr = &piece->next;
                 piece = piece->next;
             }
             if(piece) {
                 //take off list
-                *piecePtr = piece->next;             
+                *piecePtr = piece->next;
                 piece->currentSize = 0;
             }
-            
-        } 
+
+        }
 
         if(!piece) {//need to allocate a new piece
             piece = (MemoryPiece *)calloc(sizeof(MemoryPiece), 1);
@@ -95,7 +95,7 @@ void *pushSize(Memory_Arena *arena, size_t size, int alignment = 8) {
         arena->pieces = piece;
 
         // piece->totalSizeOfArena = arena->totalSize;
-        // assert((arena->currentSize_ + size) <= arena->totalSize); 
+        // assert((arena->currentSize_ + size) <= arena->totalSize);
     }
 
     MemoryPiece *piece = arena->pieces;
@@ -108,11 +108,11 @@ void *pushSize(Memory_Arena *arena, size_t size, int alignment = 8) {
     }
 
     assert(piece);
-    assert((piece->currentSize + size) <= piece->totalSize); 
-    
+    assert((piece->currentSize + size) <= piece->totalSize);
+
     void *result = ((u8 *)piece->memory) + piece->currentSize + padding;
     piece->currentSize += (size + padding);
-    
+
     memset(result, 0, (size + padding));
     return result;
 }
@@ -150,10 +150,10 @@ Memory_Arena initMemoryArena_withMemory(void *memory, size_t totalSize) {
 }
 
 // Arena easyArena_subDivideArena(Arena *parentArena, size_t size) {
-    
+
 // }
 
-typedef struct { 
+typedef struct {
     int id;
     Memory_Arena *arena;
     size_t memAt; //the actuall value we roll back, don't need to do anything else
@@ -175,7 +175,7 @@ void releaseMemoryMark(MemoryArenaMark *mark) {
     assert(mark->id == arena->markCount);
     assert(arena->markCount >= 0);
     assert(arena->pieces);
-    //all ways the top piece is the current memory block for the arena. 
+    //all ways the top piece is the current memory block for the arena.
     MemoryPiece *piece = arena->pieces;
     if(mark->piece != piece) {
         //not on the same memory block
@@ -195,7 +195,7 @@ void releaseMemoryMark(MemoryArenaMark *mark) {
             }
         }
         assert(found);
-    } 
+    }
     assert(arena->pieces == mark->piece);
     //roll back size
     piece->currentSize = mark->memAt;
@@ -228,31 +228,31 @@ char *nullTerminateBuffer(char *result, char *string, int length) {
 char *concat_(char *a, s32 lengthA, char *b, s32 lengthB, Memory_Arena *arena) {
     int aLen = lengthA;
     int bLen = lengthB;
-    
+
     int newStrLen = aLen + bLen + 1; // +1 for null terminator
     char *newString = 0;
     if(arena) {
         newString = (char *)pushArray(arena, newStrLen, char);
     } else {
-        newString = (char *)platform_alloc_memory(newStrLen, true); 
+        newString = (char *)platform_alloc_memory(newStrLen, true);
     }
     assert(newString);
-    
+
     newString[newStrLen - 1] = '\0';
-    
+
     char *at = newString;
     for (int i = 0; i < aLen; ++i)
     {
         *at++ = a[i];
     }
-    
+
     for (int i = 0; i < bLen; ++i)
     {
         *at++ = b[i];
     }
     assert(at == &newString[newStrLen - 1]);
     assert(newString[newStrLen - 1 ] == '\0');
-    
+
     return newString;
 }
 
@@ -266,7 +266,7 @@ inline char *easy_createString_printf(Memory_Arena *arena, char *formatString, .
     
     char *strArray = pushArray(arena, stringLengthToAlloc, char);
 
-    vsnprintf(strArray, stringLengthToAlloc, formatString, args); 
+    vsnprintf(strArray, stringLengthToAlloc, formatString, args);
 
     va_end(args);
 

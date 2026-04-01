@@ -23,6 +23,7 @@
 #include "gameplay.cpp"
 #include "board_astar.h"
 #include "game_state.h"
+#include "opponent_ai.cpp"
 #include "terrain.cpp"
 #include "assets.cpp"
 #include "tileMap.cpp"
@@ -79,9 +80,6 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 		updateZoomAndPan(gameState, dt, mouseP_01, make_float2(windowWidth, windowHeight));
 	}
 
-	//NOTE: Get pointer to player - always at slot zero
-	gameState->player = &gameState->entities[0];
-
 	pushViewport(renderer, make_float4(0, 0, windowWidth, windowHeight));
 	renderer_defaultScissors(renderer, windowWidth, windowHeight);
 
@@ -94,11 +92,11 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	float fauxDimensionY = 1000;
 	float fauxDimensionX = fauxDimensionY * (windowWidth/windowHeight);
 
-	// updatePlayerInput(gameState);
 	updateCamera(gameState, dt);
 
 	gameState->planeSizeY = (windowHeight / windowWidth) * gameState->planeSizeX;
 	float16 fovMatrix = make_ortho_matrix_origin_center(gameState->planeSizeX*gameState->zoomLevel, gameState->planeSizeY*gameState->zoomLevel, MATH_3D_NEAR_CLIP_PlANE, MATH_3D_FAR_CLIP_PlANE);
+	updateAiIfNeed(gameState, dt);
 	updateAndRenderEntities(gameState, renderer, dt, fovMatrix, windowWidth, windowHeight);
 	drawGameUi(gameState, renderer, dt, windowWidth, windowHeight, mouseP_01);
 
