@@ -8,6 +8,7 @@
 #include "lex_utf8.h"
 #include "color.cpp"
 #include "font.cpp"
+#include "string_buffer.cpp"
 #include "SimplexNoise.cpp"
 #include "transform.cpp"
 #include "animation.cpp"
@@ -101,7 +102,7 @@ static GameState *updateEditor(BackendRenderer *backendRenderer, float dt, float
 	drawGameUi(gameState, renderer, dt, windowWidth, windowHeight, mouseP_01);
 
 #if DEBUG_BUILD
-	// drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
+	drawDebugAndEditorText(gameState, renderer, fauxDimensionX, fauxDimensionY, windowWidth, windowHeight, dt, fovMatrix);
 
 	EasyProfile_DrawGraph(renderer, gameState, gameState->drawState, dt, windowHeight/windowWidth, mouseP_01);
 #endif

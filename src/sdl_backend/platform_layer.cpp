@@ -24,7 +24,7 @@ static SDL_GLContext renderContext;
 static bool global_windowDidResize = false;
 
 // static bool w32_got_system_info = false;
-// SYSTEM_INFO w32_system_info = {}; 
+// SYSTEM_INFO w32_system_info = {};
 
 //TODO:  From docs: Because the system cannot compact a private heap, it can become fragmented.
 //TODO:  This means we don't want to use heap alloc, we would rather use a memory arena
@@ -95,7 +95,7 @@ static void *platform_alloc_memory_pages(size_t size) {
 
     size_t size_to_alloc = size + (page_size - 1);
 
-    size_to_alloc -= size_to_alloc % page_size; 
+    size_to_alloc -= size_to_alloc % page_size;
 
 #if DEBUG_BUILD
     global_debug_stats.total_virtual_alloc += size_to_alloc;
@@ -125,19 +125,19 @@ static u64 GlobalTimeFrequencyDatum;
 inline u64 EasyTime_GetTimeCount()
 {
     u64 s = SDL_GetPerformanceCounter();
-    
+
     return s;
 }
 
 inline u64 EasyTime_GetSecondsCount() {
 	return (EasyTime_GetTimeCount() / GlobalTimeFrequencyDatum);
-} 
+}
 
 inline float EasyTime_GetSecondsElapsed(u64 CurrentCount, u64 LastCount)
 {
     u64 Difference = CurrentCount - LastCount;
     float Seconds = (float)Difference / (float)GlobalTimeFrequencyDatum;
-    
+
     return Seconds;
 }
 
@@ -146,9 +146,9 @@ inline float EasyTime_GetMillisecondsElapsed(u64 CurrentCount, u64 LastCount)
     u64 Difference = CurrentCount - LastCount;
     assert(Difference >= 0); //user put them in the right order
     double Seconds = (float)Difference / (float)GlobalTimeFrequencyDatum;
-	float millseconds = (float)(Seconds * 1000.0);     
+	float millseconds = (float)(Seconds * 1000.0);
     return millseconds;
-    
+
 }
 
 static inline u64 EasyTime_getTimeStamp() {
@@ -163,7 +163,7 @@ void updateKeyState(PlatformKeyType keyType, bool keyIsDown) {
     if(keyIsDown) {
         if(state == MOUSE_BUTTON_NONE) {
           global_platformInput.keys[keyType] = MOUSE_BUTTON_PRESSED;
-          
+
           wasPressed++;
         } else if(state == MOUSE_BUTTON_PRESSED) {
           global_platformInput.keys[keyType] = MOUSE_BUTTON_DOWN;
@@ -181,17 +181,45 @@ void updateKeyState(PlatformKeyType keyType, bool keyIsDown) {
     global_platformInput.keyStates[keyType].releasedCount += wasReleased;
 
     global_platformInput.keyStates[keyType].isDown = keyIsDown;
-  
+
 }
 
 void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight, bool *running) {
-    
+
+        //NOTE: Clear the keys we're controlling via the OS input lag instead of instant state queries
+      global_platformInput.keyStates[PLATFORM_KEY_BACKSPACE].isDown = false;
+      global_platformInput.keyStates[PLATFORM_KEY_CURSOR_RIGHT].isDown = false;
+      global_platformInput.keyStates[PLATFORM_KEY_CURSOR_LEFT].isDown = false;
+
       SDL_Event e;
       while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
             *running = false;
           } else if (e.type == SDL_MOUSEWHEEL) {
             global_platformInput.mouseScrollY = e.wheel.y;
+          } else if (e.type == SDL_KEYDOWN) {
+            //NOTE: We do these keys because we want the OS lag to control them instead of instant state queries
+            if(e.key.keysym.sym == SDLK_BACKSPACE) {
+                global_platformInput.keyStates[PLATFORM_KEY_BACKSPACE].isDown = true;
+            }
+            if(e.key.keysym.sym == SDLK_RIGHT) {
+                global_platformInput.keyStates[PLATFORM_KEY_CURSOR_RIGHT].isDown = true;
+            }
+            if(e.key.keysym.sym == SDLK_LEFT) {
+                global_platformInput.keyStates[PLATFORM_KEY_CURSOR_LEFT].isDown = true;
+            }
+          } else if (e.type == SDL_KEYUP) {
+          } else if (e.type == SDL_TEXTINPUT) {
+            char *str = (char *)e.text.text;
+            int index = 0;
+            while(*str) {
+                assert(index < (arrayCount(global_platformInput.textInput_utf8) - 1));
+                if(index < (arrayCount(global_platformInput.textInput_utf8) - 1)) {
+                    global_platformInput.textInput_utf8[index++] = *str;
+                }
+                str++;
+            }
+            global_platformInput.textInput_utf8[index] = 0; //NOTE: Null terminate
           }
       }
 
@@ -203,6 +231,7 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     updateKeyState(PLATFORM_KEY_RIGHT, currentKeyStates[SDL_SCANCODE_RIGHT] == 1 || currentKeyStates[SDL_SCANCODE_D] == 1);
     updateKeyState(PLATFORM_KEY_SPACE, currentKeyStates[SDL_SCANCODE_SPACE] == 1);
     updateKeyState(PLATFORM_KEY_ESCAPE, currentKeyStates[SDL_SCANCODE_ESCAPE] == 1);
+    updateKeyState(PLATFORM_KEY_ENTER, currentKeyStates[SDL_SCANCODE_RETURN] == 1);
     updateKeyState(PLATFORM_KEY_SHIFT, currentKeyStates[SDL_SCANCODE_LSHIFT] == 1);
     updateKeyState(PLATFORM_KEY_CTRL, currentKeyStates[SDL_SCANCODE_LCTRL] == 1);
     updateKeyState(PLATFORM_KEY_Z, currentKeyStates[SDL_SCANCODE_Z] == 1);
@@ -217,10 +246,16 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     updateKeyState(PLATFORM_KEY_6, currentKeyStates[SDL_SCANCODE_6] == 1);
     updateKeyState(PLATFORM_KEY_7, currentKeyStates[SDL_SCANCODE_7] == 1);
     updateKeyState(PLATFORM_KEY_8, currentKeyStates[SDL_SCANCODE_8] == 1);
+    #if defined(__APPLE__)
+    //NOTE: Command for mac
+        updateKeyState(PLATFORM_KEY_COMMAND, currentKeyStates[SDL_GetScancodeFromKey(SDLK_LGUI)] == 1);
+    #else
+      updateKeyState(PLATFORM_KEY_COMMAND, currentKeyStates[SDL_GetScancodeFromKey(SDLK_LCTRL)] == 1);
+    #endif
     updateKeyState(PLATFORM_KEY_MINUS, currentKeyStates[SDL_SCANCODE_MINUS] == 1);
     updateKeyState(PLATFORM_KEY_PLUS, currentKeyStates[SDL_SCANCODE_EQUALS] == 1);
-    
-    int w; 
+
+    int w;
     int h;
     SDL_GetWindowSize(window, &w, &h);
     // gameState->screenWidth = (float)w;
@@ -233,10 +268,10 @@ void updateInput(SDL_Window *window, int *lastWindowWidth, int *lastWindowHeight
     *lastWindowWidth = w;
     *lastWindowHeight = h;
 
-    int x; 
+    int x;
     int y;
     Uint32 mouseState = SDL_GetMouseState(&x, &y);
-    
+
     global_platformInput.mouseX = (float)x;
     global_platformInput.mouseY = (float)(y);
 
@@ -257,7 +292,7 @@ static Platform_File_Handle platform_begin_file_write_utf8_file_path (char *path
     Platform_File_Handle Result = {};
 
     FILE *fileHandle = fopen(path_utf8, "w+");
-    
+
     if(fileHandle)
     {
         Result.data = fileHandle;
@@ -266,7 +301,7 @@ static Platform_File_Handle platform_begin_file_write_utf8_file_path (char *path
     {
         Result.has_errors = true;
     }
-    
+
     return Result;
 }
 
@@ -279,7 +314,7 @@ static void platform_close_file(Platform_File_Handle handle)
     }
 }
 
-static bool platform_write_file_data(Platform_File_Handle handle, void *memory, size_t size_to_write, size_t offset) {   
+static bool platform_write_file_data(Platform_File_Handle handle, void *memory, size_t size_to_write, size_t offset) {
     bool success = false;
     if(!handle.has_errors) {
         FILE *FileHandle = (FILE *)handle.data;
@@ -312,7 +347,7 @@ static bool doesFileExists(char *filename_utf8) {
     if (fileHandle) {
         result = true;
         fclose(fileHandle);
-    } 
+    }
 
     return result;
 }
@@ -332,16 +367,16 @@ static bool Platform_LoadEntireFile_utf8(char *filename_utf8, void **data, size_
         fseek(fileHandle, 0L, SEEK_SET);
 
         void *read_data = platform_alloc_memory(read_bytes + 1, false);
-        size_t bytesRead = fread(read_data, 1, read_bytes, fileHandle); 
+        size_t bytesRead = fread(read_data, 1, read_bytes, fileHandle);
 
         //NOTE: Read the ttf file contents
         if(bytesRead == read_bytes) {
-            //NOTE: Null terminate the buffer 
+            //NOTE: Null terminate the buffer
             ((u8 *)read_data)[read_bytes] = 0;
-          
+
             *data = read_data;
             *data_size = (u64)bytesRead;
-            
+
             succeed = true;
         } else {
           platform_free_memory(read_data);
@@ -386,7 +421,7 @@ float getBestDt(float secondsElapsed) {
           closestFrameRate = dt_;
         }
       }
-      // printf("frames per second: %f\n", closestFrameRate);              
+      // printf("frames per second: %f\n", closestFrameRate);
       return closestFrameRate;
 }
 
@@ -401,17 +436,17 @@ int main(int argc, char **argv) {
     float sizeFactor = 1.0f;
     int windowWidth = sizeFactor*960;
     int windowHeight = sizeFactor*540;
-    
+
     GlobalTimeFrequencyDatum = SDL_GetPerformanceFrequency();
     DEBUG_TIME_BLOCK_FOR_FRAME_BEGIN(beginFrameProfiler, "Main: Intial setup");\
 
     // Open a window
-    {	
+    {
         //NOTE: Allocate stuff
         global_platform.permanent_storage_size = PERMANENT_STORAGE_SIZE + sizeof(GameState); //NOTE: Make sure we have enough room for the gameState
         global_platform.permanent_storage = platform_alloc_memory_pages(global_platform.permanent_storage_size);
         assert(global_platform.permanent_storage);
-        
+
         global_long_term_arena = initMemoryArena_withMemory(((u8 *)global_platform.permanent_storage) + sizeof(GameState), global_platform.permanent_storage_size - sizeof(GameState));
 
         globalPerFrameArena = initMemoryArena(Kilobytes(100));
@@ -419,23 +454,6 @@ int main(int argc, char **argv) {
 
         globalPerEntityLoadArena = initMemoryArena(Megabytes(10));
         global_perEntityLoadArenaMark = takeMemoryMark(&globalPerEntityLoadArena);
-
-        //NOTE: Get the settings file we need
-        // {
-        //     save_file_location_utf8 = platform_get_save_file_location_utf8(&global_long_term_arena);
-
-        //     char *settings_file_path = concatInArena(save_file_location_utf8, "user.settings", &globalPerFrameArena);
-        //     Settings_To_Save settings_to_save = load_settings(settings_file_path);
-
-        //     if(settings_to_save.is_valid) {
-        //         window_width = (LONG)settings_to_save.window_width;
-        //         window_height = (LONG)settings_to_save.window_height;
-
-        //         window_xAt = (LONG)settings_to_save.window_xAt;
-        //         window_yAt = (LONG)settings_to_save.window_yAt;
-        //     }
-        // }
-
 
         //Now create the actual window
         global_wndHandle = SDL_CreateWindow("Boardgame",  SDL_WINDOWPOS_CENTERED,  SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, flags);
@@ -445,11 +463,11 @@ int main(int argc, char **argv) {
         SDL_RaiseWindow(global_wndHandle);
     }
 
-    
-    
-    
-    //TODO: Change to using memory arena? 
-    BackendRenderer *backendRenderer = (BackendRenderer *)platform_alloc_memory(sizeof(BackendRenderer), true); 
+
+
+
+    //TODO: Change to using memory arena?
+    BackendRenderer *backendRenderer = (BackendRenderer *)platform_alloc_memory(sizeof(BackendRenderer), true);
     backendRender_init(backendRenderer, global_wndHandle);
 
     global_platformInput.dpi_for_window = GetDpiForWindow();
@@ -459,8 +477,8 @@ int main(int argc, char **argv) {
     //NOTE: Clear the keys states to NONE to start of with
     for(int i = 0; i < arrayCount(global_platformInput.keys); ++i) {
       global_platformInput.keys[i] = MOUSE_BUTTON_NONE;
-    } 
-  
+    }
+
     /////////////////////
 
     // Timing
@@ -533,14 +551,14 @@ int main(int argc, char **argv) {
             DEBUG_TIME_BLOCK_NAMED("Present Final Frame");
             backendRender_presentFrame(backendRenderer);
         }
-        
+
         first_frame = false;
 
         DEBUG_TIME_BLOCK_FOR_FRAME_END(beginFrameProfiler, global_platformInput.keyStates[PLATFORM_KEY_SPACE].pressedCount > 0);
         DEBUG_TIME_BLOCK_FOR_FRAME_START(beginFrameProfiler, "Per frame");
 
     }
-    
+
     return 0;
 
 }

@@ -22,7 +22,7 @@ bool lexMatchString(char *A, char *B) {
     while(*A && *B) {
         res = (*A++ == *B++);
         if(!res) break;
-    } 
+    }
 
     if((!A[0] && B[0]) || (A[0] && !B[0])) {
         res = false;
@@ -103,13 +103,13 @@ typedef struct {
     char *at;
 
     bool isKeyword;
-    bool isType; 
-    
+    bool isType;
+
     EasyTokenType type;
     int size;
-    
+
     u32 lineNumber;
-    
+
     union {
         struct {
             int intVal;
@@ -131,23 +131,23 @@ static inline bool isNewlineTokenWindowsType(EasyToken token) {
 
 char *lexEatWhiteSpace(char *at) {
     while(*at == ' ' || *at == '\r' || *at == '\n' || *at == '\t') {
-        at++;		
+        at++;
     }
     return at;
 }
 
 char *lexEatWhiteSpaceExceptNewLine(char *at) {
     while(*at == ' ' || *at == '\t') {
-        at++;		
+        at++;
     }
     return at;
 }
 
 char *lexEatSpaces(char *at) {
     while(*at == ' ') {
-        at++;		
+        at++;
     }
-    return at;	
+    return at;
 }
 
 bool lexIsNewLine(char value) {
@@ -160,7 +160,7 @@ EasyToken lexInitToken(EasyTokenType type, char *at, int size, u32 lineNumber) {
     result.at = at;
     result.size = size;
     result.lineNumber = lineNumber;
-    
+
     return result;
 }
 
@@ -170,6 +170,7 @@ typedef struct {
     bool parsing;
     bool eatWhiteSpace;
     bool parseComments;
+    bool keepStringQuotations;
 
 } EasyTokenizer;
 
@@ -177,6 +178,7 @@ typedef enum {
     EASY_LEX_OPTION_NONE = 0,
     EASY_LEX_OPTION_EAT_WHITE_SPACE = 1 << 0,
     EASY_LEX_EAT_SLASH_COMMENTS = 1 << 1,
+    EASY_LEX_OPTION_KEEP_STRING_QUOTATIONS = 1 << 2,
 } EasyLexOptions;
 
 EasyTokenizer lexBeginParsing(void *src, EasyLexOptions options) {
@@ -184,6 +186,7 @@ EasyTokenizer lexBeginParsing(void *src, EasyLexOptions options) {
     result.src = (char *)src;
     result.eatWhiteSpace = options & EASY_LEX_OPTION_EAT_WHITE_SPACE;
     result.parseComments = !(options & EASY_LEX_EAT_SLASH_COMMENTS);
+    result.keepStringQuotations = options & EASY_LEX_OPTION_KEEP_STRING_QUOTATIONS;
     result.parsing = true;
     return result;
 }
@@ -203,466 +206,22 @@ int lexStringLength(char *str) {
 
 void lexAdvancePtrWithToken(EasyTokenizer *tokenizer, EasyToken token) {
     tokenizer->src = (token.at + token.size);
-    if(token.type == TOKEN_STRING) { tokenizer->src++; } //to move past the last quote 
+    if(token.type == TOKEN_STRING) { tokenizer->src++; } //to move past the last quote
 }
 
 void DEBUG_lexPrintToken(EasyToken *token) {
     char buffer[256] = {};
     char *a = DEBUG_lexNullTerminateBuffer(buffer, token->at, token->size);
-    
+
     printf("%s\n%s\n---\n", a, LexTokenTypeStrings[token->type]);
 }
-
-
-#define peekTokenBackwards_hasRoomLeft(at, start_of_buffer) (start_of_buffer <= at)
-
-//NOTE: This isn't a full token looker, just to get an idea of what's behind the cursor, the cursor might be in the middle of a token, so it doesn't try and work out which token it is by going forward. It's just for skipping text with the arrow key  
-static EasyToken peekTokenBackwards_tokenNotComplete(char *at, char *start_of_buffer) {
-    EasyToken token = lexInitToken(TOKEN_UNINITIALISED, at, 1, 0);
-    
-    u32 lineNumber = 0;            
-
-    if(start_of_buffer <= at) {
-
-        switch(*at) {
-            case ' ': {
-                token = lexInitToken(TOKEN_SPACE, at, 1, lineNumber);
-                at--;
-                while(peekTokenBackwards_hasRoomLeft(at, start_of_buffer) && *at == ' ') {
-                    token.size++;
-                    token.at = at;
-                    at--;
-
-                }
-
-            } break;
-            case ';': {
-                token = lexInitToken(TOKEN_SEMI_COLON, at, 1, lineNumber);
-                at--;
-            } break;
-            case ':': {
-                token = lexInitToken(TOKEN_COLON, at, 1, lineNumber);
-                at--;
-            } break;
-            case '.': {
-                token = lexInitToken(TOKEN_PERIOD, at, 1, lineNumber); 
-                at--;
-            } break;
-            case '\0': {
-                token = lexInitToken(TOKEN_NULL_TERMINATOR, at, 1, lineNumber);
-                at--;
-            } break;
-            case ',': {
-                token = lexInitToken(TOKEN_COMMA, at, 1, lineNumber);
-                at--;
-            } break;
-            case '\r': 
-            case '\n': {
-                token = lexInitToken(TOKEN_NEWLINE, at, 1, lineNumber);
-
-                at--;
-                if(peekTokenBackwards_hasRoomLeft(at, start_of_buffer) && at[0] == '\r' && at[1] == '\n') {
-                    token.size++;
-                    token.at = at;
-                    at--;
-                }
-            } break;
-            case '\t': {
-                token = lexInitToken(TOKEN_TAB, at, 1, lineNumber);
-                at--;
-            } break;
-            case '{': {
-                token = lexInitToken(TOKEN_OPEN_BRACKET, at, 1, lineNumber);
-                at--;
-            } break;
-            case '}': {
-                token = lexInitToken(TOKEN_CLOSE_BRACKET, at, 1, lineNumber);
-                at--;
-            } break;
-            case '[': {
-                token = lexInitToken(TOKEN_OPEN_SQUARE_BRACKET, at, 1, lineNumber);
-                at--;
-            } break;
-            case ']': {
-                token = lexInitToken(TOKEN_CLOSE_SQUARE_BRACKET, at, 1, lineNumber);
-                at--;
-            } break;
-            case '(': {
-                token = lexInitToken(TOKEN_OPEN_PARENTHESIS, at, 1, lineNumber);
-                at--;
-            } break;
-            case ')': {
-                token = lexInitToken(TOKEN_CLOSE_PARENTHESIS, at, 1, lineNumber);
-                at--;
-            } break;
-            case '@': {
-                token = lexInitToken(TOKEN_AT_SYMBOL, at, 1, lineNumber);
-                at--;
-            } break;
-            case '=': {
-                token = lexInitToken(TOKEN_EQUALS, at, 1, lineNumber);
-                at--;
-
-                if(peekTokenBackwards_hasRoomLeft(at, start_of_buffer) &&  *at == '=') {
-                    token.at = at;
-                    token.type = TOKEN_DOUBLE_EQUAL;
-                    token.size = 2;
-                    at--;
-                }
-            } break;
-            case '>': {
-                token = lexInitToken(TOKEN_GREATER_THAN, at, 1, lineNumber);
-                at--;
-
-                if(*at && *at == '=') {
-                    token.at = at;
-                    token.type = TOKEN_GREATER_THAN_OR_EQUAL_TO;
-                    token.size = 2;
-                    at--;
-                }
-            } break;
-            case '<': {
-                token = lexInitToken(TOKEN_LESS_THAN, at, 1, lineNumber);
-                at--;
-
-                if(*at && *at == '=') {
-                    token.at = at;
-                    token.type = TOKEN_LESS_THAN_OR_EQUAL_TO;
-                    token.size = 2;
-                    at--;
-                }
-            } break;
-            case '*': {
-                token = lexInitToken(TOKEN_ASTRIX, at, 1, lineNumber);
-                at--;
-            } break;
-            case '-': {
-                token = lexInitToken(TOKEN_MINUS, at, 1, lineNumber);
-                at--;
-            } break;
-            case '+': {
-                token = lexInitToken(TOKEN_PLUS, at, 1, lineNumber);
-                at--;
-            } break;
-            default: {
-                if(lexIsAlphaNumeric(*at) || lexIsNumeric(*at) || lexInnerAlphaNumericCharacter(*at)) {
-                    token = lexInitToken(TOKEN_WORD, at, 1, lineNumber);
-                    at--;
-                    while(peekTokenBackwards_hasRoomLeft(at, start_of_buffer) && (lexIsAlphaNumeric(*at) || lexIsNumeric(*at) || lexInnerAlphaNumericCharacter(*at))) {
-                        token.at = at;
-                        token.size++;
-                        at--;
-                    }
-                }
-            }
-        }
-        assert((start_of_buffer - 1) <= at);
-    } else {
-        //NOTE: Buffer underrun detection
-        // assert(false);
-    }
-    
-    
-
-    return token;
-}
-
-
-#define peekTokenForwards_hasRoomLeft(at, end_of_buffer) (at < end_of_buffer)
-
-//NOTE: This isn't a full token looker, just to get an idea of what's infornt the cursor, the cursor might be in the middle of a token, so it doesn't try and work out which token it is by going backwards first. It's just for skipping text with the arrow key  
-static EasyToken peekTokenForward_tokenNotComplete(char *at, char *end_of_buffer) {
-    EasyToken token = lexInitToken(TOKEN_UNINITIALISED, at, 1, 0);
-    
-    u32 lineNumber = 0;            
-
-    if(at < end_of_buffer) {
-        switch(*at) {
-            case ' ': {
-                token = lexInitToken(TOKEN_SPACE, at, 1, lineNumber);
-                at++;
-                while(peekTokenForwards_hasRoomLeft(at, end_of_buffer) && *at == ' ') {
-                    token.size++;
-                    at++;
-                }
-
-            } break;
-            case ';': {
-                token = lexInitToken(TOKEN_SEMI_COLON, at, 1, lineNumber);
-                at++;
-            } break;
-            case ':': {
-                token = lexInitToken(TOKEN_COLON, at, 1, lineNumber);
-                at++;
-            } break;
-            case '.': {
-                token = lexInitToken(TOKEN_PERIOD, at, 1, lineNumber); 
-                at++;
-            } break;
-            case '\0': {
-                token = lexInitToken(TOKEN_NULL_TERMINATOR, at, 1, lineNumber);
-                at++;
-            } break;
-            case ',': {
-                token = lexInitToken(TOKEN_COMMA, at, 1, lineNumber);
-                at++;
-            } break;
-            case '\r': 
-            case '\n': {
-                token = lexInitToken(TOKEN_NEWLINE, at, 1, lineNumber);
-
-                if(peekTokenForwards_hasRoomLeft(at, end_of_buffer) && at[0] == '\r' && at[1] == '\n') {
-                    at++;
-                    token.size++;
-                }
-                at++;
-            } break;
-            case '\t': {
-                token = lexInitToken(TOKEN_TAB, at, 1, lineNumber);
-                at++;
-            } break;
-            case '{': {
-                token = lexInitToken(TOKEN_OPEN_BRACKET, at, 1, lineNumber);
-                at++;
-            } break;
-            case '}': {
-                token = lexInitToken(TOKEN_CLOSE_BRACKET, at, 1, lineNumber);
-                at++;
-            } break;
-            case '[': {
-                token = lexInitToken(TOKEN_OPEN_SQUARE_BRACKET, at, 1, lineNumber);
-                at++;
-            } break;
-            case ']': {
-                token = lexInitToken(TOKEN_CLOSE_SQUARE_BRACKET, at, 1, lineNumber);
-                at++;
-            } break;
-            case '(': {
-                token = lexInitToken(TOKEN_OPEN_PARENTHESIS, at, 1, lineNumber);
-                at++;
-            } break;
-            case ')': {
-                token = lexInitToken(TOKEN_CLOSE_PARENTHESIS, at, 1, lineNumber);
-                at++;
-            } break;
-            case '@': {
-                token = lexInitToken(TOKEN_AT_SYMBOL, at, 1, lineNumber);
-                at++;
-            } break;
-            case '=': {
-                token = lexInitToken(TOKEN_EQUALS, at, 1, lineNumber);
-                at++;
-
-                if(peekTokenForwards_hasRoomLeft(at, end_of_buffer) &&  *at == '=') {
-                    token.type = TOKEN_DOUBLE_EQUAL;
-                    token.size = 2;
-                    at++;
-                }
-            } break;
-            case '>': {
-                token = lexInitToken(TOKEN_GREATER_THAN, at, 1, lineNumber);
-                at++;
-
-                if(*at && *at == '=') {
-                    token.type = TOKEN_GREATER_THAN_OR_EQUAL_TO;
-                    token.size = 2;
-                    at++;
-                }
-            } break;
-            case '<': {
-                token = lexInitToken(TOKEN_LESS_THAN, at, 1, lineNumber);
-                at++;
-
-                if(*at && *at == '=') {
-                    token.type = TOKEN_LESS_THAN_OR_EQUAL_TO;
-                    token.size = 2;
-                    at++;
-                }
-            } break;
-            case '*': {
-                token = lexInitToken(TOKEN_ASTRIX, at, 1, lineNumber);
-                at++;
-            } break;
-            case '-': {
-                token = lexInitToken(TOKEN_MINUS, at, 1, lineNumber);
-                at++;
-            } break;
-            case '+': {
-                token = lexInitToken(TOKEN_PLUS, at, 1, lineNumber);
-                at++;
-            } break;
-            default: {
-                if(lexIsAlphaNumeric(*at) || lexIsNumeric(*at) || lexInnerAlphaNumericCharacter(*at)) {
-                    token = lexInitToken(TOKEN_WORD, at, 1, lineNumber);
-                    at++;
-                    while(peekTokenForwards_hasRoomLeft(at, end_of_buffer) && (lexIsAlphaNumeric(*at) || lexIsNumeric(*at) || lexInnerAlphaNumericCharacter(*at))) {
-                        token.size++;
-                        at++;
-                    }
-                }
-            }
-        }
-        assert(at <= end_of_buffer);
-    } else {
-        //NOTE: Buffer underrun detection
-        // assert(false);
-    }
-    
-    
-
-    return token;
-}
-
-
-#if DEBUG_BUILD
-static inline void DEBUG_runUnitTestForLookBackTokens() { 
-    {
-        char *buffer = "key juu";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[3], buffer);
-        assert(token.type == TOKEN_SPACE);
-        assert(token.size == 1);
-    }
-    {
-        char *buffer = "key   juu";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[5], buffer);
-        assert(token.type == TOKEN_SPACE);
-        assert(token.size == 3);
-    }
-    {
-        char *buffer = "key   juu";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[4], buffer);
-        assert(token.type == TOKEN_SPACE);
-        assert(token.size == 2);
-    }
-
-    {
-        char *buffer = "\r\n ";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[1], buffer);
-        assert(token.type == TOKEN_NEWLINE);
-        assert(token.size == 2);
-    }
-
-    {
-        char *buffer = "\r\n ";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[0], buffer);
-        assert(token.type == TOKEN_NEWLINE);
-        assert(token.size == 1);
-    }
-    {
-        char *buffer = "\r\n ";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[2], buffer);
-        assert(token.type == TOKEN_SPACE);
-        assert(token.size == 1);
-    }
-
-    {
-        char *buffer = " *";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[1], buffer);
-        assert(token.type == TOKEN_ASTRIX);
-        assert(token.size == 1);
-    }
-
-    {
-        char *buffer = " *";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[0] - 1, buffer);
-        assert(token.type == TOKEN_UNINITIALISED);
-    }
-
-    {
-        char *buffer = "thiswor";
-
-        EasyToken token = peekTokenBackwards_tokenNotComplete(&buffer[3], buffer);
-        assert(token.type == TOKEN_WORD);
-        assert(token.size == 4);
-    }
-} 
-
-static inline void DEBUG_runUnitTestForLookForwardTokens() { 
-    {
-        char *buffer = "key juu";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[4], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_WORD);
-        assert(token.size == 3);
-    }
-    {
-        char *buffer = "key   juu";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[5], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_SPACE);
-        assert(token.size == 1);
-    }
-    {
-        char *buffer = "key   juu";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[4], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_SPACE);
-        assert(token.size == 2);
-    }
-
-    {
-        char *buffer = "\r\n ";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[1], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_NEWLINE);
-        assert(token.size == 1);
-    }
-
-    {
-        char *buffer = "\r\n ";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[0], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_NEWLINE);
-        assert(token.size == 2);
-    }
-    {
-        char *buffer = "\r\n ";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[2], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_SPACE);
-        assert(token.size == 1);
-    }
-
-    {
-        char *buffer = " *";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[1], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_ASTRIX);
-        assert(token.size == 1);
-    }
-
-    {
-        char *buffer = " *";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[2], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_UNINITIALISED);
-    }
-
-    {
-        char *buffer = "thiswor";
-
-        EasyToken token = peekTokenForward_tokenNotComplete(&buffer[3], buffer + easyString_getSizeInBytes_utf8(buffer));
-        assert(token.type == TOKEN_WORD);
-        assert(token.size == 4);
-    }
-} 
-
-#endif
 
 EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
     char *at = tokenizer->src;
     int *lineNumber = &tokenizer->lineNumber;
     EasyToken token = lexInitToken(TOKEN_UNINITIALISED, at, 1, *lineNumber);
     if(tokenizer->eatWhiteSpace) { at = lexEatWhiteSpace(at); }
-    
+
     switch(*at) {
         case ' ': {
             token = lexInitToken(TOKEN_SPACE, at, 1, *lineNumber);
@@ -681,7 +240,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
             at++;
         } break;
         case '.': {
-            token = lexInitToken(TOKEN_PERIOD, at, 1, *lineNumber); 
+            token = lexInitToken(TOKEN_PERIOD, at, 1, *lineNumber);
             at++;
         } break;
         case '\0': {
@@ -693,7 +252,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
             token = lexInitToken(TOKEN_COMMA, at, 1, *lineNumber);
             at++;
         } break;
-        case '\r': 
+        case '\r':
         case '\n': {
             token = lexInitToken(TOKEN_NEWLINE, at, 1, *lineNumber);
             if(at[0] == '\r' && at[1] == '\n') {
@@ -788,9 +347,9 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
 
             token.size = (at - token.at);
         } break;
-        case '\'': 
+        case '\'':
         case '\"': {
-            token = lexInitToken(TOKEN_STRING, at + 1, 1, *lineNumber);
+            token = lexInitToken(TOKEN_STRING, (tokenizer->keepStringQuotations) ? at : at + 1, 1, *lineNumber);
             char endOfString = (*at == '\"') ? '\"' : '\'';
             at++;
             while(*at && *at != endOfString) {
@@ -801,7 +360,11 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
                 at++;
             }
             if(*at == endOfString) at++;
-            token.size = (at - (token.at + 1));//quotation aren't kept with the value
+            char *endChar = (token.at + 1);
+            if(tokenizer->keepStringQuotations) {
+                endChar = (token.at);
+            }
+            token.size = (at - endChar);//quotation aren't kept with the value
         } break;
         case '/': {
             token = lexInitToken(TOKEN_FORWARD_SLASH, at, 1, *lineNumber);
@@ -815,7 +378,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
                 } else if(lexMatchString(at, "/*")) {
                     token.type = TOKEN_COMMENT;
                     at += 2;
-                    
+
                     while(*at && !lexMatchString(at, "*/")) {
                         if(lexIsNewLine(*at)) {
                             *lineNumber = *lineNumber + 1;
@@ -846,7 +409,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
                 token.size = at - token.at;
                 token.isKeyword = true;
 
-                    
+
                 if(easyString_stringsMatch_null_and_count("new", token.at, token.size)) {
                     token.type = TOKEN_NEW_KEYWORD;
                 } else if(easyString_stringsMatch_null_and_count("for", token.at, token.size)) {
@@ -899,8 +462,8 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
                 } else {
                     token.isKeyword = false;
                 }
-                
-                
+
+
             } else if(lexIsNumeric(*at) || *at == '-') {
                 token = lexInitToken(TOKEN_INTEGER, at, 1, *lineNumber);
                 int numberOfDecimal = 0;
@@ -915,42 +478,42 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
                             break;
                         }
                     }
-                    
+
                     if(*at == 'E' || *at == 'e') {
                         assert(!hadENotation);
                         token.type = TOKEN_FLOAT;
                         char *a = nullTerminateArena(token.at, (at - token.at), &globalPerFrameArena);
                         token.floatVal = atof(a);
-                        
+
                         char *beginExponent = ++at;
                         int exponentSize = 0;
                         float isNegative = 1;
-                        
+
                         if(*(at) == '-') {
                             isNegative = -1;
                             at++;
                             exponentSize++;
                         }
-                        
-                        
+
+
                         while(*at && lexIsNumeric(*at)) {
                             exponentSize++;
                             at++;
                         }
-                        
+
                         char *exponentStr = nullTerminateArena(beginExponent, exponentSize, &globalPerFrameArena);
                         int exponent = atoi(exponentStr);
-                        
+
                         token.floatVal = token.floatVal*powf(10, exponent);
-                        
+
                         hadENotation = true;
                     } else {
                         at++;
                     }
-                    
-                    
+
+
                 }
-                
+
                 if(!hadENotation) {
                     char *a = nullTerminateArena(token.at, (at - token.at), &globalPerFrameArena);
                     if(numberOfDecimal > 0) {
@@ -960,7 +523,7 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
                         token.intVal = atoi(a);
                     }
                 }
-                
+
                 token.size = at - token.at;
             } else {
 #if PRINT_UNKNOWN_CHARACTERS
@@ -970,14 +533,14 @@ EasyToken lexGetToken_(EasyTokenizer *tokenizer, bool advanceWithToken) {
             }
         }
     }
-    
+
     //DEBUG_lexPrintToken(&token);
     //assert(token.type != TOKEN_UNINITIALISED);
-    
-    assert(tokenizer->src != at); // this doesn't 
+
+    assert(tokenizer->src != at); // this doesn't
     assert(token.at);
     if(advanceWithToken) { tokenizer->src = at; }
-    
+
     return token;
 }
 

@@ -8,7 +8,7 @@ typedef struct {
     int xoffset;
     int yoffset;
 
-    int xadvance;  
+    int xadvance;
 
     int width;
     int height;
@@ -54,18 +54,18 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
     sheet->maxText = endChar;
     sheet->next = 0;
     sheet->glyphCount = 0;
-    
-    
-    //NOTE(ollie): Get the 'scale' for the max pixel height 
+
+
+    //NOTE(ollie): Get the 'scale' for the max pixel height
     float maxHeightForFontInPixels = 32;//pixels
     float scale = stbtt_ScaleForPixelHeight(font->fontInfo, maxHeightForFontInPixels);
 
     font->originalScaleFactor = scale;
-    
+
     //NOTE(ollie): Scale the padding around the glyph proportional to the size of the glyph
     font->padding = 2;
     //NOTE(ollie): The distance from the glyph center that determines the edge (i.e. all the 'in' pixels)
-    u8 onedge_value = (u8)(0.5f*255); 
+    u8 onedge_value = (u8)(0.5f*255);
     //NOTE(ollie): The rate at which the distance from the center should increase
     float pixel_dist_scale = 0.3*(float)onedge_value/font->padding;
 
@@ -78,18 +78,18 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
 
     u32 counAt = 0;
     u32 rowCount = 1;
-   
+
     for(s32 codeIndex = firstChar; codeIndex < endChar; ++codeIndex) {
-        
+
         int width;
         int height;
-        int xoffset; 
+        int xoffset;
         int yoffset;
 
         assert((endChar - firstChar) <= 256);
-        
-        u8 *data = stbtt_GetCodepointSDF(font->fontInfo, scale, codeIndex, font->padding, onedge_value, pixel_dist_scale, &width, &height, &xoffset, &yoffset);    
-            
+
+        u8 *data = stbtt_GetCodepointSDF(font->fontInfo, scale, codeIndex, font->padding, onedge_value, pixel_dist_scale, &width, &height, &xoffset, &yoffset);
+
         assert(sheet->glyphCount < MY_MAX_GLYPH_COUNT);
         GlyphInfo *info = &sheet->glyphs[sheet->glyphCount++];
 
@@ -113,14 +113,14 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
         info->width = width;
         info->height = height;
         if(data) {
-            { 
+            {
                 totalWidth += width;
                 counAt++;
 
                 if(height > maxHeight) {
                     maxHeight = height;
                 }
-            } 
+            }
 
             if((counAt % 16) == 0) {
                 rowCount++;
@@ -131,7 +131,7 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
         }
     }
 
-        
+
     totalWidth = maxWidth;
     totalHeight = maxHeight*rowCount;
     u32 *sdfBitmap_32 = (u32 *)platform_alloc_memory(totalWidth*totalHeight*sizeof(u32), true);
@@ -181,7 +181,7 @@ FontSheet *createFontSheet(Font *font, u32 firstChar, u32 endChar) {
     //         sdfBitmap_32[y*totalWidth + x] = 0xFFF0FFF0;// | (u32)(((u32)alpha) << 24);
     //     }
     // }
-    
+
     //NOTE(ollie): Load the texture to the GPU
     sheet->handle = Platform_loadTextureToGPU(sdfBitmap_32, totalWidth, totalHeight, 4);
 
@@ -218,16 +218,16 @@ FontSheet *findFontSheet(Font *font, unsigned int character) {
 }
 
 Font initFont_(char *fileName, int firstChar, int endChar) {
-    Font result = {}; 
+    Font result = {};
     result.fileName = fileName;
 
     void *contents = 0;
-    size_t contentsSize = 0; 
+    size_t contentsSize = 0;
     Platform_LoadEntireFile_utf8(fileName, &contents, &contentsSize);
 
     //NOTE(ollie): This stores all the info about the font
     result.fontInfo = (stbtt_fontinfo *)platform_alloc_memory(sizeof(stbtt_fontinfo), true);
-    
+
     //NOTE(ollie): Fill out the font info
     stbtt_InitFont(result.fontInfo, (const unsigned char *)contents, 0);
 
@@ -275,10 +275,10 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
     float xAt = startX;
 
     bool parsing = true;
-    EasyTokenizer tokenizer = lexBeginParsing(str, EASY_LEX_OPTION_NONE);
+    EasyTokenizer tokenizer = lexBeginParsing(str, (EasyLexOptions)(EASY_LEX_OPTION_NONE | EASY_LEX_OPTION_KEEP_STRING_QUOTATIONS));
 
     int runeAt = 0;
-    
+
     int roundCount = 0;
     while(parsing) {
          EasyToken token = lexGetNextToken(&tokenizer);
@@ -312,7 +312,7 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
                     newLine = true;
                 } else {
                     roundCount = 0;
-                    
+
                     u32 rune = easyUnicode_utf8_codepoint_To_Utf32_codepoint(&at, true);
 
                     GlyphInfo g = easyFont_getGlyph(font, rune);
@@ -323,13 +323,13 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
 
                         float4 color = font_color;
                         float2 scale = make_float2(g.width*fontScale, g.height*fontScale);
-                        
+
                         if(newLine) {
                             xAt = startX + fontScale*g.xoffset;
                         }
 
                         float3 pos = {};
-                        //NOTE: Because STB font has the sprite at the bottom corner but we render the glyphs in the center, 
+                        //NOTE: Because STB font has the sprite at the bottom corner but we render the glyphs in the center,
                         //      we offset the position by the width & height;
                         pos.x = xAt + fontScale*g.xoffset + 0.5f*fontScale*g.width;
                         assert(pos.x >= startX);
@@ -344,7 +344,7 @@ static Rect2f draw_text_(Renderer *renderer, Font *font, char *str, float startX
                             }
                             pushGlyph(renderer, g.handle, pos, scale, color, g.uvCoords);
                         }
-                        
+
 
                         result = rect2f_union(make_rect2f_center_dim(make_float2(pos.x, pos.y), scale), result);
                     }

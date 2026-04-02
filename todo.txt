@@ -2,3 +2,8 @@
 
 - when have two peasants should show two building outlines
 
+- make a drop down level loader text input
+
+- start from making simple levels like just beach and peasant and go from there - explore each game mechanic
+
+

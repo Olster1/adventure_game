@@ -1,6 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../libs/stb_image.h"
-#define STB_TRUETYPE_IMPLEMENTATION 
+#define STB_TRUETYPE_IMPLEMENTATION
 #include "../libs/stb_truetype.h"
 
 #include <stdint.h> //for the type uint8_t for our text input buffer
@@ -58,7 +58,7 @@ typedef intptr_t intprt;
 
 #if !defined arrayCount
 #define arrayCount(array1) (sizeof(array1) / sizeof(array1[0]))
-#endif 
+#endif
 
 #define ENUM(value) value,
 #define STRING(value) #value,
@@ -69,7 +69,7 @@ typedef struct {
 
 	void *permanent_storage;
 	void *scratch_storage;
-} PlatformLayer; 
+} PlatformLayer;
 
 struct Platform_File_Handle {
     void *data;
@@ -82,6 +82,8 @@ enum PlatformKeyType {
     PLATFORM_KEY_DOWN,
     PLATFORM_KEY_RIGHT,
     PLATFORM_KEY_LEFT,
+    PLATFORM_KEY_CURSOR_RIGHT,
+    PLATFORM_KEY_CURSOR_LEFT,
     PLATFORM_KEY_X,
     PLATFORM_KEY_Z,
     PLATFORM_KEY_P,
@@ -104,11 +106,13 @@ enum PlatformKeyType {
     PLATFORM_KEY_8,
 
     PLATFORM_KEY_SPACE,
+    PLATFORM_KEY_ENTER,
 
     PLATFORM_KEY_HOME,
     PLATFORM_KEY_END,
 
     PLATFORM_KEY_CTRL,
+    PLATFORM_KEY_COMMAND,
     PLATFORM_KEY_COMMA,
     PLATFORM_KEY_FULL_STOP,
     PLATFORM_KEY_FULL_FORWARD_SLASH,
@@ -126,7 +130,7 @@ enum PlatformKeyType {
 
     PLATFORM_MOUSE_LEFT_BUTTON,
     PLATFORM_MOUSE_RIGHT_BUTTON,
-    
+
     // NOTE: Everything before here
     PLATFORM_KEY_TOTAL_COUNT
 };
@@ -149,7 +153,7 @@ enum MouseKeyState {
 
 struct PlatformInputState {
 
-    PlatformKeyState keyStates[PLATFORM_KEY_TOTAL_COUNT]; 
+    PlatformKeyState keyStates[PLATFORM_KEY_TOTAL_COUNT];
     MouseKeyState keys[PLATFORM_KEY_TOTAL_COUNT];
 
     //NOTE: Mouse data

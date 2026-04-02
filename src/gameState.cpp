@@ -89,16 +89,13 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		srand(time(NULL));   // Initialization, should only be called once.
 
-		//NOTE: Used to build the entity ids
-		gameState->randomIdStartApp = rand();
-		gameState->randomIdStart = rand();
-
 		gameState->planeSizeY = 20;
 		gameState->planeSizeX = 20;
 
 		gameState->gamePlay = init_gameplay();
 
 		gameState->drawState = EasyProfiler_initProfilerDrawState();
+		stringBuffer_init(&gameState->debug_commandBuffer.debug_stringBuffer);
 
 		gameState->textureAtlas = readTextureAtlas("../images/texture_atlas.json", "../images/texture_atlas.png");
 		gameState->bannerTexture = backendRenderer_loadFromFileToGPU(backendRenderer, "../images/ui/banner.png");
@@ -143,7 +140,6 @@ void initGameState(GameState *gameState, BackendRenderer *backendRenderer) {
 
 		gameState->selectedColor = make_float4(1, 1, 1, 1);
 		createAOOffsets(gameState);
-		gameState->gameMode = PLAY_MODE;
 		gameState->cameraFollowPlayer = true;
 		//TODO: Probably save this each time we leave the app
 		gameState->zoomLevel = 1.8f;

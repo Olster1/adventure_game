@@ -14,6 +14,24 @@ typedef enum {
 	EASY_PROFILER_DRAW_CLOSED,
 } EasyDrawProfile_OpenState;
 
+typedef enum {
+	DEBUG_COMMAND_BUFFER_CLOSED,
+	DEBUG_COMMAND_BUFFER_OPEN_SEMI,
+	DEBUG_COMMAND_BUFFER_OPEN_FULL,
+} DebugCommandBufferState;
+
+
+#define MAX_DEBUG_COMMAND_BUFFER_LINE_COUNT 1024
+struct DebugGameCommandBuffer {
+    //NOTE: Ring buffer
+    char *lines[MAX_DEBUG_COMMAND_BUFFER_LINE_COUNT];
+    int lineAt;
+    int lineCount;
+
+    DebugCommandBufferState debug_InputBufferOpenState;
+	StringBuffer debug_stringBuffer;
+};
+
 typedef struct {
 	int hotIndex;
 
@@ -100,7 +118,6 @@ struct RenderDamageSplatItem {
 typedef struct {
 	bool initialized;
 
-	GameMode gameMode;
 	PlatformAudioSpec audioSpec;
 
 	SoundAssets soundAssets;
@@ -122,9 +139,7 @@ typedef struct {
 	RenderDamageSplatItem *perFrameDamageSplatArray;
 	RenderDamageSplatItem *perFrameHealthBarArray;
 
-	//NOTE: For creating unique entity ids like MongoDb ObjectIds
-	int randomIdStartApp;
-	int randomIdStart;
+	DebugGameCommandBuffer debug_commandBuffer;
 
 	Renderer renderer;
 
